@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Fleet Monitor | School Bus Track Pro Admin</title>
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <style>
+    /* Fleet Page Specific Overrides */
+    .bus-scroll-area { height: 400px; overflow-y: auto; padding: 10px; scrollbar-width: thin; }
+    .bus-card { background: var(--bg); padding: 16px; border-radius: var(--r-lg); border: 1px solid var(--border); display: flex; align-items: center; gap: 16px; margin-bottom: 12px; cursor: pointer; transition: var(--transition); }
+    .bus-card:hover { transform: translateX(8px); border-color: var(--yellow); background: white; }
+    .bus-card.active-unit { border-left: 4px solid var(--green); }
+    .bus-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .bus-icon.online { background: var(--green-light); color: var(--green); }
+    .bus-icon.offline { background: #e2e8f0; color: var(--text-muted); }
+
+    /* --- BROADCAST UI --- */
+    .broadcast-box { background: var(--navy); color: white; padding: 20px; border-radius: var(--r-xl); margin-top: 24px; }
+    .broadcast-input { width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: var(--r-md); padding: 12px; margin: 12px 0; outline: none; }
+    
+    /* --- SOS EMERGENCY OVERLAY --- */
+    #emergency-overlay {
+        display: none; position: fixed; inset: 0; background: rgba(220, 38, 38, 0.9); z-index: 10000;
+        align-items: center; justify-content: center; text-align: center; color: white; backdrop-filter: blur(8px);
+    }
+    #emergency-overlay.active { display: flex; animation: pulseRed 2s infinite; }
+    @keyframes pulseRed { 0% { background: rgba(185, 28, 28, 0.9); } 50% { background: rgba(239, 68, 68, 0.95); } 100% { background: rgba(185, 28, 28, 0.9); } }
+
+    /* --- TABLE SCROLL FOR MOBILE --- */
+    .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* --- MOBILE RESPONSIVENESS --- */
+    @media (max-width: 768px) {
+        .admin-sidebar { display: none; }
+        .admin-main { padding-bottom: 100px; }
+        .desktop-only { display: none; }
+        .topbar-title { font-size: 20px; }
+        .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<div id="emergency-overlay">
+    <div style="max-width: 500px; padding: 40px;">
+        <i class="bi bi-exclamation-triangle-fill" style="font-size: 80px; display: block; margin-bottom: 20px;"></i>
+        <h1 style="font-size: 32px; font-weight: 900; margin-bottom: 10px;">CRITICAL EMERGENCY</h1>
+        <p id="sos-details" style="font-size: 18px; margin-bottom: 30px;">Waiting for signal details...</p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button class="btn btn-white" id="btn-ack-sos">Acknowledge Alert</button>
+            <button class="btn btn-ghost" onclick="document.getElementById('emergency-overlay').classList.remove('active')">Dismiss</button>
+        </div>
+    </div>
+</div>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png" alt="Logo">
+      <div class="logo-text">School Bus Track Pro <small>Admin Command</small></div>
+    </div>
+    
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Fleet Operations</div>
+      <a href="fleet.html" class="nav-link active"><i class="bi bi-radar"></i><span>Live Fleet</span></a>
+      <a href="crisis-center.html" class="nav-link"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis Center</span></a>
+      <div class="nav-group-label">System Management</div>
+      <a href="users.html" class="nav-link"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
+      <a href="routes.html" class="nav-link"><i class="bi bi-map-fill"></i><span>Route Control</span></a>
+      <a href="analytics.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="tel:+2348114875252" class="btn btn-sm btn-yellow btn-full" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; text-decoration: none; font-weight: 800;">
+        <i class="bi bi-telephone-outbound-fill"></i> Directors Hotline
+      </a>
+      <div class="admin-user">
+        <div class="admin-avatar">A</div>
+        <div class="admin-user-info" style="color:white; font-size: 13px;">
+          <div style="font-weight:800;">Administrator</div>
+          <div style="opacity:0.6; font-size:11px;">System Superuser</div>
+        </div>
+      </div>
+      <button id="signout-btn" class="btn btn-red btn-full btn-sm" style="margin-top: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);">
+        <i class="bi bi-power"></i> Log Out
+      </button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1 class="topbar-title">Fleet Command Center</h1>
+        <p style="font-size: 13px; color: var(--text-secondary);">Real-time monitoring of all active school transport units</p>
+      </div>
+      <div class="desktop-only" style="display: flex; gap: 12px; align-items: center;">
+        <div style="background: var(--green-light); color: var(--green); padding: 8px 16px; border-radius: var(--r-full); font-size: 12px; font-weight: 800;">
+          <span class="live-dot"></span> CONNECTION STABLE
+        </div>
+        <button class="btn btn-yellow btn-sm" onclick="window.print()"><i class="bi bi-file-earmark-arrow-down"></i> Export Logs</button>
+      </div>
+    </header>
+
+    <div class="admin-content">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Active Fleet</div>
+          <div class="kpi-value" id="kpi-active">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Units Offline</div>
+          <div class="kpi-value text-red" id="kpi-offline">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Students Boarded</div>
+          <div class="kpi-value text-yellow" id="kpi-transit">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">SOS Activity</div>
+          <div class="kpi-value text-red" id="kpi-alerts">0</div>
+        </div>
+      </div>
+
+      <div class="bento-grid">
+        <div class="tile tile-8">
+            <div class="table-header">
+                <div class="table-title"><i class="bi bi-geo-alt-fill text-yellow"></i> Global Geospatial View</div>
+            </div>
+            <div id="admin-fleet-map" style="flex: 1; min-height: 450px; border-radius: 12px;"></div>
+        </div>
+
+        <div class="tile tile-4">
+            <div class="table-header"><div class="table-title">Unit Directory</div></div>
+            <div class="bus-scroll-area" id="bus-list-sidebar"></div>
+
+            <div class="broadcast-box">
+                <div style="font-weight: 800; font-size: 14px; color: var(--yellow);">
+                    <i class="bi bi-megaphone-fill"></i> FLEET BROADCAST
+                </div>
+                <input type="text" id="broadcast-input" class="broadcast-input" placeholder="Type message for all drivers...">
+                <button class="btn btn-yellow btn-full btn-sm" id="btn-send-broadcast">
+                    <i class="bi bi-send-fill"></i> Dispatch Message
+                </button>
+            </div>
+        </div>
+
+        <div class="tile tile-12">
+            <div class="table-header"><div class="table-title">Detailed System Telemetry</div></div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Bus Reference</th>
+                            <th>Status</th>
+                            <th>Velocity</th>
+                            <th>Coordinate Pair</th>
+                            <th>Last Synchronization</th>
+                            <th style="text-align:right;">Control</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fleet-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav mobile-only">
+    <a href="fleet.html" class="active"><i class="bi bi-radar"></i>Command</a>
+    <a href="crisis-center.html"><i class="bi bi-exclamation-octagon-fill"></i>Crisis</a>
+    <a href="users.html"><i class="bi bi-people-fill"></i>Users</a>
+    <a href="analytics.html"><i class="bi bi-graph-up-arrow"></i>Stats</a>
+</nav>
+
+<div id="toast-container"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script type="module">
+  import { supabase } from '../js/config.js';
+  import { signOut } from '../js/auth.js';
+
+  // --- INITIALIZE MAP ---
+  const map = L.map('admin-fleet-map', { zoomControl: true, attributionControl: false }).setView([6.5244, 3.3792], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+
+  let busMarkers = {};
+  let emergencyAlarm = new Audio('../assets/audio/emergency-alarm.mp3');
+  emergencyAlarm.loop = true;
+
+  const broadcastChannel = supabase.channel('global-fleet-broadcast');
+  broadcastChannel.subscribe();
+
+  // --- BOOTSTRAP COMMAND CENTER ---
+  async function startCommandCenter() {
+    await fetchData();
+
+    // --- REAL-TIME LISTENERS ---
+    supabase.channel('fleet-master')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'buses' }, () => fetchData())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'type=eq.emergency' }, payload => {
+          handleEmergencySignal(payload.new);
+      })
+      .subscribe();
+  }
+
+  // --- EMERGENCY HANDLING ---
+  function handleEmergencySignal(sos) {
+      const overlay = document.getElementById('emergency-overlay');
+      const details = document.getElementById('sos-details');
+      
+      details.innerHTML = `<strong>${sos.title}</strong><br>${sos.message}`;
+      overlay.classList.add('active');
+      emergencyAlarm.play().catch(e => console.log("Audio interaction required"));
+
+      fetchData(); 
+      window.showToast(`EMERGENCY: SOS RECEIVED`, 'error');
+  }
+
+  document.getElementById('btn-ack-sos').onclick = async () => {
+      document.getElementById('emergency-overlay').classList.remove('active');
+      emergencyAlarm.pause();
+      emergencyAlarm.currentTime = 0;
+      window.showToast("Emergency Acknowledged.", "success");
+  };
+
+  // --- REALTIME BROADCAST DISPATCH ---
+  document.getElementById('btn-send-broadcast').onclick = async () => {
+      const input = document.getElementById('broadcast-input');
+      const broadcastMsg = input.value.trim();
+      if (!broadcastMsg) return;
+
+      const btn = document.getElementById('btn-send-broadcast');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Dispatching...';
+
+      // 1. Direct WebSocket Pipe
+      broadcastChannel.send({
+          type: 'broadcast',
+          event: 'urgent-alert',
+          payload: { 
+              title: "🚨 SYSTEM DIRECTIVE", 
+              message: broadcastMsg,
+              timestamp: new Date().toISOString()
+          }
+      });
+
+      // 2. Database Backup Fallback (Logs cleanly to prevent Crisis Center pollution)
+      const { error } = await supabase.from('notifications').insert([{
+          title: "ADMIN BROADCAST",
+          message: broadcastMsg,
+          type: 'broadcast',
+          status: 'logged'
+      }]);
+
+      if (!error) {
+          window.showToast("Broadcast transmitted across fleet instantly.", "success");
+          input.value = '';
+      } else {
+          console.error("Database backup logger error:", error.message);
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-send-fill"></i> Dispatch Message';
+  };
+
+  // --- DATA SYNC ENGINE ---
+  async function fetchData() {
+    try {
+        const { data: buses, error } = await supabase.from('buses').select('*').order('id');
+        if (error) throw error;
+
+        if (buses) {
+          renderDirectory(buses);
+          renderTelemetryTable(buses);
+          updateKPIs(buses);
+          buses.forEach(bus => syncMarker(bus));
+        }
+    } catch (e) {
+        console.error("Data fetch error:", e.message);
+    }
+  }
+
+  async function updateKPIs(buses) {
+    const onlineCount = buses.filter(b => b.status === 'active').length;
+    document.getElementById('kpi-active').textContent = onlineCount;
+    document.getElementById('kpi-offline').textContent = buses.length - onlineCount;
+
+    const { count: onboard } = await supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('status', 'on-board');
+    document.getElementById('kpi-transit').textContent = onboard || 0;
+
+    // Fixed: Counts ONLY true unacknowledged emergency logs
+    const { count: alerts } = await supabase.from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('type', 'emergency')
+        .eq('status', 'active');
+        
+    document.getElementById('kpi-alerts').textContent = alerts || 0;
+  }
+
+  // --- MAP SYNC ---
+  function syncMarker(bus) {
+    const lat = bus.current_lat || 6.5244;
+    const lng = bus.current_lng || 3.3792;
+    const isLive = bus.status === 'active';
+    const markerColor = isLive ? '#22C55E' : '#EF4444';
+
+    if (busMarkers[bus.id]) {
+        busMarkers[bus.id].setLatLng([lat, lng]);
+    } else {
+        const icon = L.divIcon({
+            html: `<div style="background:${markerColor}; width:34px; height:34px; border-radius:10px; border:3px solid white; display:flex; align-items:center; justify-content:center; color:white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                    <i class="bi bi-bus-front-fill"></i>
+                  </div>`,
+            className: '', iconSize: [34, 34]
+        });
+        busMarkers[bus.id] = L.marker([lat, lng], { icon }).addTo(map).bindPopup(`<b>Bus: ${bus.id}</b><br>Speed: ${bus.speed} km/h`);
+    }
+  }
+
+  // --- DIRECTORY RENDER ---
+  function renderDirectory(buses) {
+    const list = document.getElementById('bus-list-sidebar');
+    if (!list) return;
+    list.innerHTML = buses.map(bus => {
+      const isLive = bus.status === 'active';
+      return `
+      <div class="bus-card ${isLive ? 'active-unit' : ''}" onclick="window.focusUnit(${bus.current_lat}, ${bus.current_lng})">
+        <div class="bus-icon ${isLive ? 'online' : 'offline'}">
+          <i class="bi bi-truck-front-fill"></i>
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:800; font-size:14px;">${bus.id}</div>
+          <div style="font-size:11px; opacity:0.7;">${isLive ? 'Unit Transmitting' : 'Signal Lost'}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:800; font-size:12px;">${bus.speed || 0} km/h</div>
+          <span class="badge ${isLive ? 'badge-green' : 'badge-red'}">${isLive ? 'LIVE' : 'OFF'}</span>
+        </div>
+      </div>
+    `}).join('');
+  }
+
+  // --- TELEMETRY TABLE RENDER ---
+  function renderTelemetryTable(buses) {
+    const body = document.getElementById('fleet-table-body');
+    if (!body) return;
+    body.innerHTML = buses.map(bus => {
+      const isLive = bus.status === 'active';
+      return `
+      <tr>
+        <td><strong>${bus.id}</strong></td>
+        <td><span class="badge ${isLive ?'badge-green':'badge-red'}">${bus.status.toUpperCase()}</span></td>
+        <td>${bus.speed || 0} km/h</td>
+        <td style="font-family: monospace; font-size: 11px;">${(bus.current_lat || 0).toFixed(4)}, ${(bus.current_lng || 0).toFixed(4)}</td>
+        <td>${bus.last_seen ? new Date(bus.last_seen).toLocaleTimeString() : '---'}</td>
+        <td style="text-align:right;"><button class="btn btn-ghost btn-sm" onclick="window.focusUnit(${bus.current_lat}, ${bus.current_lng})">Locate</button></td>
+      </tr>
+    `}).join('');
+  }
+
+  // --- HELPER UTILITIES ---
+  window.focusUnit = (la, ln) => {
+      if(la && ln) map.flyTo([la, ln], 16);
+  };
+
+  window.showToast = (m, t='info') => {
+    const c = document.getElementById('toast-container');
+    if (!c) return;
+    const d = document.createElement('div');
+    d.className = `toast ${t} active`;
+    d.textContent = m;
+    c.appendChild(d);
+    setTimeout(() => d.remove(), 4000);
+  };
+
+  document.getElementById('signout-btn').onclick = () => signOut();
+  
+  startCommandCenter();
+</script>
+</body>
+</html>

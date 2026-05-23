@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pre-Trip Inspection | School Bus Track Pro</title>
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css"> <!-- Blueprint for Layout -->
+  <link rel="stylesheet" href="../assets/css/driver.css">
+  <style>
+    /* Professional Checkbox UI Integrated with Bento Tiles */
+    .check-item {
+        background: var(--bg); padding: 16px; border-radius: 12px; margin-bottom: 10px;
+        display: flex; justify-content: space-between; align-items: center;
+        border: 1.5px solid var(--border); transition: all 0.2s; cursor: pointer;
+    }
+    .check-item.checked { border-color: var(--green); background: var(--green-light); }
+    .check-item.checked .check-box { background: var(--green); border-color: var(--green); color: white; }
+    .check-box { 
+        width: 24px; height: 24px; border: 2px solid var(--border); 
+        border-radius: 6px; display: flex; align-items: center; justify-content: center; color: transparent;
+    }
+    .check-label { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 14px; color: var(--navy); }
+    
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    #progress-ring {
+      width: 55px; height: 55px; border-radius: 50%;
+      background: conic-gradient(var(--green) 0deg, var(--border) 0deg);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: var(--shadow-sm);
+    }
+  </style>
+</head>
+<body>
+
+<div class="admin-layout">
+  <!-- SIDEBAR: Matches Dashboard Blueprint -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png" alt="Logo">
+      <div class="logo-text">School Bus Track Pro <small>Driver Hub</small></div>
+    </div>
+    
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Operations</div>
+      <a href="dashboard.html" class="nav-link active"><i class="bi bi-geo-alt-fill"></i><span>Live Drive</span></a>
+      <a href="schedule.html" class="nav-link"><i class="bi bi-calendar-check-fill"></i><span>Manifest</span></a>
+      
+      <div class="nav-group-label">System</div>
+      <a href="stats.html" class="nav-link"><i class="bi bi-bar-chart-fill"></i><span>Statistics</span></a>
+      <a href="profile.html" class="nav-link"><i class="bi bi-person-gear"></i><span>Settings</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="admin-user">
+        <div class="admin-avatar" id="sidebar-initial">V</div>
+        <div class="admin-user-info" style="color:white; font-size: 13px;">
+          <div style="font-weight:800;" id="sidebar-name">VITO</div>
+          <div style="opacity:0.6; font-size:11px;" id="sidebar-bus">Bus Assigned</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN AREA -->
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div class="d-flex align-center gap-16">
+        <a href="dashboard.html" class="desktop-only text-navy" style="font-size: 20px;"><i class="bi bi-arrow-left-circle"></i></a>
+        <div>
+          <h1 class="topbar-title">Safety Inspection</h1>
+          <p style="font-size: 13px; color: var(--text-secondary);">Verify vehicle integrity to unlock drive mode</p>
+        </div>
+      </div>
+      <div id="progress-ring">
+        <div style="width:42px; height:42px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:var(--navy);" id="progress-pct">0%</div>
+      </div>
+    </header>
+
+    <div class="admin-content">
+      <!-- KPI Row (Summary & Banner) -->
+      <div class="kpi-grid">
+        <div class="kpi-card" style="grid-column: span 2; background: var(--navy); color: white; display: flex; align-items: center; gap: 15px;">
+           <i class="bi bi-shield-check" style="font-size: 24px; color: var(--yellow);"></i>
+           <div style="font-size: 13px; font-weight: 500;">
+             <strong>Legal Requirement:</strong> All items must be manually verified to secure the transport unit.
+           </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Status</div>
+          <div class="kpi-value" id="progress-label" style="font-size: 18px; margin-top: 5px;">0 of 7 verified</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Date</div>
+          <div class="kpi-value" id="current-date" style="font-size: 18px; margin-top: 5px;">--/--/--</div>
+        </div>
+      </div>
+
+      <!-- Bento Grid -->
+      <form id="checklist-form">
+        <div class="bento-grid">
+          
+          <!-- TILE: Exterior (Tile-4) -->
+          <div class="tile tile-4">
+              <div class="table-header">
+                  <div class="table-title">Exterior Walkaround</div>
+              </div>
+              <div style="padding: 24px;">
+                  <div class="check-item" onclick="window.toggleCheck(this)">
+                    <div class="check-label"><i class="bi bi-tire"></i> Tires & Pressure</div>
+                    <div class="check-box"><i class="bi bi-check-lg"></i></div>
+                  </div>
+                  <div class="check-item" onclick="window.toggleCheck(this)">
+                    <div class="check-label"><i class="bi bi-lightbulb-fill"></i> Lights & Indicators</div>
+                    <div class="check-box"><i class="bi bi-check-lg"></i></div>
+                  </div>
+                  <div class="check-item" onclick="window.toggleCheck(this)">
+                    <div class="check-label"><i class="bi bi-door-closed"></i> All Exit Doors</div>
+                    <div class="check-box"><i class="bi bi-check-lg"></i></div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- TILE: Interior (Tile-4) -->
+          <div class="tile tile-4">
+              <div class="table-header">
+                  <div class="table-title">Internal Safety</div>
+              </div>
+              <div style="padding: 24px;">
+                  <div class="check-item" onclick="window.toggleCheck(this)">
+                    <div class="check-label"><i class="bi bi-stop-circle"></i> Service Brakes</div>
+                    <div class="check-box"><i class="bi bi-check-lg"></i></div>
+                  </div>
+                  <div class="check-item" onclick="window.toggleCheck(this)">
+                    <div class="check-label"><i class="bi bi-extinguisher"></i> Emergency Gear</div>
+                    <div class="check-box"><i class="bi bi-check-lg"></i></div>
+                  </div>
+                  <div class="check-item" onclick="window.toggleCheck(this)">
+                    <div class="check-label"><i class="bi bi-fuel-pump"></i> Fuel & Fluids</div>
+                    <div class="check-box"><i class="bi bi-check-lg"></i></div>
+                  </div>
+                  <div class="check-item" onclick="window.toggleCheck(this)">
+                    <div class="check-label"><i class="bi bi-webcam"></i> CCTV & GPS Signal</div>
+                    <div class="check-box"><i class="bi bi-check-lg"></i></div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- TILE: Technical Log (Tile-4) -->
+          <div class="tile tile-4">
+              <div class="table-header">
+                  <div class="table-title">Technical Log</div>
+              </div>
+              <div style="padding: 24px;">
+                  <div class="form-group">
+                    <label class="form-label">Current Odometer (KM)</label>
+                    <input type="number" class="form-control" id="odometer" placeholder="e.g. 45230" required>
+                  </div>
+                  <div class="form-group" style="margin-top: 15px;">
+                    <label class="form-label">Inspection Notes</label>
+                    <textarea class="form-control" id="notes" placeholder="Describe any defects..." style="height: 100px;"></textarea>
+                  </div>
+                  <button type="submit" class="btn btn-navy btn-full" id="submit-btn" disabled style="margin-top: 20px; padding: 15px;">
+                    <i class="bi bi-lock-fill"></i> Secure Unit
+                  </button>
+              </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+
+<!-- Mobile Bottom Navigation -->
+<nav class="bottom-nav mobile-only">
+    <a href="dashboard.html" class="active"><i class="bi bi-geo-alt-fill"></i>Drive</a>
+    <a href="schedule.html"><i class="bi bi-calendar-check-fill"></i>Schedule</a>
+    <a href="stats.html"><i class="bi bi-bar-chart-fill"></i>Stats</a>
+    <a href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
+</nav>
+
+<div id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+    import { supabase } from '../js/config.js';
+
+    const TOTAL = 7;
+    let checkedCount = 0;
+
+    document.getElementById('current-date').textContent = new Date().toLocaleDateString();
+
+    async function loadSidebar() {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      if (p) {
+          document.getElementById('sidebar-name').textContent = p.full_name || 'VITO';
+          document.getElementById('sidebar-initial').textContent = (p.full_name || 'V').charAt(0);
+          if(p.bus_id) document.getElementById('sidebar-bus').textContent = `BUS ${p.bus_id} · INSPECTING`;
+      }
+    }
+
+    window.toggleCheck = function(el) {
+      const wasChecked = el.classList.contains('checked');
+      el.classList.toggle('checked');
+      checkedCount += wasChecked ? -1 : 1;
+      updateProgressUI();
+    }
+
+    function updateProgressUI() {
+      const pct = Math.round((checkedCount / TOTAL) * 100);
+      document.getElementById('progress-label').textContent = `${checkedCount} of ${TOTAL} verified`;
+      document.getElementById('progress-pct').textContent = `${pct}%`;
+      document.getElementById('progress-ring').style.background =
+        `conic-gradient(var(--green) ${pct * 3.6}deg, var(--border) 0deg)`;
+
+      const btn = document.getElementById('submit-btn');
+      if (checkedCount === TOTAL) {
+        btn.disabled = false;
+        btn.classList.replace('btn-navy', 'btn-yellow');
+        btn.innerHTML = '<i class="bi bi-check-all"></i> Submit Inspection';
+      } else {
+        btn.disabled = true;
+        btn.classList.replace('btn-yellow', 'btn-navy');
+        btn.innerHTML = `<i class="bi bi-lock-fill"></i> Locked (${checkedCount}/${TOTAL})`;
+      }
+    }
+
+    const form = document.getElementById('checklist-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Logging...';
+      btn.disabled = true;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      const odometer = document.getElementById('odometer').value;
+
+      const { error } = await supabase.from('notifications').insert([{
+        user_id: user.id,
+        title: '✅ DAILY INSPECTION PASSED',
+        message: `Bus verified. Odometer: ${odometer}km. Status: Safe.`,
+        type: 'info'
+      }]);
+
+      if (!error) {
+        localStorage.setItem(`checklist_${new Date().toDateString()}`, 'true');
+        window.location.href = 'dashboard.html';
+      } else {
+        btn.disabled = false;
+        updateProgressUI();
+      }
+    });
+
+    loadSidebar();
+</script>
+</body>
+</html>

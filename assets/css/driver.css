@@ -1,0 +1,139 @@
+/* ============================================================
+   DRIVER.CSS — Desktop-First Driver Interface
+   Full Refactored Version — Inherits Admin Blueprint
+   ============================================================ */
+
+/* --- Desktop Layout (Default) --- */
+.driver-sidebar {
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+    background: var(--navy);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+/* --- Sidebar Sidebar Styles (Shared with Admin) --- */
+.driver-sidebar .sidebar-logo { padding: 32px 24px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.driver-sidebar .nav-link { color: rgba(255,255,255,0.6); padding: 12px 16px; margin-bottom: 4px; display: flex; align-items: center; gap: 12px; border-radius: var(--r-lg); }
+.driver-sidebar .nav-link.active { background: var(--yellow); color: var(--navy); }
+
+/* --- Driver-Specific Components (Preserved Exactly) --- */
+.driver-page {
+    background: var(--bg);
+    min-height: 100vh;
+}
+
+/* Driver Header - Now Responsive */
+.driver-header {
+    background: var(--navy);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+@media (min-width: 1025px) {
+    .driver-header { display: none; } /* Use Admin-style topbar on desktop */
+}
+
+.driver-info { display: flex; align-items: center; gap: 12px; }
+.driver-avatar {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: var(--yellow);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 16px; color: var(--navy);
+    border: 2px solid rgba(255,255,255,0.2);
+}
+.driver-meta .name { font-weight: 700; font-size: 15px; color: var(--white); }
+.driver-meta .role-label { font-size: 11px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Status Badge */
+.status-badge {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: var(--r-full);
+    font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    color: var(--white);
+    background: rgba(255,255,255,0.08);
+}
+.status-badge.live { border-color: var(--green); color: var(--green); background: rgba(34,197,94,0.1); }
+
+/* SOS Component - Preserved Exactly */
+.sos-zone { margin-bottom: 20px; }
+.sos-btn {
+    width: 100%; height: 96px; border-radius: var(--r-xl);
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    color: white; display: flex; align-items: center; justify-content: center;
+    gap: 14px; font-family: var(--font-display); font-size: 22px; font-weight: 800;
+    box-shadow: 0 8px 30px rgba(239,68,68,0.4); cursor: pointer; border: none;
+}
+.sos-btn.holding .hold-progress { transform: scaleX(1); transition: transform 3s linear; }
+.sos-btn.sent { background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%); }
+
+/* Trip Controls - Preserved Exactly */
+.trip-controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+.btn-start-trip {
+    width: 100%; height: 72px;
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+    color: white; border-radius: var(--r-xl);
+    font-family: var(--font-display); font-size: 20px; font-weight: 800;
+    border: none; display: flex; align-items: center; justify-content: center; gap: 12px;
+    box-shadow: 0 6px 24px rgba(34,197,94,0.35);
+}
+
+/* Quick Action Grid - Preserved Exactly */
+.quick-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.quick-btn {
+    background: var(--white); border-radius: var(--r-lg); padding: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; box-shadow: var(--shadow-sm); border: 1.5px solid var(--border);
+    cursor: pointer; font-size: 12px; font-weight: 700; color: var(--text-secondary);
+}
+
+/* Stats Row - Preserved Exactly */
+.stats-row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; margin-bottom: 20px;
+}
+.stat-card {
+    background: var(--white); border-radius: var(--r-lg);
+    padding: 16px; box-shadow: var(--shadow-sm);
+}
+
+/* Map Preview - Preserved Exactly */
+.map-preview {
+    background: var(--white); border-radius: var(--r-lg); overflow: hidden;
+    box-shadow: var(--shadow-sm); margin-bottom: 20px; border: 1.5px solid var(--border);
+}
+#driver-map { height: 250px; }
+
+/* Checklist - Preserved Exactly */
+.check-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--white); border-radius: var(--r-md);
+    padding: 14px 16px; margin-bottom: 8px;
+    box-shadow: var(--shadow-sm); border: 1.5px solid var(--border);
+}
+.check-item.checked { border-color: var(--green); background: var(--green-light); }
+
+/* Performance Score - Preserved Exactly */
+.score-ring {
+    width: 140px; height: 140px; border-radius: 50%;
+    background: conic-gradient(var(--green) 352deg, var(--border) 0deg);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+}
+.score-inner { width: 110px; height: 110px; background: var(--white); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+/* Mobile View Overrides (Inherited from Admin Logic) */
+@media (max-width: 1024px) {
+    .driver-sidebar { display: none; }
+    .driver-content { padding-bottom: 100px; } /* Space for bottom nav */
+}

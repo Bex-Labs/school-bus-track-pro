@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Account Verified | School Bus Track Pro</title>
+  <link rel="icon" type="image/png" href="assets/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <style>
+    body { background: var(--bg-light); display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    .confirm-card { background: white; padding: 40px; border-radius: 24px; box-shadow: var(--shadow-xl); text-align: center; max-width: 400px; width: 90%; }
+    .success-icon { font-size: 64px; color: var(--green); margin-bottom: 20px; display: inline-block; }
+    .success-icon.processing { color: var(--yellow); animation: spinIcon 2s infinite linear; }
+    .success-icon.error-state { color: var(--red); }
+    h1 { font-family: var(--font-display); font-size: 24px; margin-bottom: 12px; color: var(--navy); }
+    p { color: var(--text-secondary); margin-bottom: 30px; line-height: 1.6; }
+    
+    @keyframes spinIcon {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="confirm-card">
+  <div class="success-icon" id="status-icon">
+    <i class="bi bi-arrow-clockwise" id="inner-icon"></i>
+  </div>
+  <h1 id="confirm-title">Verifying Connection...</h1>
+  <p id="confirm-desc">Please hold on while we securely authenticate your email handshake token with our security servers.</p>
+  
+  <a href="index.html" class="btn btn-yellow btn-full" id="proceed-btn" style="display: none;">
+    Proceed to Login <i class="bi bi-arrow-right-short"></i>
+  </a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+  import { supabase } from './js/config.js';
+
+  // Helper utility to trace deep directory roots safely
+  function rootPath(path) {
+    const depth = window.location.pathname.split('/').length - 2;
+    const prefix = depth > 0 ? '../'.repeat(depth) : './';
+    return prefix + path.replace(/^\//, '');
+  }
+
+  async function handleEmailConfirmation() {
+    const iconContainer = document.getElementById('status-icon');
+    const innerIcon = document.getElementById('inner-icon');
+    const titleEl = document.getElementById('confirm-title');
+    const descEl = document.getElementById('confirm-desc');
+    const proceedBtn = document.getElementById('proceed-btn');
+
+    // Trigger loading state animations immediately on runtime boot
+    iconContainer.classList.add('processing');
+
+    try {
+        // 1. Capture hash authentication fragments sent back by the Supabase verification redirect
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const errorDescription = hashParams.get('error_description');
+
+        // Check if the link failed at the email service level
+        if (errorDescription) {
+            throw new Error(errorDescription);
+        }
+
+        // 2. Validate session verification token status
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) throw error;
+
+        if (session) {
+            // Token handshake verified successfully! Switch UI state parameters to Excellent
+            iconContainer.classList.remove('processing');
+            innerIcon.className = 'bi bi-check-circle-fill';
+            titleEl.textContent = 'Account Verified!';
+            descEl.textContent = 'Congratulations! Your email has been successfully authenticated. You can now login to access your dashboard safely.';
+            proceedBtn.style.display = 'block';
+
+            // 3. Clear temporary session state to force clean credential login input on index.html
+            await supabase.auth.signOut();
+        } else {
+            // Missing parameters or link clicked twice
+            throw new Error("No active verification session token found. The validation window may have expired or been used already.");
+        }
+
+    } catch (err) {
+        // Fallback interface adjustments if the link token handshake fails
+        console.error("Authentication confirmation crash:", err.message);
+        iconContainer.classList.remove('processing');
+        iconContainer.classList.add('error-state');
+        innerIcon.className = 'bi bi-exclamation-octagon-fill';
+        titleEl.textContent = 'Verification Failed';
+        descEl.textContent = err.message || 'The confirmation link is invalid, altered, or expired. Please attempt registration profile creation again.';
+        proceedBtn.textContent = 'Return to Gateway';
+        proceedBtn.href = rootPath('index.html');
+        proceedBtn.style.display = 'block';
+    }
+  }
+
+  // Execute confirmation tracking logic on DOM load
+  if (supabase) {
+      handleEmailConfirmation();
+  } else {
+      console.error("Configuration system mapping unavailable.");
+  }
+</script>
+</body>
+</html>

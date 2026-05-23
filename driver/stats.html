@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Driver Stats | School Bus Track Pro</title>
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css"> 
+  <link rel="stylesheet" href="../assets/css/driver.css">
+  <style>
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    .score-ring {
+      width: 140px; height: 140px; border-radius: 50%;
+      background: conic-gradient(var(--green) calc(var(--score) * 1%), var(--bg) 0);
+      display: flex; align-items: center; justify-content: center; position: relative;
+      margin: 0 auto 16px;
+      transition: all 1s ease-in-out;
+      box-shadow: var(--shadow-md);
+    }
+    .score-ring::before {
+      content: ''; position: absolute; width: 120px; height: 120px;
+      background: white; border-radius: 50%;
+    }
+    .score-inner { position: relative; z-index: 1; text-align: center; }
+    .score-number { font-family: var(--font-display); font-size: 42px; font-weight: 800; color: var(--navy); line-height: 1; }
+    .score-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png" alt="Logo">
+      <div class="logo-text">School Bus Track Pro <small>Driver Hub</small></div>
+    </div>
+    
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Operations</div>
+      <a href="dashboard.html" class="nav-link"><i class="bi bi-geo-alt-fill"></i><span>Live Drive</span></a>
+      <a href="schedule.html" class="nav-link"><i class="bi bi-calendar-check-fill"></i><span>Manifest</span></a>
+      
+      <div class="nav-group-label">System</div>
+      <a href="stats.html" class="nav-link active"><i class="bi bi-bar-chart-fill"></i><span>Statistics</span></a>
+      <a href="profile.html" class="nav-link"><i class="bi bi-person-gear"></i><span>Settings</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="admin-user">
+        <div class="admin-avatar" id="sidebar-initial">V</div>
+        <div class="admin-user-info" style="color:white; font-size: 13px;">
+          <div style="font-weight:800;" id="sidebar-name">VITO</div>
+          <div style="opacity:0.6; font-size:11px;" id="sidebar-bus">Bus Assigned</div>
+        </div>
+      </div>
+      <button class="btn btn-red btn-full btn-sm" style="margin-top: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);">
+        <i class="bi bi-power"></i> Log Out
+      </button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1 class="topbar-title">Performance Insights</h1>
+        <p style="font-size: 13px; color: var(--text-secondary);">Analyzing safety records and trip efficiency</p>
+      </div>
+    </header>
+
+    <div class="admin-content">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Total Trips</div>
+          <div class="kpi-value" id="total-trips-val">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Students Boarded</div>
+          <div class="kpi-value text-yellow" id="students-val">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">SOS Alerts</div>
+          <div class="kpi-value text-red" id="alerts-val">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Average Speed</div>
+          <div class="kpi-value text-green" id="avg-speed-val">0 <small style="font-size: 12px;">km/h</small></div>
+        </div>
+      </div>
+
+      <div class="bento-grid">
+        <div class="tile tile-4">
+            <div class="table-header">
+                <div class="table-title">Safety Rating</div>
+            </div>
+            <div style="padding: 30px; text-align: center;">
+                <div class="score-ring" id="score-ring-element" style="--score: 0;">
+                    <div class="score-inner">
+                        <div class="score-number" id="driver-score">--</div>
+                        <div class="score-label">Safety</div>
+                    </div>
+                </div>
+                <div style="font-family:var(--font-display); font-size:18px; font-weight:800; color: var(--navy); margin-bottom:4px;">Performance Grade</div>
+                <div style="font-size:13px; color:var(--text-muted);" id="score-comment">Analyzing data...</div>
+            </div>
+        </div>
+
+        <div class="tile tile-8">
+            <div class="table-header">
+                <div class="table-title">Recent Activity History</div>
+            </div>
+            <div id="trips-list" style="padding: 20px; max-height: 400px; overflow-y: auto;">
+                <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    <i class="bi bi-arrow-clockwise spin" style="display:block; font-size: 24px; margin-bottom: 10px;"></i>
+                    Fetching activity logs...
+                </div>
+            </div>
+        </div>
+
+        <div id="milestone-card" class="tile tile-12" style="background: linear-gradient(to right, var(--navy), var(--navy-mid)); color: white; transition: all 0.5s ease;">
+            <div style="padding: 32px; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <h3 id="milestone-title" style="font-family: var(--font-display); font-weight: 800; margin-bottom: 8px;">Excellence in Transit</h3>
+                    <p id="milestone-desc" style="opacity: 0.7; font-size: 14px;">You have maintained a high safety standard. Keep up the great work for our students.</p>
+                </div>
+                <i id="milestone-icon" class="bi bi-patch-check-fill" style="font-size: 48px; color: var(--yellow);"></i>
+            </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav mobile-only">
+    <a href="dashboard.html"><i class="bi bi-geo-alt-fill"></i>Drive</a>
+    <a href="schedule.html"><i class="bi bi-calendar-check-fill"></i>Schedule</a>
+    <a href="stats.html" class="active"><i class="bi bi-bar-chart-fill"></i>Stats</a>
+    <a href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+    import { supabase } from '../js/config.js';
+
+    async function fetchRealStats() {
+      try {
+        const { data: userData, error: authError } = await supabase.auth.getUser();
+        if (authError || !userData.user) return;
+        const user = userData.user;
+
+        // Fetch Profile for Bus ID
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        const busId = profile?.bus_id;
+
+        if (profile) {
+            document.getElementById('sidebar-name').textContent = profile.full_name || 'Driver';
+            document.getElementById('sidebar-initial').textContent = (profile.full_name || 'D').charAt(0);
+            if (busId) document.getElementById('sidebar-bus').textContent = `${busId} · ACTIVE`;
+        }
+
+        // 1. TRIPS: Count titles containing 'INSPECTION'
+        const { count: trips } = await supabase
+          .from('notifications')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .ilike('title', '%INSPECTION%');
+
+        document.getElementById('total-trips-val').textContent = trips || 0;
+
+        // 2. SOS ALERTS: Count type 'emergency'
+        const { count: incidents } = await supabase
+          .from('notifications')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('type', 'emergency');
+        
+        document.getElementById('alerts-val').textContent = incidents || 0;
+
+        // Reactive Rating Logic
+        const safetyScore = Math.max(0, 100 - (incidents * 20));
+        document.getElementById('driver-score').textContent = safetyScore + '%';
+        document.getElementById('score-ring-element').style.setProperty('--score', safetyScore);
+        
+        const comment = document.getElementById('score-comment');
+        const milestoneTitle = document.getElementById('milestone-title');
+        const milestoneDesc = document.getElementById('milestone-desc');
+        const milestoneIcon = document.getElementById('milestone-icon');
+
+        if(safetyScore >= 90) {
+            comment.textContent = "Excellent Safety Record!";
+            milestoneTitle.textContent = "Excellence in Transit";
+            milestoneDesc.textContent = "You have maintained a high safety standard. Keep up the great work.";
+            milestoneIcon.className = "bi bi-patch-check-fill";
+            milestoneIcon.style.color = "var(--yellow)";
+        } else if(safetyScore >= 60) {
+            comment.textContent = "Good, keep staying alert.";
+            milestoneTitle.textContent = "Safety Professional";
+            milestoneDesc.textContent = "Your record is solid. Monitor SOS incidents to maintain your status.";
+            milestoneIcon.className = "bi bi-shield-shaded";
+            milestoneIcon.style.color = "#3b82f6";
+        } else {
+            comment.textContent = "Review Required";
+            milestoneTitle.textContent = "Safety Review Pending";
+            milestoneDesc.textContent = "Recent SOS alerts have impacted your rating. Please follow all protocols.";
+            milestoneIcon.className = "bi bi-exclamation-octagon-fill";
+            milestoneIcon.style.color = "#ef4444";
+        }
+
+        // 3. STUDENTS: Count 'on-board' status for this bus
+        if (busId) {
+            const { count: boardings } = await supabase
+              .from('attendance')
+              .select('*', { count: 'exact', head: true })
+              .eq('bus_id', busId)
+              .eq('status', 'on-board'); 
+            
+            document.getElementById('students-val').textContent = boardings || 0;
+
+            const { data: busData } = await supabase.from('buses').select('speed').eq('id', busId).single();
+            if (busData) {
+                document.getElementById('avg-speed-val').innerHTML = `${Math.round(busData.speed || 0)} <small style="font-size: 12px;">km/h</small>`;
+            }
+        }
+
+        // 4. LOGS: Activity History
+        const { data: logs } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        
+        renderRealLogs(logs || []);
+
+      } catch (err) {
+        console.error("Stats Error:", err);
+      }
+    }
+
+    function renderRealLogs(items) {
+      const list = document.getElementById('trips-list');
+      if (items.length === 0) {
+        list.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);">No activity recorded.</div>';
+        return;
+      }
+
+      list.innerHTML = items.map(item => {
+        const isSOS = item.type === 'emergency';
+        const icon = isSOS ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill';
+        const color = isSOS ? 'var(--red)' : 'var(--navy)';
+        const bg = isSOS ? 'var(--red-light)' : 'white';
+
+        return `
+          <div style="background:var(--bg); border-radius:16px; padding:15px; display:flex; align-items:center; gap:15px; border:1px solid var(--border); margin-bottom:12px;">
+            <div style="width:40px; height:40px; background:${bg}; border-radius:10px; display:flex; align-items:center; justify-content:center; color:${color};">
+              <i class="bi ${icon}"></i>
+            </div>
+            <div style="flex:1;">
+              <div style="font-weight:700; font-size:14px; color:var(--navy);">${isSOS ? '🚨 SOS: ' + item.title : item.title}</div>
+              <div style="font-size:11px; color:var(--text-muted); font-weight:600;">
+                ${new Date(item.created_at).toLocaleDateString()} · ${new Date(item.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    fetchRealStats();
+</script>
+</body>
+</html>

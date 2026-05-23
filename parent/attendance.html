@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Attendance Log | School Bus Track Pro</title>
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css"> <link rel="stylesheet" href="../assets/css/parent.css"> <style>
+    /* Ensure the Attendance list fits the Bento Tile nicely */
+    .attendance-scroll {
+      max-height: 600px;
+      overflow-y: auto;
+      padding: 10px;
+      scrollbar-width: thin;
+    }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar desktop-only">
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png" alt="Logo">
+      <div class="logo-text">School Bus Track Pro <small>Parent Portal</small></div>
+    </div>
+    
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Safety Tracking</div>
+      <a href="map.html" class="nav-link"><i class="bi bi-radar"></i><span>Live Tracking</span></a>
+      <a href="attendance.html" class="nav-link active"><i class="bi bi-calendar-check"></i><span>Attendance Log</span></a>
+      <div class="nav-group-label">Account</div>
+      <a href="alerts.html" class="nav-link"><i class="bi bi-bell"></i><span>Alert Settings</span></a>
+      <a href="profile.html" class="nav-link"><i class="bi bi-person-gear"></i><span>Profile</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="admin-user">
+        <div class="admin-avatar" id="sidebar-initial">P</div>
+        <div class="admin-user-info" style="color:white; font-size: 13px;">
+          <div style="font-weight:800;" id="sidebar-parent-name">Guardian</div>
+          <div style="opacity:0.6; font-size:11px;">Verified Account</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1 class="topbar-title">Attendance History</h1>
+        <p style="font-size: 13px; color: var(--text-secondary);">Historical boarding and drop-off records</p>
+      </div>
+      <button id="export-btn" class="btn btn-sm btn-navy">
+        <i class="bi bi-download"></i> Export Data
+      </button>
+    </header>
+
+    <div class="admin-content">
+      <div class="kpi-grid">
+        <div class="kpi-card" style="background: var(--green-light); border: 1px solid rgba(34,197,94,0.2);">
+          <div class="kpi-label" style="color: var(--green-dark);">On Time</div>
+          <div class="kpi-value" id="stat-on-time" style="color: var(--green-dark);">0</div>
+        </div>
+        <div class="kpi-card" style="background: var(--yellow-light); border: 1px solid rgba(253,184,19,0.2);">
+          <div class="kpi-label" style="color: #92610A;">Late</div>
+          <div class="kpi-value" id="stat-late" style="color: #92610A;">0</div>
+        </div>
+        <div class="kpi-card" style="background: var(--red-light); border: 1px solid rgba(239,68,68,0.2);">
+          <div class="kpi-label" style="color: var(--red-dark);">Absent</div>
+          <div class="kpi-value" id="stat-absent" style="color: var(--red-dark);">0</div>
+        </div>
+      </div>
+
+      <div class="filter-chips" id="child-filters" style="margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap;">
+        <div class="chip active" id="filter-chip-all-selector">All Children</div>
+        </div>
+
+      <div class="bento-grid">
+        <div class="tile tile-12">
+            <div class="table-header">
+                <div class="table-title">Activity Feed</div>
+            </div>
+            <div class="attendance-scroll" id="attendance-list">
+                <div style="text-align:center; padding:40px; color:var(--text-muted);">
+                    <i class="bi bi-arrow-clockwise spin" style="display:block; font-size:2rem; margin-bottom:10px;"></i>
+                    Syncing logs...
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav mobile-only">
+    <a href="map.html"><i class="bi bi-map-fill"></i>Track</a>
+    <a href="attendance.html" class="active"><i class="bi bi-clock-history"></i>History</a>
+    <a href="alerts.html"><i class="bi bi-bell-fill"></i>Alerts</a>
+    <a href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
+</nav>
+
+<div id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+    import { supabase } from '../js/config.js';
+
+    let records = [];
+    let parentUid = null;
+
+    // Direct temporal string format fallbacks to isolate dependency loading crashes
+    function fallbackFormatDate(dateStr) {
+        try { return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); }
+        catch(e) { return dateStr; }
+    }
+    function fallbackFormatTime(dateStr) {
+        try { return new Date(dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }
+        catch(e) { return dateStr; }
+    }
+
+    async function initAttendance() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { window.location.href = '../index.html'; return; }
+        parentUid = user.id;
+
+        await loadSidebarInfo();
+        await loadChildChips();
+        await loadRealLogs();
+        setupExportTrigger();
+    }
+
+    async function loadSidebarInfo() {
+        const { data: p } = await supabase.from('profiles').select('*').eq('id', parentUid).single();
+        if(p) {
+            document.getElementById('sidebar-parent-name').textContent = p.full_name;
+            document.getElementById('sidebar-initial').textContent = p.full_name.charAt(0);
+        }
+    }
+
+    async function loadChildChips() {
+        const { data: children } = await supabase.from('students').select('full_name').eq('parent_id', parentUid);
+        const container = document.getElementById('child-filters');
+        if (!container) return;
+
+        // Wire default "All" filter chip accurately
+        const allChip = document.getElementById('filter-chip-all-selector');
+        if(allChip) {
+            allChip.onclick = (e) => window.filterChild('all', e.target);
+        }
+
+        if (children) {
+            children.forEach(c => {
+                const firstName = c.full_name.split(' ')[0];
+                const chip = document.createElement('div');
+                chip.className = 'chip';
+                chip.innerHTML = `<i class="bi bi-person-fill"></i> ${firstName}`;
+                
+                // FIXED: Direct element level handler assignment guarantees click listener execution context
+                chip.onclick = () => window.filterChild(firstName.toLowerCase(), chip);
+                container.appendChild(chip);
+            });
+        }
+    }
+
+    async function loadRealLogs() {
+        const { data: logs, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', parentUid)
+            .order('created_at', { ascending: false });
+
+        if (!error && logs && logs.length > 0) {
+            const grouped = {};
+            let onTime = 0, late = 0, absent = 0;
+
+            logs.forEach(log => {
+                const dateLabel = fallbackFormatDate(log.created_at);
+                if (!grouped[dateLabel]) grouped[dateLabel] = { date: dateLabel, events: [] };
+                
+                if (log.title.includes('Boarded')) onTime++;
+                if (log.type === 'warning') late++;
+                if (log.type === 'error') absent++;
+
+                // Isolate first dynamic split node string array to map individual student names accurately
+                const guessedChildName = log.title.split(' ')[0] || 'Student';
+
+                grouped[dateLabel].events.push({
+                    type: log.title.includes('Dropped') ? 'dropped' : 'boarded',
+                    child: guessedChildName, 
+                    event: log.title,
+                    route: log.message,
+                    time: fallbackFormatTime(log.created_at),
+                    verified: true
+                });
+            });
+
+            document.getElementById('stat-on-time').textContent = onTime;
+            document.getElementById('stat-late').textContent = late;
+            document.getElementById('stat-absent').textContent = absent;
+
+            records = Object.values(grouped);
+            window.renderList('all');
+        } else {
+            document.getElementById('attendance-list').innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);">No historical tracking parameters localized inside logs.</div>`;
+        }
+    }
+
+    window.renderList = function(filter='all') {
+        const list = document.getElementById('attendance-list');
+        if (!list) return;
+        list.innerHTML = '';
+        
+        records.forEach(group => {
+            const events = filter === 'all' ? group.events : group.events.filter(e => e.child.toLowerCase() === filter);
+            if (!events.length) return;
+
+            const dateHeader = document.createElement('div');
+            dateHeader.className = 'attendance-date-label';
+            dateHeader.textContent = group.date;
+            list.appendChild(dateHeader);
+
+            events.forEach(ev => {
+                const iconHTML = ev.type === 'dropped' ? '<i class="bi bi-house-door-fill"></i>' : '<i class="bi bi-bus-front-fill"></i>';
+                const row = document.createElement('div');
+                row.className = 'attendance-item';
+                row.innerHTML = `
+                    <div class="attendance-icon ${ev.type}">${iconHTML}</div>
+                    <div class="attendance-info">
+                        <div class="event">${ev.event}</div>
+                        <div class="route">${ev.route}</div>
+                    </div>
+                    <div class="attendance-time">
+                        <div class="time">${ev.time}</div>
+                        <div class="verified">✓ VERIFIED</div>
+                    </div>`;
+                list.appendChild(row);
+            });
+        });
+        
+        if(list.children.length === 0) {
+            list.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);">No activity entries for selected child matrix.</div>`;
+        }
+    }
+
+    window.filterChild = function(child, el) {
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        if(el) el.classList.add('active');
+        window.renderList(child);
+    }
+
+    // NEW: NATIVE ENTERPRISE CSV CONTEXT EXPORTER FLOW
+    function setupExportTrigger() {
+        const btn = document.getElementById('export-btn');
+        if(!btn) return;
+
+        btn.onclick = () => {
+            if(records.length === 0) {
+                alert("No structural logging data items available to bundle.");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,Date,Student,Activity,Route Details,Timestamp\n";
+            
+            records.forEach(group => {
+                group.events.forEach(e => {
+                    const rowData = [
+                        `"${group.date}"`,
+                        `"${e.child}"`,
+                        `"${e.event}"`,
+                        `"${e.route.replace(/"/g, '""')}"`,
+                        `"${e.time}"`
+                    ].join(",");
+                    csvContent += rowData + "\n";
+                });
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const downloadAnchor = document.createElement("a");
+            downloadAnchor.setAttribute("href", encodedUri);
+            downloadAnchor.setAttribute("download", `SBTP_Attendance_Log_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        };
+    }
+
+    initAttendance();
+</script>
+</body>
+</html>

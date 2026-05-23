@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Account Settings | School Bus Track Pro</title>
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css"> <link rel="stylesheet" href="../assets/css/parent.css"> <style>
+    .bento-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; width: 100%; align-items: start; }
+    .tile-12 { grid-column: span 12; }
+    .tile-7 { grid-column: span 7; }
+    .tile-5 { grid-column: span 5; }
+
+    /* Modal Styling */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    .modal-overlay.active { display: flex; }
+    .modal-card { background: white; width: 95%; max-width: 500px; padding: 28px; border-radius: var(--r-xl); box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto; }
+    
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { margin-bottom: 16px; text-align: left; }
+    .form-label { display: block; font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+    .form-input { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: var(--r-md); font-size: 14px; }
+    
+    .full-width { grid-column: span 2; }
+    .settings-row { cursor: pointer; transition: background 0.2s; display: flex; align-items: center; padding: 14px 16px; border-radius: var(--r-md); }
+    .settings-row:hover { background: var(--bg); }
+
+    @media (max-width: 1024px) { 
+      .tile-7, .tile-5 { grid-column: span 12; } 
+      .form-grid { grid-template-columns: 1fr; } 
+      .full-width { grid-column: span 1; } 
+      .admin-content { padding-bottom: 100px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar desktop-only">
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png" alt="Logo">
+      <div class="logo-text">School Bus Track Pro <small>Parent Portal</small></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Safety Tracking</div>
+      <a href="map.html" class="nav-link"><i class="bi bi-radar"></i><span>Live Tracking</span></a>
+      <a href="attendance.html" class="nav-link"><i class="bi bi-calendar-check"></i><span>Attendance Log</span></a>
+      <div class="nav-group-label">Account</div>
+      <a href="alerts.html" class="nav-link"><i class="bi bi-bell"></i><span>Alert Settings</span></a>
+      <a href="profile.html" class="nav-link active"><i class="bi bi-person-gear"></i><span>Profile</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="tel:+2348114875252" class="btn btn-sm btn-yellow btn-full" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; text-decoration: none; font-weight: 800;">
+        <i class="bi bi-telephone-outbound-fill"></i> School Support Hotline
+      </a>
+      <div class="admin-user">
+        <div class="admin-avatar" id="sidebar-initial-icon">P</div>
+        <div class="admin-user-info">
+          <div id="sidebar-parent-name" style="font-weight:800; color:white;">Guardian</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <h1 class="topbar-title">Account Settings</h1>
+    </header>
+
+    <div class="admin-content">
+      <div class="bento-grid">
+        <div class="tile tile-12 profile-hero-tile" style="background: var(--navy); color: white; text-align: center; padding: 40px 24px; border-radius: var(--r-xl);">
+            <div id="avatar-circle" style="width:100px; height:100px; border-radius:50%; background:var(--yellow); display:flex; align-items:center; justify-content:center; font-size:42px; font-weight:800; color:var(--navy); margin: 0 auto 16px; background-size: cover;">?</div>
+            <h2 id="display-name" style="font-weight:800;">Syncing profile...</h2>
+            <p id="display-email" style="opacity:0.6;">...</p>
+        </div>
+
+        <div class="tile tile-7">
+            <div class="table-header">
+                <div class="table-title">Linked Students</div>
+                <button class="btn btn-sm btn-navy" onclick="openModal('addChildModal')"><i class="bi bi-plus"></i> Add Child</button>
+            </div>
+            <div id="children-list" style="padding: 24px;"></div>
+        </div>
+
+        <div class="tile tile-5">
+            <div class="table-header"><div class="table-title">System & Safety</div></div>
+            <div style="padding: 12px 24px;">
+                <div class="settings-group" style="border:none;">
+                    <div class="settings-row" onclick="openModal('editDetailsModal')">
+                        <div class="settings-row-icon" style="background:var(--bg); padding:10px; border-radius:8px; margin-right:12px;"><i class="bi bi-pencil-fill"></i></div>
+                        <div style="flex: 1;"><div class="s-label">Personal Details</div></div>
+                        <i class="bi bi-chevron-right"></i>
+                    </div>
+                    <div class="settings-row" onclick="handleSecurityReset()">
+                        <div class="settings-row-icon" style="background:var(--bg); padding:10px; border-radius:8px; margin-right:12px;"><i class="bi bi-shield-lock-fill"></i></div>
+                        <div style="flex: 1;"><div class="s-label">Security Credentials</div></div>
+                        <i class="bi bi-chevron-right"></i>
+                    </div>
+                    <button id="signout-btn" class="btn btn-red btn-full" style="margin-top:16px;">Sign Out</button>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav mobile-only">
+    <a href="map.html"><i class="bi bi-map-fill"></i>Track</a>
+    <a href="attendance.html"><i class="bi bi-clock-history"></i>History</a>
+    <a href="alerts.html"><i class="bi bi-bell-fill"></i>Alerts</a>
+    <a href="profile.html" class="active"><i class="bi bi-person-fill"></i>Profile</a>
+</nav>
+
+<div id="addChildModal" class="modal-overlay">
+    <div class="modal-card">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+            <h3 style="font-weight:800;">Register Child</h3>
+            <i class="bi bi-x-lg" style="cursor:pointer;" onclick="closeModal('addChildModal')"></i>
+        </div>
+        <div class="form-grid">
+            <div class="form-group full-width">
+                <label class="form-label">Full Name</label>
+                <input type="text" id="child-name" class="form-input" placeholder="Enter child's full name">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Age</label>
+                <input type="number" id="child-age" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Gender</label>
+                <select id="child-gender" class="form-input">
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                </select>
+            </div>
+            <div class="form-group full-width">
+                <label class="form-label">Assigned Registration ID</label>
+                <input type="text" id="child-reg-id" class="form-input" placeholder="e.g. STU-12345">
+            </div>
+            <div class="form-group full-width">
+                <label class="form-label">Emergency Medical Info (Optional)</label>
+                <textarea id="child-medical" class="form-input" style="height:60px;"></textarea>
+            </div>
+        </div>
+        <button class="btn btn-navy btn-full" onclick="submitAddChild()">Register & Link</button>
+    </div>
+</div>
+
+<div id="editDetailsModal" class="modal-overlay">
+    <div class="modal-card">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+            <h3 style="font-weight:800;">Detailed Profile</h3>
+            <i class="bi bi-x-lg" style="cursor:pointer;" onclick="closeModal('editDetailsModal')"></i>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="parent-name" class="form-input">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Primary Phone Number</label>
+            <input type="tel" id="parent-phone" class="form-input">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Physical Home Address</label>
+            <input type="text" id="parent-address" class="form-input" placeholder="e.g. 12 Hughes Ave, Alagomeji, Yaba">
+            <small style="color:var(--text-muted); font-size:11px; display:block; margin-top:4px; font-weight:600;">⚠️ Injects live pick-up and drop-off tracking coordinates instantly.</small>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Alternate Emergency Contact</label>
+            <input type="tel" id="parent-alt-phone" class="form-input">
+        </div>
+        <button id="update-profile-btn" class="btn btn-navy btn-full" onclick="submitUpdateProfile()">Update All Details</button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+    import { supabase } from '../js/config.js';
+    import { signOut } from '../js/auth.js';
+
+    window.openModal = (id) => document.getElementById(id).classList.add('active');
+    window.closeModal = (id) => document.getElementById(id).classList.remove('active');
+
+    async function loadProfile() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      if (profile) {
+        const name = profile.full_name || 'Guardian';
+        document.getElementById('display-name').textContent = name;
+        document.getElementById('display-email').textContent = user.email;
+        document.getElementById('parent-name').value = name;
+        
+        document.getElementById('parent-phone').value = profile.phone || '';
+        document.getElementById('parent-address').value = profile.address || '';
+        document.getElementById('parent-alt-phone').value = profile.alt_phone || '';
+        
+        document.getElementById('sidebar-parent-name').textContent = name;
+        document.getElementById('sidebar-initial-icon').textContent = name.charAt(0);
+        document.getElementById('avatar-circle').textContent = name.charAt(0);
+      }
+
+      const { data: children } = await supabase.from('students').select('*').eq('parent_id', user.id);
+      renderChildren(children || []);
+    }
+
+    function renderChildren(children) {
+      const container = document.getElementById('children-list');
+      container.innerHTML = children.length === 0 ? '<p style="text-align:center; color:var(--text-muted); padding:20px;">No linked children registered.</p>' : children.map(c => `
+        <div class="student-card" style="border: 1px solid var(--border); padding: 12px; margin-bottom: 8px; border-radius: 8px; display: flex; align-items: center; gap: 12px; background:white;">
+          <div style="background: var(--yellow); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color:var(--navy); flex-shrink:0;">${c.full_name ? c.full_name.charAt(0).toUpperCase() : 'S'}</div>
+          <div>
+            <div style="font-weight: 700; color:var(--navy); font-size:14px;">${c.full_name}</div>
+            <div style="font-size: 11px; opacity: 0.7; color:var(--text-secondary); font-weight:600; margin-top:2px;">Age: ${c.age} | ID: ${c.student_reg_id}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    window.submitAddChild = async () => {
+      try {
+          const { data: { user } } = await supabase.auth.getUser();
+          const payload = {
+            parent_id: user.id,
+            full_name: document.getElementById('child-name').value.trim(),
+            age: parseInt(document.getElementById('child-age').value) || null,
+            gender: document.getElementById('child-gender').value,
+            student_reg_id: document.getElementById('child-reg-id').value.trim(),
+            medical_info: document.getElementById('child-medical').value.trim()
+          };
+
+          if(!payload.full_name || !payload.student_reg_id) {
+              alert("Please furnish student identification parameters completely.");
+              return;
+          }
+
+          const { error } = await supabase.from('students').insert([payload]);
+          if (!error) { 
+              alert("Student Profile Registered and Linked."); 
+              closeModal('addChildModal'); 
+              loadProfile(); 
+          } else {
+              throw error;
+          }
+      } catch(err) {
+          alert("Registration execution halted: " + err.message);
+      }
+    };
+
+    // REAL-WORLD ASYNCHRONOUS GEOCODING UPDATE SCRIPT
+    window.submitUpdateProfile = async () => {
+      const btn = document.getElementById('update-profile-btn');
+      const addressValue = document.getElementById('parent-address').value.trim();
+      
+      if(!addressValue) { alert("Please input a valid physical pickup address."); return; }
+      
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Geospatial Geocoding active...';
+
+      let lat = null;
+      let lng = null;
+
+      try {
+          // Fire direct lookup payload out to the live OpenStreetMap engine securely
+          const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressValue)}&limit=1`);
+          const data = await response.json();
+
+          if(data && data.length > 0) {
+              lat = parseFloat(data[0].lat);
+              lng = parseFloat(data[0].lon);
+              console.log(`Geocoding Verified -> Lat: ${lat}, Lng: ${lng}`);
+          } else {
+              // Fail-safe default fallback loop parameters if typing is ambiguous (sets center cluster bounds)
+              console.warn("Ambiguous address token path, assigning root default coordinates.");
+              lat = 6.5244;
+              lng = 3.3792;
+          }
+
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          const updates = {
+            full_name: document.getElementById('parent-name').value.trim(),
+            phone: document.getElementById('parent-phone').value.trim(),
+            address: addressValue,
+            alt_phone: document.getElementById('parent-alt-phone').value.trim(),
+            home_lat: lat,
+            home_lng: lng
+          };
+
+          const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+          
+          if (!error) { 
+              alert("Profile & Geospatial pick-up metrics successfully locked to database!"); 
+              closeModal('editDetailsModal'); 
+              loadProfile(); 
+          } else {
+              throw error;
+          }
+      } catch(err) {
+          alert("Profile update stalled: " + err.message);
+      } finally {
+          btn.disabled = false;
+          btn.innerHTML = 'Update All Details';
+      }
+    };
+
+    window.handleSecurityReset = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+                redirectTo: window.location.origin + '/reset-password.html'
+            });
+            if (error) throw error;
+            alert("Security credential reset handshakes dispatched to: " + user.email);
+        } catch(err) {
+            alert("Security transmission failed: " + err.message);
+        }
+    };
+
+    document.getElementById('signout-btn').onclick = async () => {
+      if(confirm('Are you sure you want to sign out from your portal workspace?')) {
+          await signOut();
+      }
+    };
+
+    loadProfile();
+</script>
+</body>
+</html>

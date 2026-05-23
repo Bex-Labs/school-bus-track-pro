@@ -1,0 +1,199 @@
+/* ============================================================
+   AUTH.CSS — Login & Signup Desktop-First Layout
+   Refined with Background Image & Dark Overlay
+   ============================================================ */
+
+.auth-page {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr; /* Desktop Split */
+    min-height: 100vh;
+    background: var(--white);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Left Panel: Branding with Image & Gradient Overlay */
+.auth-visual-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px;
+    overflow: hidden;
+    /* Use a high-quality transport/tech image */
+    background-image: url('https://images.unsplash.com/photo-1653147496338-b07db1c4acc9?q=80&w=869&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+    background-size: cover;
+    background-position: center;
+}
+
+/* The Dark Shadow Overlay to deem brightness and highlight logo */
+.auth-visual-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    /* Gradient goes from deep navy to a transparent mid-tone */
+    background: linear-gradient(135deg, rgba(27, 42, 59, 0.95) 0%, rgba(27, 42, 59, 0.7) 100%);
+    z-index: 1;
+}
+
+.visual-content {
+    position: relative;
+    z-index: 10; /* Sits above the overlay */
+    max-width: 520px;
+}
+
+.visual-content h2 {
+    font-family: var(--font-display);
+    color: var(--yellow);
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 24px;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.3); /* Adds readability */
+}
+
+.visual-content p {
+    color: var(--white);
+    opacity: 0.9;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+/* Right Panel: Focused Bento Tile */
+.auth-form-panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    background: var(--bg);
+    position: relative;
+    z-index: 5;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 480px;
+    background: var(--surface);
+    padding: 48px;
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-bento);
+    border: 1px solid var(--border);
+    animation: cardIn 0.6s var(--ease) both;
+}
+
+@keyframes cardIn {
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.auth-logo {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 32px;
+}
+
+.logo-text {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--navy);
+    line-height: 1.2;
+}
+
+.logo-text span {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.auth-heading {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--navy);
+    margin-bottom: 8px;
+}
+
+.auth-subtext {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+}
+
+/* Role Selection */
+.role-selector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.role-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 8px;
+    border-radius: var(--r-md);
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.role-pill i { font-size: 22px; }
+.role-pill:hover { border-color: var(--yellow); color: var(--navy); }
+.role-pill.active { 
+    border-color: var(--yellow); 
+    background: var(--yellow-light); 
+    color: var(--navy);
+    box-shadow: 0 4px 12px rgba(253,184,19,0.2);
+}
+
+/* Google Button */
+.btn-google {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px;
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 24px;
+}
+
+.btn-google:hover { background: var(--bg); }
+.btn-google svg { width: 20px; height: 20px; }
+
+/* Links and Footer */
+.auth-links { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; font-size: 14px; }
+.auth-links a { color: var(--text-secondary); font-weight: 700; }
+.auth-links a:hover { color: var(--navy); }
+
+.auth-footer { margin-top: 32px; text-align: center; font-size: 14px; color: var(--text-secondary); }
+.auth-footer a { color: var(--navy); font-weight: 800; text-decoration: underline; }
+
+/* Animated Glow Shapes (Reduced opacity for image background) */
+.auth-bg-shapes .shape { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.1; z-index: 2; }
+.shape-1 { width: 500px; height: 500px; background: var(--yellow); top: -150px; right: -150px; animation: float1 15s infinite; }
+.shape-2 { width: 400px; height: 400px; background: var(--green); bottom: -100px; left: -100px; animation: float2 18s infinite; }
+@keyframes float1 { 0%,100%{transform: translate(0,0);} 50%{transform: translate(-30px, 30px);} }
+@keyframes float2 { 0%,100%{transform: translate(0,0);} 50%{transform: translate(30px, -20px);} }
+
+/* Responsive Transition */
+@media (max-width: 1024px) {
+    .auth-page { grid-template-columns: 1fr; }
+    .auth-visual-panel { display: none; }
+    .auth-form-panel { background: var(--navy); padding: 24px; }
+    .auth-card { padding: 32px 24px; border: none; }
+}

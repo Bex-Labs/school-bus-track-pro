@@ -1,0 +1,25 @@
+---
+
+### 5. `.gitignore`
+Essential for keeping your API keys and environment files secure.
+
+```text
+# Configuration Secrets
+js/config.js
+
+# Dependencies
+node_modules/
+
+# OS Specific
+.DS_Store
+Thumbs.db
+
+# IDE/Editor
+.vscode/
+.idea/
+*.subo
+*.swp
+
+# Logs
+logs/
+*.log
