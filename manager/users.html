@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management | School Bus Track Pro</title>
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <style>
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    .admin-layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+    .admin-main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--bg); }
+    .admin-content { flex: 1; overflow-y: auto; padding: 24px; scrollbar-width: thin; }
+    .modal-overlay { background: rgba(27,42,59,0.7) !important; backdrop-filter: blur(4px); display: none; position: fixed; inset: 0; z-index: 9999; align-items: center; justify-content: center; }
+    .modal-overlay.active { display: flex; }
+    .chip { background: white; border: 1px solid var(--border); padding: 6px 16px; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 13px; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+    .chip.active { background: var(--navy); color: white; border-color: var(--navy); }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .user-card-mobile { display: none; background: white; border: 1px solid var(--border); border-radius: var(--r-md); padding: 16px; margin-bottom: 12px; }
+    @media (max-width: 768px) {
+      .admin-sidebar { display: none; }
+      .admin-main { height: 100vh; }
+      .admin-content { padding: 16px; padding-bottom: 100px; }
+      .admin-topbar { height: auto !important; min-height: 80px; padding: 15px !important; flex-direction: column !important; align-items: flex-start !important; gap: 12px; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .tile-12 table { display: none; }
+      .user-card-mobile { display: block; }
+      .tile-12 { background: transparent; border: none; padding: 0; box-shadow: none; }
+      .header-actions { width: 100%; }
+      .header-actions button { width: 100%; justify-content: center; height: 45px; }
+      .search-container { max-width: 100% !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png" alt="Logo">
+      <div class="logo-text" id="sidebar-school-name">School Bus Track Pro <small>Manager Console</small></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Fleet Operations</div>
+      <a href="fleet.html" class="nav-link"><i class="bi bi-radar"></i><span>Live Fleet</span></a>
+      <a href="crisis-center.html" class="nav-link"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis Center</span></a>
+      <div class="nav-group-label">System Management</div>
+      <a href="users.html" class="nav-link active"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
+      <a href="routes.html" class="nav-link"><i class="bi bi-map-fill"></i><span>Route Control</span></a>
+      <a href="analytics.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-user">
+        <div class="admin-avatar" id="sidebar-avatar">M</div>
+        <div class="admin-user-info" style="color:white;font-size:13px;">
+          <div style="font-weight:800;" id="sidebar-manager-name">Manager</div>
+          <div style="opacity:0.6;font-size:11px;">School Manager</div>
+        </div>
+      </div>
+      <button id="signout-btn-sidebar" class="btn btn-red btn-full btn-sm" style="margin-top:16px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);">
+        <i class="bi bi-power"></i> Log Out
+      </button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1 class="topbar-title">User Management</h1>
+        <p style="font-size:13px;color:var(--text-secondary);">Manage access for Drivers and Parents in your school</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-yellow btn-sm" id="btn-open-modal">
+          <i class="bi bi-plus-lg"></i> Add New User
+        </button>
+      </div>
+    </header>
+
+    <div class="admin-content">
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">Drivers</div><div class="kpi-value" id="count-drivers">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">Parents</div><div class="kpi-value text-yellow" id="count-parents">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">Students</div><div class="kpi-value text-green" id="count-students">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">Total Records</div><div class="kpi-value text-navy" id="count-total">0</div></div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;gap:16px;flex-wrap:wrap;">
+        <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:5px;" id="role-tabs">
+          <button class="chip active" data-role="all">All Users</button>
+          <button class="chip" data-role="driver">Drivers</button>
+          <button class="chip" data-role="parent">Parents</button>
+          <button class="chip" data-role="student">Students</button>
+        </div>
+        <div class="search-container" style="display:flex;align-items:center;gap:8px;border:1px solid var(--border);padding:10px 16px;border-radius:var(--r-md);background:white;width:100%;max-width:350px;">
+          <i class="bi bi-search"></i>
+          <input type="text" id="user-search" placeholder="Search name or email..." style="border:none;outline:none;width:100%;">
+        </div>
+      </div>
+
+      <div class="bento-grid">
+        <div class="tile tile-12">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th><th>Role</th><th>Email</th>
+                <th>Bus ID</th><th>Status</th>
+                <th style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody">
+              <tr><td colspan="6" style="text-align:center;padding:40px;"><i class="bi bi-arrow-clockwise spin"></i> Loading users...</td></tr>
+            </tbody>
+          </table>
+          <div id="users-mobile-list"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottom-nav mobile-only">
+    <a href="fleet.html"><i class="bi bi-radar"></i><span>Fleet</span></a>
+    <a href="crisis-center.html"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis</span></a>
+    <a href="users.html" class="active"><i class="bi bi-people-fill"></i><span>Users</span></a>
+    <a href="analytics.html"><i class="bi bi-graph-up-arrow"></i><span>Analytics</span></a>
+  </nav>
+</div>
+
+<!-- Add User Modal -->
+<div id="add-modal" class="modal-overlay">
+  <div class="tile" style="padding:32px;width:100%;max-width:450px;background:white;">
+    <h2 style="margin-bottom:20px;">Register New User</h2>
+    <div class="form-group">
+      <label class="form-label">Full Name</label>
+      <input type="text" id="new-user-name" class="form-control">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input type="email" id="new-user-email" class="form-control">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Role</label>
+      <select id="new-user-role" class="form-control">
+        <option value="driver">Driver</option>
+        <option value="parent">Parent</option>
+        <option value="student">Student</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:32px;">
+      <button class="btn btn-ghost flex-1" id="btn-cancel">Cancel</button>
+      <button class="btn btn-yellow flex-1" id="btn-save-user">Create</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script type="module">
+  import { supabase, getUserProfile } from '../js/config.js';
+  import { signOut, requireAuth } from '../js/auth.js';
+
+  // ── 0. Auth gate + resolve tenant ─────────────────────────────────────
+  await requireAuth();
+  const profile = await getUserProfile();
+
+  if (!profile || !profile.organization_id) {
+    setTimeout(() => signOut(), 2000);
+    throw new Error('No organization_id on profile.');
+  }
+
+  const ORG_ID = profile.organization_id;
+
+  // ── 1. Sidebar ─────────────────────────────────────────────────────────
+  const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
+  if (org) {
+    const el = document.getElementById('sidebar-school-name');
+    if (el) el.innerHTML = `${org.name} <small>Manager Console</small>`;
+  }
+  if (profile.full_name) {
+    const n = document.getElementById('sidebar-manager-name');
+    const a = document.getElementById('sidebar-avatar');
+    if (n) n.textContent = profile.full_name;
+    if (a) a.textContent = profile.full_name.charAt(0).toUpperCase();
+  }
+
+  const safeAttach = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+  safeAttach('signout-btn-sidebar', () => signOut());
+
+  // ── 2. Fetch users — scoped to ORG_ID ─────────────────────────────────
+  let allUsers = [];
+  let currentFilter = 'all';
+
+  async function fetchUsers() {
+    const tbody = document.getElementById('users-tbody');
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('organization_id', ORG_ID)        // ← scoped to tenant
+        .order('full_name', { ascending: true });
+
+      if (error) throw error;
+      allUsers = data || [];
+      updateKPIs(allUsers);
+      renderUI(allUsers);
+    } catch (err) {
+      console.error('Fetch Error:', err.message);
+      if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);text-align:center;padding:20px;"><i class="bi bi-exclamation-triangle"></i> ${err.message}</td></tr>`;
+    }
+  }
+
+  function renderUI(users) {
+    const tbody      = document.getElementById('users-tbody');
+    const mobileList = document.getElementById('users-mobile-list');
+    if (!tbody || !mobileList) return;
+
+    const searchTerm = document.getElementById('user-search')?.value.toLowerCase() || '';
+    let filtered = currentFilter === 'all' ? users : users.filter(u => u.role === currentFilter);
+    const finalData = filtered.filter(u =>
+      u.full_name?.toLowerCase().includes(searchTerm) ||
+      u.email?.toLowerCase().includes(searchTerm)
+    );
+
+    if (finalData.length === 0) {
+      const empty = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">No records found.</td></tr>';
+      tbody.innerHTML = empty;
+      mobileList.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">No records found.</div>';
+      return;
+    }
+
+    tbody.innerHTML = finalData.map(u => {
+      let displayBusId = '---';
+      if (u.role === 'parent') displayBusId = '<span style="opacity:0.5">PARENT</span>';
+      else displayBusId = u.bus_id || '---';
+
+      return `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="admin-avatar" style="width:30px;height:30px;font-size:12px;">${u.full_name ? u.full_name[0] : '?'}</div>
+            <strong>${u.full_name || 'Anonymous'}</strong>
+          </div>
+        </td>
+        <td><span class="badge badge-navy">${u.role?.toUpperCase()}</span></td>
+        <td>${u.email || '---'}</td>
+        <td><code style="color:var(--navy);font-weight:700;">${displayBusId}</code></td>
+        <td><span class="badge badge-green-light"><span class="live-dot" style="background:var(--green)"></span> Active</span></td>
+        <td style="text-align:right;">
+          <button class="btn-table delete" onclick="window.deleteUser('${u.id}')" title="Delete User">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>`;
+    }).join('');
+
+    mobileList.innerHTML = finalData.map(u => {
+      let displayBusId = u.role === 'parent' ? 'PARENT ACCOUNT' : (u.bus_id || '---');
+      return `
+      <div class="user-card-mobile">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="admin-avatar" style="width:35px;height:35px;">${u.full_name ? u.full_name[0] : '?'}</div>
+            <div>
+              <div style="font-weight:800;font-size:14px;">${u.full_name || 'Anonymous'}</div>
+              <div style="font-size:11px;color:var(--text-muted);">${u.email || '---'}</div>
+            </div>
+          </div>
+          <span class="badge badge-navy" style="font-size:10px;">${u.role?.toUpperCase()}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;background:var(--bg);padding:8px;border-radius:8px;">
+          <span style="font-weight:700;color:var(--text-muted);">BUS ID / TYPE</span>
+          <span style="font-family:monospace;font-weight:800;">${displayBusId}</span>
+        </div>
+        <button class="btn btn-red btn-full btn-sm" style="margin-top:12px;height:35px;" onclick="window.deleteUser('${u.id}')">
+          <i class="bi bi-trash"></i> Remove User
+        </button>
+      </div>`;
+    }).join('');
+  }
+
+  function updateKPIs(users) {
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('count-drivers',  users.filter(u => u.role === 'driver').length);
+    set('count-parents',  users.filter(u => u.role === 'parent').length);
+    set('count-students', users.filter(u => u.role === 'student').length);
+    set('count-total',    users.length);
+  }
+
+  // ── 3. Modal ───────────────────────────────────────────────────────────
+  const modal = document.getElementById('add-modal');
+  safeAttach('btn-open-modal', () => modal.style.display = 'flex');
+  safeAttach('btn-cancel',     () => modal.style.display = 'none');
+
+  safeAttach('btn-save-user', async () => {
+    const name  = document.getElementById('new-user-name').value.trim();
+    const email = document.getElementById('new-user-email').value.trim();
+    const role  = document.getElementById('new-user-role').value;
+
+    if (!name || !email) return alert('Please fill all fields.');
+
+    const { error } = await supabase.from('profiles').insert([{
+      full_name: name,
+      email,
+      role,
+      organization_id: ORG_ID              // ← scoped to tenant
+    }]);
+
+    if (error) alert(error.message);
+    else { modal.style.display = 'none'; fetchUsers(); }
+  });
+
+  // ── 4. Search + filter ─────────────────────────────────────────────────
+  const searchInp = document.getElementById('user-search');
+  if (searchInp) searchInp.oninput = () => renderUI(allUsers);
+
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.onclick = () => {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      currentFilter = chip.dataset.role;
+      renderUI(allUsers);
+    };
+  });
+
+  // ── 5. Delete — only users in this org ────────────────────────────────
+  window.deleteUser = async (id) => {
+    if (!confirm('Permanently delete this user?')) return;
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', id)
+      .eq('organization_id', ORG_ID);       // ← safety: can't delete outside org
+    if (!error) fetchUsers();
+    else alert('Delete failed: ' + error.message);
+  };
+
+  fetchUsers();
+</script>
+</body>
+</html>

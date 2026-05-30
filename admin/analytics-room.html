@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>System-Wide Analytics Room | Bex Central Admin</title>
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <style>
+    /* --- MASTER INDUSTRIAL ANALYTICS SURFACES --- */
+    .analytics-grid-row { 
+        display: grid; 
+        grid-template-columns: repeat(2, 1fr); 
+        gap: 24px; 
+        margin-bottom: 24px; 
+    }
+    
+    .table-container { 
+        width: 100%; 
+        overflow-x: auto; 
+        -webkit-overflow-scrolling: touch; 
+    }
+
+    /* --- CLEAN SOLID WHITE METRICS DASHBOARD CARDS --- */
+    .infra-grid-matrix { 
+        display: grid; 
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 16px; 
+        width: 100%; 
+        margin: 12px 0 24px 0; 
+    }
+    
+    .infra-data-node { 
+        background: white !important; 
+        border: 1px solid var(--border); 
+        border-radius: var(--r-lg); 
+        padding: 16px 12px; 
+        text-align: center; 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center; 
+        align-items: center; 
+        box-shadow: var(--shadow-sm); 
+        min-height: 90px; 
+    }
+    
+    .infra-title-text { 
+        font-size: 10px !important; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px; 
+        color: var(--text-secondary); 
+        font-weight: 700; 
+        line-height: 1.3; 
+        margin-bottom: 6px; 
+    }
+    
+    .infra-value-text { 
+        font-size: 24px !important; 
+        font-weight: 900; 
+        color: var(--navy); 
+        line-height: 1; 
+        margin-top: auto; 
+    }
+
+    /* --- PREMIUM ISOLATED CONTENT OVERVIEW CARD MODULES --- */
+    .analysis-bento-card { 
+        background: white !important; 
+        border: 1px solid var(--border); 
+        border-radius: var(--r-xl); 
+        padding: 24px; 
+        box-shadow: var(--shadow-sm); 
+        display: flex; 
+        flex-direction: column; 
+    }
+    
+    .panel-heading { 
+        display: flex; 
+        align-items: center; 
+        gap: 8px; 
+        font-size: 16px; 
+        font-weight: 800; 
+        color: var(--navy); 
+        margin-bottom: 6px; 
+    }
+    
+    .panel-subtext { 
+        font-size: 12px; 
+        color: var(--text-secondary); 
+        margin-bottom: 18px; 
+        line-height: 1.4; 
+    }
+
+    /* --- STANDARDIZED METRIC ROWS --- */
+    .metric-strip { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        padding: 12px 0; 
+        border-bottom: 1px solid var(--border); 
+    }
+    
+    .metric-strip:last-child { 
+        border-bottom: none; 
+    }
+    
+    .metric-title { 
+        font-size: 13px; 
+        font-weight: 700; 
+        color: var(--navy); 
+    }
+    
+    .metric-value { 
+        font-family: monospace; 
+        font-size: 13px; 
+        font-weight: 800; 
+        color: var(--text-secondary); 
+    }
+
+    /* --- PREMIUM MOBILE-FIRST RESPONSIVE BREAKPOINTS --- */
+    @media (max-width: 768px) {
+        .admin-sidebar { display: none !important; }
+        .admin-main { margin-left: 0 !important; padding: 16px 16px 100px 16px !important; overflow-x: hidden !important; }
+        .desktop-only { display: none !important; }
+        
+        /* FIX: Header overlap on mobile */
+        .admin-topbar { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; height: auto !important; }
+        .topbar-title { font-size: 20px !important; font-weight: 900; line-height: 1.2; }
+        .admin-topbar p { font-size: 12px !important; line-height: 1.4 !important; }
+
+        .analytics-grid-row { grid-template-columns: 1fr !important; gap: 16px; }
+        
+        /* Fixed Grid Metrics Stack */
+        .infra-grid-matrix { grid-template-columns: 1fr !important; gap: 12px !important; margin: 8px 0 20px 0 !important; }
+        .infra-data-node { padding: 14px 16px !important; min-height: auto !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; }
+        .infra-title-text { margin-bottom: 0 !important; text-align: left !important; max-width: 70% !important; }
+        .infra-value-text { font-size: 22px !important; margin-top: 0 !important; }
+
+        .bottom-nav.mobile-only { 
+            height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center; background: var(--navy) !important;
+        }
+        .bottom-nav.mobile-only a { 
+            flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0px !important; padding: 0 !important; margin: 0 !important; color: rgba(255, 255, 255, 0.6) !important;
+        }
+        .bottom-nav.mobile-only a i { font-size: 22px !important; }
+        .bottom-nav.mobile-only a.active { color: var(--yellow) !important; background: rgba(255, 255, 255, 0.04) !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="admin-layout">
+  
+  <aside class="admin-sidebar" style="display: flex; flex-direction: column; height: 100vh;">
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png" alt="Logo">
+      <div class="logo-text">Bex Central Hub <small>SaaS Superuser Console</small></div>
+    </div>
+    
+    <nav class="sidebar-nav" style="flex: 1; overflow-y: auto;">
+      <div class="nav-group-label">Enterprise Monitoring</div>
+      <a href="bex-dashboard.html" class="nav-link"><i class="bi bi-radar"></i><span>Global Fleet</span></a>
+      <a href="crisis-center.html" class="nav-link"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis Center</span></a>
+      <a href="schools-management.html" class="nav-link"><i class="bi bi-building"></i><span>Tenant Schools</span></a>
+      
+      <div class="nav-group-label">System Management</div>
+      <a href="users-directory.html" class="nav-link"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
+      <a href="analytics-room.html" class="nav-link active"><i class="bi bi-graph-up-arrow"></i><span>Analytics Room</span></a>
+      <a href="billing-usage.html" class="nav-link"><i class="bi bi-envelope-check-fill"></i><span>Resend Gateway</span></a>
+      <a href="audit-logs.html" class="nav-link"><i class="bi bi-journal-text"></i><span>System Audit</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="tel:+2348114875252" class="btn btn-sm btn-yellow btn-full" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; text-decoration: none; font-weight: 800;">
+        <i class="bi bi-telephone-outbound-fill"></i> Directors Hotline
+      </a>
+      <div class="admin-user" style="display: flex; align-items: center; gap: 12px;">
+        <div class="admin-avatar" id="avatar-char" style="width: 36px; height: 36px; background: var(--yellow); color: var(--navy); border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; font-weight: 800;">B</div>
+        <div class="admin-user-info" style="color:white; font-size: 13px;">
+          <div style="font-weight:800;" id="admin-user-name">Bex Administrator</div>
+          <div style="opacity:0.6; font-size:11px;">Global Platform Controller</div>
+        </div>
+      </div>
+      <button id="signout-btn" class="btn btn-red btn-full btn-sm" style="margin-top: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); width: 100%;">
+        <i class="bi bi-power"></i> Log Out
+      </button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1 class="topbar-title">Analytics Room</h1>
+        <p style="font-size: 13px; color: var(--text-secondary);">Cross-tenant global distribution metrics, resource allocation profiles, and platform inventory summaries.</p>
+      </div>
+    </header>
+
+    <div class="admin-content">
+      
+      <div class="infra-grid-matrix">
+        <div class="infra-data-node">
+          <div class="infra-title-text">Onboarded Tenant Schools</div>
+          <div class="infra-value-text" id="metrics-total-schools">0</div>
+        </div>
+        <div class="infra-data-node">
+          <div class="infra-title-text">Aggregated Platform Fleet</div>
+          <div class="infra-value-text" id="metrics-total-fleet">0</div>
+        </div>
+        <div class="infra-data-node">
+          <div class="infra-title-text">Ecosystem Human Accounts</div>
+          <div class="infra-value-text" id="metrics-total-accounts">0</div>
+        </div>
+      </div>
+
+      <div class="analytics-grid-row">
+        
+        <div class="analysis-bento-card">
+          <div class="panel-heading">
+            <i class="bi bi-people-fill text-yellow"></i> Global Population Analysis
+          </div>
+          <div class="panel-subtext">
+            Dynamic allocation metrics parsed across active system profile roles.
+          </div>
+          
+          <div class="metric-strip">
+            <span class="metric-title">Ecosystem Super Administrators</span>
+            <span class="metric-value" id="breakdown-super-admins">0 users</span>
+          </div>
+          <div class="metric-strip">
+            <span class="metric-title">School Managers & Tenant Admins</span>
+            <span class="metric-value" id="breakdown-tenant-admins">0 users</span>
+          </div>
+          <div class="metric-strip">
+            <span class="metric-title">Active Logged Drivers</span>
+            <span class="metric-value" id="breakdown-drivers">0 users</span>
+          </div>
+          <div class="metric-strip">
+            <span class="metric-title">Parent & Stakeholder Nodes</span>
+            <span class="metric-value" id="breakdown-parents">0 users</span>
+          </div>
+        </div>
+
+        <div class="analysis-bento-card">
+          <div class="panel-heading">
+            <i class="bi bi-exclamation-octagon-fill text-red"></i> Emergency & Exception Tracking
+          </div>
+          <div class="panel-subtext">
+            Lifetime system logging analysis calculated from platform status exceptions.
+          </div>
+          
+          <div class="metric-strip">
+            <span class="metric-title">Active Intercepted Crisis Threats</span>
+            <span class="metric-value" id="crisis-active-count" style="color: #dc2626; font-weight: 900;">0 alerts</span>
+          </div>
+          <div class="metric-strip">
+            <span class="metric-title">Awaiting Dispatch Handshakes</span>
+            <span class="metric-value" id="crisis-pending-count" style="color: var(--yellow); font-weight: 700;">0 alerts</span>
+          </div>
+          <div class="metric-strip">
+            <span class="metric-title">Resolved Lifetime Incidents</span>
+            <span class="metric-value" id="crisis-resolved-count" style="color: #22c55e; font-weight: 700;">0 items</span>
+          </div>
+          <div class="metric-strip">
+            <span class="metric-title">Global Broadcast Notifications Transmitted</span>
+            <span class="metric-value" id="total-broadcast-notifications">0 logs</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tile tile-12" style="margin-top: 4px;">
+        <div class="table-header">
+          <div class="table-title"><i class="bi bi-building-fill text-navy"></i> Tenant Workspace Allocation Matrix</div>
+        </div>
+        <div class="table-container" style="margin-top: 15px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Tenant School Identity Name</th>
+                <th>Gateway Routing Space</th>
+                <th>Assigned Fleet Allocations</th>
+                <th>Associated Driver Nodes</th>
+                <th>Registered Parent Accounts</th>
+                <th>Emergency Logs Count</th>
+              </tr>
+            </thead>
+            <tbody id="tenant-allocation-matrix-body">
+              <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:30px;">Analyzing multi-tenant storage configurations...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav mobile-only">
+    <a href="bex-dashboard.html" title="Global Fleet"><i class="bi bi-radar"></i></a>
+    <a href="crisis-center.html" title="Crisis Center"><i class="bi bi-exclamation-octagon-fill"></i></a>
+    <a href="schools-management.html" title="Tenant Schools"><i class="bi bi-building"></i></a>
+    <a href="users-directory.html" title="User Directory"><i class="bi bi-people-fill"></i></a>
+    <a href="analytics-room.html" class="active" title="Analytics Room"><i class="bi bi-graph-up-arrow"></i></a>
+    <a href="billing-usage.html" title="Resend Gateway"><i class="bi bi-envelope-check-fill"></i></a>
+    <a href="audit-logs.html" title="System Audit"><i class="bi bi-journal-text"></i></a>
+</nav>
+
+<div id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script type="module">
+  import { supabase } from '../js/config.js';
+  import { signOut, requireAuth } from '../js/auth.js';
+
+  async function verifyAdminAuth() {
+    const session = await requireAuth();
+    if (!session) return;
+    const { data: profile } = await supabase.from('profiles').select('role, full_name').eq('id', session.user.id).single();
+    const activeRole = profile?.role || session.user.user_metadata?.role;
+    if (activeRole === 'super_admin' || activeRole === 'admin' || session.user.email?.includes('admin')) {
+        setTimeout(compileEcosystemDataAnalysis, 50);
+    } else { window.location.href = '../index.html'; }
+  }
+
+  async function compileEcosystemDataAnalysis() {
+    try {
+      const [orgsRes, busesRes, profilesRes, notificationsRes] = await Promise.all([
+        supabase.from('organizations').select('*'),
+        supabase.from('buses').select('*'),
+        supabase.from('profiles').select('*'),
+        supabase.from('notifications').select('*')
+      ]);
+      const organizationsArray = orgsRes.data || [];
+      const busesArray = busesRes.data || [];
+      const profilesArray = profilesRes.data || [];
+      const notificationsArray = notificationsRes.data || [];
+
+      document.getElementById('metrics-total-schools').textContent = organizationsArray.length;
+      document.getElementById('metrics-total-fleet').textContent = busesArray.length;
+      document.getElementById('metrics-total-accounts').textContent = profilesArray.length;
+
+      document.getElementById('breakdown-super-admins').textContent = `${profilesArray.filter(p => p.role === 'super_admin').length} users`;
+      document.getElementById('breakdown-tenant-admins').textContent = `${profilesArray.filter(p => p.role === 'admin' || p.role === 'manager').length} users`;
+      document.getElementById('breakdown-drivers').textContent = `${profilesArray.filter(p => p.role === 'driver').length} users`;
+      document.getElementById('breakdown-parents').textContent = `${profilesArray.filter(p => p.role === 'parent').length} users`;
+
+      const activeCrises = notificationsArray.filter(n => n.type === 'emergency' && n.status === 'active').length;
+      const pendingCrises = notificationsArray.filter(n => n.type === 'emergency' && (n.status === 'pending' || n.status === 'logged')).length;
+      const resolvedCrises = notificationsArray.filter(n => n.type === 'emergency' && n.status === 'resolved').length;
+      const totalBroadcasts = notificationsArray.filter(n => n.type === 'broadcast').length;
+
+      document.getElementById('crisis-active-count').textContent = `${activeCrises} alert${activeCrises === 1 ? '' : 's'}`;
+      document.getElementById('crisis-pending-count').textContent = `${pendingCrises} alert${pendingCrises === 1 ? '' : 's'}`;
+      document.getElementById('crisis-resolved-count').textContent = `${resolvedCrises} item${resolvedCrises === 1 ? '' : 's'}`;
+      document.getElementById('total-broadcast-notifications').textContent = `${totalBroadcasts} log${totalBroadcasts === 1 ? '' : 's'}`;
+
+      const matrixContainer = document.getElementById('tenant-allocation-matrix-body');
+      if (organizationsArray.length === 0) {
+        matrixContainer.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:24px;">No configured school workspace segments registered.</td></tr>`;
+      } else {
+        matrixContainer.innerHTML = organizationsArray.map(school => {
+          const schoolBusesCount = busesArray.filter(b => b.organization_id === school.id || b.school_id === school.id).length;
+          const schoolDriversCount = profilesArray.filter(p => p.role === 'driver' && p.organization_id === school.id).length;
+          const schoolParentsCount = profilesArray.filter(p => p.role === 'parent' && p.organization_id === school.id).length;
+          const schoolCrisisCount = notificationsArray.filter(n => n.type === 'emergency' && (n.organization_id === school.id || n.school_id === school.id)).length;
+          return `
+            <tr>
+              <td><span style="font-weight:800; color:var(--navy);">${school.name}</span></td>
+              <td style="font-family:monospace; font-size:12px; color:var(--navy); font-weight:700;">${school.subdomain || 'unmapped'}.bexlabs.com</td>
+              <td style="font-family:monospace; font-weight:700; font-size:13px; color:var(--text-secondary);">${schoolBusesCount} vehicles</td>
+              <td style="font-family:monospace; font-weight:700; font-size:13px; color:var(--text-secondary);">${schoolDriversCount} nodes</td>
+              <td style="font-family:monospace; font-weight:700; font-size:13px; color:var(--text-secondary);">${schoolParentsCount} accounts</td>
+              <td><span class="badge ${schoolCrisisCount > 0 ? 'badge-red' : 'badge-green'}" style="font-family:monospace; font-weight:800;">${schoolCrisisCount} logged exception${schoolCrisisCount === 1 ? '' : 's'}</span></td>
+            </tr>
+          `;
+        }).join('');
+      }
+    } catch (err) { console.error("Ecosystem analysis failure:", err.message); }
+  }
+
+  document.getElementById('signout-btn').onclick = () => signOut();
+  verifyAdminAuth();
+</script>
+</body>
+</html>

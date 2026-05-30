@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Global Identity & Access Directory | Bex Central Admin</title>
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <style>
+    /* --- USER MATRIX DIRECTORY LAYERS --- */
+    .table-container { 
+        width: 100%; 
+        overflow-x: auto; 
+        -webkit-overflow-scrolling: touch; 
+    }
+
+    /* --- CLEAN SOLID WHITE RESOURCE CARDS GRID --- */
+    .infra-grid-matrix { 
+        display: grid; 
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 16px; 
+        width: 100%; 
+        margin: 12px 0 24px 0; 
+    }
+    
+    .infra-data-node { 
+        background: white !important; 
+        border: 1px solid var(--border); 
+        border-radius: var(--r-lg); 
+        padding: 16px 12px; 
+        text-align: center; 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center; 
+        align-items: center; 
+        box-shadow: var(--shadow-sm); 
+        min-height: 90px; 
+    }
+    
+    .infra-title-text { 
+        font-size: 10px !important; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px; 
+        color: var(--text-secondary); 
+        font-weight: 700; 
+        line-height: 1.3; 
+        margin-bottom: 6px; 
+    }
+    
+    .infra-value-text { 
+        font-size: 24px !important; 
+        font-weight: 900; 
+        color: var(--navy); 
+        line-height: 1; 
+        margin-top: auto; 
+    }
+
+    /* --- CONTROLS OVERLAYS --- */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); z-index: 2000; backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+    .modal-overlay.active { display: flex; }
+    .modal-card { background: white; width: 100%; max-width: 460px; padding: 28px; border-radius: var(--r-xl); border: 1px solid var(--border); box-shadow: var(--shadow-lg); }
+    .form-input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--r-md); margin-top: 4px; margin-bottom: 14px; outline: none; font-size: 13px; color: var(--navy); background: var(--bg); }
+
+    /* --- TOOLBAR CONTROLS --- */
+    .filter-deck { display: flex; gap: 12px; margin-bottom: 16px; width: 100%; flex-wrap: wrap; }
+    .search-input { flex: 1; min-width: 200px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; color: var(--navy); }
+    .role-select { padding: 0 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; color: var(--navy); height: 38px; }
+
+    /* --- INTERACTION BUTTONS --- */
+    .toggle-btn { padding: 2px 8px; font-size: 10px; font-weight: 800; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; transition: var(--transition); background: var(--bg); color: var(--text-secondary); }
+    .toggle-btn.verified-state { background: var(--green-light); border-color: var(--green); color: var(--green); }
+
+    /* --- PREMIUM MOBILE-FIRST RESPONSIVE BREAKPOINTS --- */
+    @media (max-width: 768px) {
+        .admin-sidebar { display: none !important; }
+        .admin-main { margin-left: 0 !important; padding: 16px 16px 100px 16px !important; overflow-x: hidden !important; }
+        
+        .admin-topbar { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; margin-bottom: 16px !important; height: auto !important; }
+        .topbar-title { font-size: 22px !important; font-weight: 900; }
+        
+        /* Fixed Grid Metrics Stack */
+        .infra-grid-matrix { grid-template-columns: 1fr !important; gap: 12px !important; margin: 8px 0 20px 0 !important; }
+        .infra-data-node { padding: 14px 16px !important; min-height: auto !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; }
+        .infra-title-text { margin-bottom: 0 !important; text-align: left !important; max-width: 70% !important; }
+        .infra-value-text { font-size: 22px !important; margin-top: 0 !important; }
+
+        .filter-deck { flex-direction: column; gap: 8px; }
+        .role-select { width: 100%; }
+
+        .bottom-nav.mobile-only { 
+            height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center; background: var(--navy) !important;
+        }
+        .bottom-nav.mobile-only a { 
+            flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0px !important; color: rgba(255, 255, 255, 0.6) !important;
+        }
+        .bottom-nav.mobile-only a i { font-size: 22px !important; margin: 0 !important; }
+        .bottom-nav.mobile-only a.active { color: var(--yellow) !important; background: rgba(255, 255, 255, 0.04) !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="modal-overlay" id="edit-user-modal">
+  <div class="modal-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h3 style="font-weight:900; font-size:16px; color:var(--navy);"><i class="bi bi-sliders text-yellow"></i> Modify Account Scope</h3>
+      <i class="bi bi-x-lg" style="cursor:pointer;" onclick="toggleEditModal(false)"></i>
+    </div>
+    <form id="edit-user-form">
+      <input type="hidden" id="edit-profile-id">
+      
+      <label style="font-size:11px; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">Full Name Context</label>
+      <input type="text" id="edit-full-name" class="form-input" required>
+      
+      <label style="font-size:11px; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">Ecosystem Permission Role</label>
+      <select id="edit-user-role" class="form-input" style="height:40px;">
+        <option value="super_admin">Super Platform Admin</option>
+        <option value="admin">Tenant School Admin</option>
+        <option value="driver">Registered Fleet Driver</option>
+        <option value="parent">Parent Stakeholder</option>
+      </select>
+
+      <label style="font-size:11px; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">Assigned Tenant Partition Boundary</label>
+      <select id="edit-user-org" class="form-input" style="height:40px;">
+        <option value="">Global Central Infrastructure</option>
+      </select>
+      
+      <div style="display:flex; gap:12px; margin-top:10px;">
+        <button type="submit" class="btn btn-yellow btn-full" id="btn-save-user" style="font-weight:800;">Commit Access Tokens</button>
+        <button type="button" class="btn btn-ghost" onclick="toggleEditModal(false)">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="admin-layout">
+  
+  <aside class="admin-sidebar" style="display: flex; flex-direction: column; height: 100vh;">
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png" alt="Logo">
+      <div class="logo-text">Bex Central Hub <small>SaaS Superuser Console</small></div>
+    </div>
+    
+    <nav class="sidebar-nav" style="flex: 1; overflow-y: auto;">
+      <div class="nav-group-label">Enterprise Monitoring</div>
+      <a href="bex-dashboard.html" class="nav-link"><i class="bi bi-radar"></i><span>Global Fleet</span></a>
+      <a href="crisis-center.html" class="nav-link"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis Center</span></a>
+      <a href="schools-management.html" class="nav-link"><i class="bi bi-building"></i><span>Tenant Schools</span></a>
+      
+      <div class="nav-group-label">System Management</div>
+      <a href="users-directory.html" class="nav-link active"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
+      <a href="analytics-room.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics Room</span></a>
+      <a href="billing-usage.html" class="nav-link"><i class="bi bi-envelope-check-fill"></i><span>Resend Gateway</span></a>
+      <a href="audit-logs.html" class="nav-link"><i class="bi bi-journal-text"></i><span>System Audit</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="tel:+2348114875252" class="btn btn-sm btn-yellow btn-full" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; text-decoration: none; font-weight: 800;">
+        <i class="bi bi-telephone-outbound-fill"></i> Directors Hotline
+      </a>
+      <div class="admin-user" style="display: flex; align-items: center; gap: 12px;">
+        <div class="admin-avatar" id="avatar-char" style="width: 36px; height: 36px; background: var(--yellow); color: var(--navy); border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; font-weight: 800;">B</div>
+        <div class="admin-user-info" style="color:white; font-size: 13px;">
+          <div style="font-weight:800;" id="admin-user-name">Bex Administrator</div>
+          <div style="opacity:0.6; font-size:11px;">Global Platform Controller</div>
+        </div>
+      </div>
+      <button id="signout-btn" class="btn btn-red btn-full btn-sm" style="margin-top: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); width: 100%;">
+        <i class="bi bi-power"></i> Log Out
+      </button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1 class="topbar-title">User Directory</h1>
+        <p style="font-size: 13px; color: var(--text-secondary);">Manage cross-tenant master profiles, validate identities verification states, adjust role hierarchies, and purge accounts logs.</p>
+      </div>
+    </header>
+
+    <div class="admin-content">
+      
+      <div class="infra-grid-matrix">
+        <div class="infra-data-node">
+          <div class="infra-title-text">Verified Directory Profiles</div>
+          <div class="infra-value-text" id="metrics-users-total">0</div>
+        </div>
+        <div class="infra-data-node">
+          <div class="infra-title-text">Active Fleet Drivers</div>
+          <div class="infra-value-text" id="metrics-users-drivers" style="color: var(--green);">0</div>
+        </div>
+        <div class="infra-data-node">
+          <div class="infra-title-text">Unvalidated Nodes</div>
+          <div class="infra-value-text" id="metrics-users-unverified" style="color: #dc2626;">0</div>
+        </div>
+      </div>
+
+      <div class="tile tile-12" style="margin-top: 10px;">
+        
+        <div class="filter-deck">
+          <input type="text" id="search-bar" class="search-input" placeholder="Search identities index by clear text strings profile markers...">
+          <select id="role-filter" class="role-select">
+            <option value="ALL">All Identity Access Clearances</option>
+            <option value="super_admin">Platform Super Admins</option>
+            <option value="admin">Tenant School Admins</option>
+            <option value="driver">Registered Fleet Drivers</option>
+            <option value="parent">Parent Nodes</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Profile Context Holder</th>
+                <th>Secure Communication Address</th>
+                <th>Access Clearance Level</th>
+                <th>Identity Validation</th>
+                <th>Assigned SaaS Boundary Space</th>
+                <th style="text-align:right;">Global Security Directives Overrides</th>
+              </tr>
+            </thead>
+            <tbody id="users-matrix-body">
+              <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:30px;">Connecting platform identities infrastructure matrices...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav mobile-only">
+    <a href="bex-dashboard.html" title="Global Fleet"><i class="bi bi-radar"></i></a>
+    <a href="crisis-center.html" title="Crisis Center"><i class="bi bi-exclamation-octagon-fill"></i></a>
+    <a href="schools-management.html" title="Tenant Schools"><i class="bi bi-building"></i></a>
+    <a href="users-directory.html" class="active" title="User Directory"><i class="bi bi-people-fill"></i></a>
+    <a href="analytics-room.html" title="Analytics Room"><i class="bi bi-graph-up-arrow"></i></a>
+    <a href="billing-usage.html" title="Resend Gateway"><i class="bi bi-envelope-check-fill"></i></a>
+    <a href="audit-logs.html" title="System Audit"><i class="bi bi-journal-text"></i></a>
+</nav>
+
+<div id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script type="module">
+  import { supabase } from '../js/config.js';
+  import { signOut, requireAuth } from '../js/auth.js';
+
+  let globalProfilesArray = [];
+  let multiTenantMapIndex = {};
+
+  window.toggleEditModal = (show) => {
+    document.getElementById('edit-user-modal').classList.toggle('active', show);
+    if (!show) document.getElementById('edit-user-form').reset();
+  };
+
+  async function verifyAdminAuth() {
+    const session = await requireAuth();
+    if (!session) return;
+    const { data: profile } = await supabase.from('profiles').select('role, full_name').eq('id', session.user.id).single();
+    const activeRole = profile?.role || session.user.user_metadata?.role;
+    const nameStr = profile?.full_name || session.user.user_metadata?.full_name || "Bex Operator";
+
+    if (activeRole === 'super_admin' || activeRole === 'admin' || session.user.email?.includes('admin')) {
+        document.getElementById('admin-user-name').textContent = nameStr;
+        document.getElementById('avatar-char').textContent = nameStr.charAt(0).toUpperCase();
+        setTimeout(() => { bootstrapUserDirectoryEngine(); }, 50);
+    } else {
+        window.location.href = '../index.html';
+    }
+  }
+
+  async function bootstrapUserDirectoryEngine() {
+    await fetchActiveTenantMappings();
+    await pollGlobalProfilesStorage();
+    supabase.channel('profiles-master-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, pollGlobalProfilesStorage)
+      .subscribe();
+    document.getElementById('search-bar').addEventListener('input', runLiveClientFiltering);
+    document.getElementById('role-filter').addEventListener('change', runLiveClientFiltering);
+  }
+
+  async function fetchActiveTenantMappings() {
+    const { data } = await supabase.from('organizations').select('id, name');
+    if (data) {
+      const dropdown = document.getElementById('edit-user-org');
+      dropdown.innerHTML = '<option value="">Global Central Infrastructure</option>' + data.map(o => `<option value="${o.id}">${o.name}</option>`).join('');
+      data.forEach(org => { multiTenantMapIndex[org.id] = org.name; });
+    }
+  }
+
+  async function pollGlobalProfilesStorage() {
+    const { data: profiles, error } = await supabase.from('profiles').select('*').order('full_name', { ascending: true });
+    if (error) return;
+    globalProfilesArray = profiles || [];
+    calculateEcosystemPerformanceKPIs(globalProfilesArray);
+    renderDirectoryTableRows(globalProfilesArray);
+  }
+
+  function calculateEcosystemPerformanceKPIs(profiles) {
+    document.getElementById('metrics-users-total').textContent = profiles.length;
+    document.getElementById('metrics-users-drivers').textContent = profiles.filter(p => p.role === 'driver').length;
+    document.getElementById('metrics-users-unverified').textContent = profiles.filter(p => p.role !== 'super_admin' && (p.is_verified === false || !p.is_verified)).length;
+  }
+
+  function runLiveClientFiltering() {
+    const term = document.getElementById('search-bar').value.toLowerCase().trim();
+    const roleConstraint = document.getElementById('role-filter').value;
+    const filtered = globalProfilesArray.filter(p => {
+      const matchesSearch = (p.full_name && p.full_name.toLowerCase().includes(term)) || (p.email && p.email.toLowerCase().includes(term));
+      const matchesRole = roleConstraint === 'ALL' || p.role === roleConstraint;
+      return matchesSearch && matchesRole;
+    });
+    renderDirectoryTableRows(filtered);
+  }
+
+  function renderDirectoryTableRows(profiles) {
+    const body = document.getElementById('users-matrix-body');
+    if (profiles.length === 0) {
+      body.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-secondary); padding:24px;">No records matching search.</td></tr>`;
+      return;
+    }
+    body.innerHTML = profiles.map(user => {
+      const isSuperAdmin = user.role === 'super_admin';
+      const validatedState = isSuperAdmin ? true : (user.is_verified === true);
+      const isDeactivated = user.account_status === 'deactivated';
+      let badge = isSuperAdmin ? 'badge-red' : (user.role === 'driver' ? 'badge-green' : 'badge-blue');
+      return `
+        <tr>
+          <td><span style="font-weight:800; color:var(--navy);">${user.full_name || 'Anonymous'}</span></td>
+          <td style="font-family:monospace; font-size:12px;">${user.email || '---'}</td>
+          <td><span class="badge ${badge}">${user.role?.toUpperCase()}</span></td>
+          <td>
+            ${isDeactivated ? '<span class="badge badge-red">DEACTIVATED</span>' : 
+              `<button class="toggle-btn ${validatedState ? 'verified-state' : ''}" onclick="window.toggleUserValidation('${user.id}', ${validatedState})" ${isSuperAdmin ? 'disabled' : ''}>${validatedState ? 'VERIFIED' : 'PENDING'}</button>`}
+          </td>
+          <td><span style="font-weight:700; color:var(--navy);">${multiTenantMapIndex[user.organization_id] || "Global"}</span></td>
+          <td style="text-align:right;">
+            <div style="display:inline-flex; gap:6px;">
+              <button class="btn btn-ghost btn-sm" onclick="window.openUserConfigurationEditor('${user.id}')"><i class="bi bi-sliders"></i></button>
+              <button class="btn btn-ghost btn-sm text-yellow" onclick="window.dispatchRecoveryHandshake('${user.email}')"><i class="bi bi-shield-lock"></i></button>
+              <button class="btn btn-ghost btn-sm text-red" onclick="window.toggleAccountActivationStatus('${user.id}', ${isDeactivated})" ${isSuperAdmin ? 'disabled' : ''}><i class="bi bi-power"></i></button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  window.toggleUserValidation = async (id, current) => { await supabase.from('profiles').update({ is_verified: !current }).eq('id', id); pollGlobalProfilesStorage(); };
+  window.toggleAccountActivationStatus = async (id, currentDeactivatedState) => { await supabase.from('profiles').update({ account_status: currentDeactivatedState ? 'active' : 'deactivated' }).eq('id', id); pollGlobalProfilesStorage(); };
+  window.openUserConfigurationEditor = (id) => {
+    const user = globalProfilesArray.find(p => p.id === id);
+    if (!user) return;
+    document.getElementById('edit-profile-id').value = user.id;
+    document.getElementById('edit-full-name').value = user.full_name || '';
+    document.getElementById('edit-user-role').value = user.role || 'parent';
+    document.getElementById('edit-user-org').value = user.organization_id || '';
+    toggleEditModal(true);
+  };
+
+  document.getElementById('edit-user-form').onsubmit = async function(e) {
+    e.preventDefault();
+    await supabase.from('profiles').update({
+        full_name: document.getElementById('edit-full-name').value.trim(),
+        role: document.getElementById('edit-user-role').value,
+        organization_id: document.getElementById('edit-user-org').value || null
+    }).eq('id', document.getElementById('edit-profile-id').value);
+    toggleEditModal(false);
+    pollGlobalProfilesStorage();
+  };
+
+  window.dispatchRecoveryHandshake = async (email) => { if (!email) return; await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password.html' }); window.showToast("Recovery email dispatched."); };
+  window.showToast = (msg) => { const toast = document.createElement('div'); toast.className = `toast active`; toast.textContent = msg; document.getElementById('toast-container').appendChild(toast); setTimeout(() => toast.remove(), 4000); };
+  document.getElementById('signout-btn').onclick = () => signOut();
+  verifyAdminAuth();
+</script>
+</body>
+</html>

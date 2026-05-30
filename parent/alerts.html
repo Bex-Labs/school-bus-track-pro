@@ -7,111 +7,63 @@
   <link rel="icon" type="image/png" href="../assets/images/logo.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/admin.css"> <link rel="stylesheet" href="../assets/css/parent.css"> <style>
-    /* Bento Grid Column Logic */
-    .bento-grid {
-        display: grid;
-        grid-template-columns: repeat(12, 1fr);
-        gap: 24px;
-        width: 100%;
-        align-items: start;
-    }
-
-    .tile-6 {
-        grid-column: span 6;
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-    }
-
-    .tile-12 {
-        grid-column: span 12;
-    }
-
-    /* Distance Button Styling */
-    .distance-btn { 
-        padding: 12px 8px; 
-        border-radius: var(--r-md); 
-        border: 1.5px solid var(--border); 
-        background: var(--bg); 
-        font-size: 13px; 
-        font-weight: 700; 
-        color: var(--text-secondary); 
-        cursor: pointer; 
-        transition: all 0.2s; 
-    }
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <link rel="stylesheet" href="../assets/css/parent.css">
+  <style>
+    .bento-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; width: 100%; align-items: start; }
+    .tile-6 { grid-column: span 6; display: flex; flex-direction: column; min-width: 0; }
+    .tile-12 { grid-column: span 12; }
+    .distance-btn { padding: 12px 8px; border-radius: var(--r-md); border: 1.5px solid var(--border); background: var(--bg); font-size: 13px; font-weight: 700; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
     .distance-btn.active { background: var(--yellow); border-color: var(--yellow); color: var(--navy); }
     .distance-btn:hover:not(.active) { border-color: var(--yellow); color: var(--navy); }
-    
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-    /* Interactive History Feed Card Hover Overrides */
-    .history-card-item {
-        display: flex; align-items: center; gap: 16px; padding: 16px; 
-        border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s;
-        border-radius: var(--r-md);
-    }
+    .history-card-item { display: flex; align-items: center; gap: 16px; padding: 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; border-radius: var(--r-md); }
     .history-card-item:hover { background: var(--bg); }
-
-    /* Modal Overlay Box styles */
-    .msg-modal-overlay {
-        display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5);
-        z-index: 100000; align-items: center; justify-content: center; backdrop-filter: blur(4px);
-    }
+    .msg-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 100000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
     .msg-modal-overlay.active { display: flex; }
     .msg-display-card { background: white; width: 92%; max-width: 440px; padding: 24px; border-radius: 16px; box-shadow: var(--shadow-xl); border: 1px solid var(--border); }
-
-    @media (max-width: 1024px) {
-        .tile-6 { grid-column: span 12; }
-        .bento-grid { gap: 16px; }
-        .admin-content { padding-bottom: 100px; }
-    }
+    @media (max-width: 1024px) { .tile-6 { grid-column: span 12; } .bento-grid { gap: 16px; } .admin-content { padding-bottom: 100px; } }
   </style>
 </head>
 <body>
 
 <div id="bulletin-read-modal" class="msg-modal-overlay">
-    <div class="msg-display-card">
-        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-            <div id="modal-icon-container" style="width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px;">
-                <i class="bi bi-bell-fill"></i>
-            </div>
-            <div>
-                <h3 id="modal-msg-title" style="font-size:14px; font-weight:800; color:var(--navy); margin:0;">Notification Bulletin</h3>
-                <small id="modal-msg-time" style="font-size:11px; color:var(--text-muted); font-weight:600;">Time Sent</small>
-            </div>
-        </div>
-        <div id="modal-msg-body" style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:20px; background:var(--bg); padding:14px; border-radius:10px; border:1px solid var(--border); word-break: break-word;">
-            Message Content Body...
-        </div>
-        <button class="btn btn-navy btn-full btn-sm" onclick="document.getElementById('bulletin-read-modal').classList.remove('active')">Dismiss Window</button>
+  <div class="msg-display-card">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <div id="modal-icon-container" style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">
+        <i class="bi bi-bell-fill"></i>
+      </div>
+      <div>
+        <h3 id="modal-msg-title" style="font-size:14px;font-weight:800;color:var(--navy);margin:0;">Notification</h3>
+        <small id="modal-msg-time" style="font-size:11px;color:var(--text-muted);font-weight:600;"></small>
+      </div>
     </div>
+    <div id="modal-msg-body" style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:20px;background:var(--bg);padding:14px;border-radius:10px;border:1px solid var(--border);word-break:break-word;"></div>
+    <button class="btn btn-navy btn-full btn-sm" onclick="document.getElementById('bulletin-read-modal').classList.remove('active')">Dismiss</button>
+  </div>
 </div>
 
 <div class="admin-layout">
   <aside class="admin-sidebar desktop-only">
     <div class="sidebar-logo">
       <img src="../assets/images/logo.png" alt="Logo">
-      <div class="logo-text">School Bus Track Pro <small>Parent Portal</small></div>
+      <div class="logo-text" id="sidebar-school-name">School Bus Track Pro <small>Parent Portal</small></div>
     </div>
-    
     <nav class="sidebar-nav">
       <div class="nav-group-label">Safety Tracking</div>
       <a href="map.html" class="nav-link"><i class="bi bi-radar"></i><span>Live Tracking</span></a>
       <a href="attendance.html" class="nav-link"><i class="bi bi-calendar-check"></i><span>Attendance Log</span></a>
-      
       <div class="nav-group-label">Account</div>
       <a href="alerts.html" class="nav-link active"><i class="bi bi-bell"></i><span>Alert Settings</span></a>
       <a href="profile.html" class="nav-link"><i class="bi bi-person-gear"></i><span>Profile</span></a>
     </nav>
-
     <div class="sidebar-footer">
       <div class="admin-user">
         <div class="admin-avatar" id="sidebar-initial">P</div>
-        <div class="admin-user-info" style="color:white; font-size: 13px;">
+        <div class="admin-user-info" style="color:white;font-size:13px;">
           <div style="font-weight:800;" id="sidebar-parent-name">Guardian</div>
-          <div style="opacity:0.6; font-size:11px;">Verified Account</div>
+          <div style="opacity:0.6;font-size:11px;">Verified Account</div>
         </div>
       </div>
     </div>
@@ -120,255 +72,216 @@
   <main class="admin-main">
     <header class="admin-topbar">
       <div class="d-flex align-center gap-12">
-        <a href="map.html" class="desktop-only text-navy" style="font-size: 20px;"><i class="bi bi-arrow-left-circle"></i></a>
+        <a href="map.html" class="desktop-only text-navy" style="font-size:20px;"><i class="bi bi-arrow-left-circle"></i></a>
         <div>
           <h1 class="topbar-title">Notification Center</h1>
-          <p style="font-size: 13px; color: var(--text-secondary);">Manage safety alerts and proximity triggers</p>
+          <p style="font-size:13px;color:var(--text-secondary);">Manage safety alerts and proximity triggers</p>
         </div>
       </div>
     </header>
 
     <div class="admin-content">
       <div class="bento-grid">
-        
+
         <div class="tile tile-6">
-            <div class="table-header">
-                <div class="table-title"><i class="bi bi-geo-alt-fill text-yellow"></i> Proximity Alert Distance</div>
+          <div class="table-header">
+            <div class="table-title"><i class="bi bi-geo-alt-fill text-yellow"></i> Proximity Alert Distance</div>
+          </div>
+          <div style="padding:24px;">
+            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;">
+              Trigger a notification when the school transport unit enters a specific radius from your home.
+            </p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+              <button class="distance-btn" data-val="500m" onclick="window.setDist(this,'500m')">500m</button>
+              <button class="distance-btn" data-val="1km"  onclick="window.setDist(this,'1km')">1km</button>
+              <button class="distance-btn" data-val="2km"  onclick="window.setDist(this,'2km')">2km</button>
+              <button class="distance-btn" data-val="5km"  onclick="window.setDist(this,'5km')">5km</button>
             </div>
-            <div style="padding: 24px;">
-                <p style="font-size:13px; color:var(--text-secondary); margin-bottom:20px;">
-                    Trigger a notification when the school transport unit enters a specific radius from your home layout parameters.
-                </p>
-                <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px;">
-                    <button class="distance-btn" data-val="500m" onclick="window.setDist(this,'500m')">500m</button>
-                    <button class="distance-btn" data-val="1km" onclick="window.setDist(this,'1km')">1km</button>
-                    <button class="distance-btn" data-val="2km" onclick="window.setDist(this,'2km')">2km</button>
-                    <button class="distance-btn" data-val="5km" onclick="window.setDist(this,'5km')">5km</button>
-                </div>
-                <div style="margin-top:20px; padding:16px; background:var(--yellow-light); border-radius:var(--r-md); font-size:13px; font-weight:600; color:#7A5100; border: 1px solid rgba(253,184,19,0.2);">
-                    <i class="bi bi-info-circle-fill"></i> Current Trigger Threshold: <strong id="selected-dist">1km</strong>
-                </div>
+            <div style="margin-top:20px;padding:16px;background:var(--yellow-light);border-radius:var(--r-md);font-size:13px;font-weight:600;color:#7A5100;border:1px solid rgba(253,184,19,0.2);">
+              <i class="bi bi-info-circle-fill"></i> Current Threshold: <strong id="selected-dist">1km</strong>
             </div>
+          </div>
         </div>
 
         <div class="tile tile-6">
-            <div class="table-header">
-                <div class="table-title">Communication Channels</div>
+          <div class="table-header"><div class="table-title">Communication Channels</div></div>
+          <div style="padding:10px 24px;">
+            <div class="settings-row">
+              <div class="settings-row-icon" style="background:var(--yellow-light);color:var(--yellow-dark);"><i class="bi bi-phone-vibrate"></i></div>
+              <div class="settings-row-content"><div class="s-label">App Notifications</div><div class="s-sub">Real-time web banner alerts</div></div>
+              <label class="switch"><input type="checkbox" id="push-toggle" onchange="window.saveNotificationPrefs()"><span class="slider"></span></label>
             </div>
-            <div style="padding: 10px 24px;">
-                <div class="settings-row">
-                    <div class="settings-row-icon" style="background:var(--yellow-light);color:var(--yellow-dark);"><i class="bi bi-phone-vibrate"></i></div>
-                    <div class="settings-row-content">
-                        <div class="s-label">App Notifications</div>
-                        <div class="s-sub">Real-time web banner alert streams</div>
-                    </div>
-                    <label class="switch"><input type="checkbox" id="push-toggle" onchange="window.saveNotificationPrefs()"><span class="slider"></span></label>
-                </div>
-                <div class="settings-row">
-                    <div class="settings-row-icon" style="background:var(--green-light);color:var(--green-dark);"><i class="bi bi-chat-dots-fill"></i></div>
-                    <div class="settings-row-content">
-                        <div class="s-label">SMS Messaging</div>
-                        <div class="s-sub" id="sms-sub-text">Syncing device number...</div>
-                    </div>
-                    <label class="switch"><input type="checkbox" id="sms-toggle" onchange="window.saveNotificationPrefs()"><span class="slider"></span></label>
-                </div>
-                <div class="settings-row" style="border-bottom:none;">
-                    <div class="settings-row-icon" style="background:rgba(27,42,59,0.08);color:var(--navy);"><i class="bi bi-envelope-at-fill"></i></div>
-                    <div class="settings-row-content">
-                        <div class="s-label">Email Logs</div>
-                        <div class="s-sub" id="email-sub-text">Syncing electronic inbox...</div>
-                    </div>
-                    <label class="switch"><input type="checkbox" id="email-toggle" onchange="window.saveNotificationPrefs()"><span class="slider"></span></label>
-                </div>
+            <div class="settings-row">
+              <div class="settings-row-icon" style="background:var(--green-light);color:var(--green-dark);"><i class="bi bi-chat-dots-fill"></i></div>
+              <div class="settings-row-content"><div class="s-label">SMS Messaging</div><div class="s-sub" id="sms-sub-text">Syncing...</div></div>
+              <label class="switch"><input type="checkbox" id="sms-toggle" onchange="window.saveNotificationPrefs()"><span class="slider"></span></label>
             </div>
+            <div class="settings-row" style="border-bottom:none;">
+              <div class="settings-row-icon" style="background:rgba(27,42,59,0.08);color:var(--navy);"><i class="bi bi-envelope-at-fill"></i></div>
+              <div class="settings-row-content"><div class="s-label">Email Logs</div><div class="s-sub" id="email-sub-text">Syncing...</div></div>
+              <label class="switch"><input type="checkbox" id="email-toggle" onchange="window.saveNotificationPrefs()"><span class="slider"></span></label>
+            </div>
+          </div>
         </div>
 
         <div class="tile tile-12">
-            <div class="table-header">
-                <div class="table-title">Recent Safety History (Click item to expand complete message)</div>
+          <div class="table-header">
+            <div class="table-title">Recent Safety History</div>
+          </div>
+          <div id="alert-history" style="padding:10px 24px;">
+            <div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px;">
+              <i class="bi bi-arrow-clockwise spin" style="display:block;font-size:24px;margin-bottom:10px;"></i>
+              Loading alerts...
             </div>
-            <div id="alert-history" style="padding: 10px 24px;">
-                <div style="text-align:center; padding:40px; color:var(--text-muted); font-size:13px;">
-                    <i class="bi bi-arrow-clockwise spin" style="display:block; font-size:24px; margin-bottom:10px;"></i>
-                    Retrieving secure tracking logs...
-                </div>
-            </div>
+          </div>
         </div>
+
       </div>
     </div>
   </main>
 </div>
 
 <nav class="bottom-nav mobile-only">
-    <a href="map.html"><i class="bi bi-map-fill"></i>Track</a>
-    <a href="attendance.html"><i class="bi bi-clock-history"></i>History</a>
-    <a href="alerts.html" class="active"><i class="bi bi-bell-fill"></i>Alerts</a>
-    <a href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
+  <a href="map.html"><i class="bi bi-map-fill"></i>Track</a>
+  <a href="attendance.html"><i class="bi bi-clock-history"></i>History</a>
+  <a href="alerts.html" class="active"><i class="bi bi-bell-fill"></i>Alerts</a>
+  <a href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
 </nav>
 
 <div id="toast-container"></div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script type="module">
-    import { supabase } from '../js/config.js';
+  import { supabase, getUserProfile } from '../js/config.js';
+  import { requireAuth, signOut } from '../js/auth.js';
 
-    let notificationCacheMemory = [];
+  // ── 0. Auth gate ───────────────────────────────────────────────────────
+  await requireAuth();
+  const profile = await getUserProfile();
 
-    function fallbackFormatTime(dateStr) {
-        try {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        } catch(e) {
-            return dateStr;
-        }
+  if (!profile || !profile.organization_id) {
+    setTimeout(() => signOut(), 2000);
+    throw new Error('No organization_id on profile.');
+  }
+
+  const ORG_ID = profile.organization_id;
+  const USER_ID = profile.id;
+
+  let notificationCache = [];
+
+  function formatTime(dateStr) {
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch { return dateStr; }
+  }
+
+  // ── 1. Sidebar ─────────────────────────────────────────────────────────
+  const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
+  if (org) {
+    const el = document.getElementById('sidebar-school-name');
+    if (el) el.innerHTML = `${org.name} <small>Parent Portal</small>`;
+  }
+  document.getElementById('sidebar-parent-name').textContent = profile.full_name || 'Guardian';
+  document.getElementById('sidebar-initial').textContent     = (profile.full_name || 'G').charAt(0);
+
+  // ── 2. Load full profile prefs ─────────────────────────────────────────
+  const { data: fullProfile } = await supabase
+    .from('profiles')
+    .select('phone, push_enabled, sms_enabled, email_enabled, alert_distance, email')
+    .eq('id', USER_ID)
+    .single();
+
+  if (fullProfile) {
+    document.getElementById('sms-sub-text').textContent   = fullProfile.phone || 'No number configured';
+    document.getElementById('email-sub-text').textContent = fullProfile.email || 'No email configured';
+    document.getElementById('push-toggle').checked        = fullProfile.push_enabled !== false;
+    document.getElementById('sms-toggle').checked         = !!fullProfile.sms_enabled;
+    document.getElementById('email-toggle').checked       = !!fullProfile.email_enabled;
+
+    const dist = fullProfile.alert_distance || '1km';
+    document.getElementById('selected-dist').textContent = dist;
+    document.querySelectorAll('.distance-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-val') === dist);
+    });
+  }
+
+  // ── 3. Fetch notifications scoped to this org + this user ──────────────
+  const { data: notifications } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('organization_id', ORG_ID)
+    .or(`user_id.eq.${USER_ID},type.eq.broadcast`)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  notificationCache = notifications || [];
+  renderAlertHistory(notificationCache);
+
+  function renderAlertHistory(data) {
+    const h = document.getElementById('alert-history');
+    if (!data.length) {
+      h.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px;">No recent alerts.</div>';
+      return;
     }
+    h.innerHTML = data.map(a => {
+      const isEmergency = a.type === 'emergency';
+      return `
+      <div class="history-card-item" onclick="window.readFullMessage('${a.id}')">
+        <div style="width:44px;height:44px;border-radius:12px;background:${isEmergency ? 'var(--red-light)' : 'var(--bg)'};color:${isEmergency ? 'var(--red)' : 'var(--navy)'};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">
+          <i class="bi ${isEmergency ? 'bi-exclamation-triangle-fill' : 'bi-bell-fill'}"></i>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:700;color:var(--navy);">${a.title}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${formatTime(a.created_at)}</div>
+        </div>
+        <i class="bi bi-chevron-right text-muted" style="font-size:14px;"></i>
+      </div>`;
+    }).join('');
+  }
 
-    async function initAlertsPage() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { window.location.href = '../index.html'; return; }
+  window.readFullMessage = function(id) {
+    const item = notificationCache.find(n => n.id === id);
+    if (!item) return;
+    const isEmergency = item.type === 'emergency';
+    const modal = document.getElementById('bulletin-read-modal');
+    document.getElementById('modal-icon-container').style.background = isEmergency ? 'var(--red-light)' : 'var(--yellow-light)';
+    document.getElementById('modal-icon-container').style.color      = isEmergency ? 'var(--red)' : 'var(--yellow-dark)';
+    document.getElementById('modal-icon-container').innerHTML        = isEmergency ? '<i class="bi bi-exclamation-triangle-fill"></i>' : '<i class="bi bi-megaphone-fill"></i>';
+    document.getElementById('modal-msg-title').textContent = item.title;
+    document.getElementById('modal-msg-time').textContent  = formatTime(item.created_at);
+    document.getElementById('modal-msg-body').textContent  = item.message;
+    modal.classList.add('active');
+  };
 
-      document.getElementById('email-sub-text').textContent = user.email;
+  // ── 4. Distance + prefs ────────────────────────────────────────────────
+  window.setDist = async function(el, val) {
+    document.querySelectorAll('.distance-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('selected-dist').textContent = val;
+    await supabase.from('profiles').update({ alert_distance: val }).eq('id', USER_ID);
+    showToast(`Alert radius set to ${val}`, 'success');
+  };
 
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      if (profile) {
-        if (profile.phone) {
-            document.getElementById('sms-sub-text').textContent = `Verified: ${profile.phone}`;
-        } else {
-            document.getElementById('sms-sub-text').textContent = "No primary number configured";
-        }
-        
-        document.getElementById('sidebar-parent-name').textContent = profile.full_name || 'Guardian';
-        document.getElementById('sidebar-initial').textContent = (profile.full_name || 'G').charAt(0);
-        
-        // Load active toggle preferences safely
-        document.getElementById('push-toggle').checked = profile.push_enabled !== false;
-        document.getElementById('sms-toggle').checked = !!profile.sms_enabled;
-        document.getElementById('email-toggle').checked = !!profile.email_enabled;
+  window.saveNotificationPrefs = async function() {
+    const { error } = await supabase.from('profiles').update({
+      push_enabled:  document.getElementById('push-toggle').checked,
+      sms_enabled:   document.getElementById('sms-toggle').checked,
+      email_enabled: document.getElementById('email-toggle').checked,
+    }).eq('id', USER_ID);
+    if (!error) showToast('Preferences saved.', 'success');
+    else showToast('Failed to save preferences.', 'error');
+  };
 
-        const currentDistance = profile.alert_distance || '1km';
-        document.getElementById('selected-dist').textContent = currentDistance;
-        
-        document.querySelectorAll('.distance-btn').forEach(btn => {
-            if (btn.getAttribute('data-val') === currentDistance) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
-        });
-      }
-
-      // Fetch dynamic alerts + store directly to internal layout arrays
-      const { data: notifications } = await supabase
-        .from('notifications')
-        .select('*')
-        .or(`user_id.eq.${user.id},type.eq.broadcast`)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      notificationCacheMemory = notifications || [];
-      renderAlertHistory(notificationCacheMemory);
-    }
-
-    function renderAlertHistory(data) {
-      const h = document.getElementById('alert-history');
-      if (data.length === 0) {
-        h.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted); font-size:13px;">No recent safety alerts recorded.</div>';
-        return;
-      }
-
-      h.innerHTML = '';
-      data.forEach(a => {
-        const isEmergency = a.type === 'emergency';
-        const iconHTML = isEmergency ? '<i class="bi bi-exclamation-triangle-fill"></i>' : '<i class="bi bi-bell-fill"></i>';
-        const bgColor = isEmergency ? 'var(--red-light)' : 'var(--bg)';
-        const textColor = isEmergency ? 'var(--red)' : 'var(--navy)';
-        
-        // FIXED: Replaced default structure with history-card-item to bind global modal events cleanly on click
-        h.innerHTML += `
-          <div class="history-card-item" onclick="window.readFullMessageText('${a.id}')">
-            <div style="width:44px;height:44px;border-radius:12px;background:${bgColor};color:${textColor};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${iconHTML}</div>
-            <div style="flex:1;">
-              <div style="font-size:14px;font-weight:700;color:var(--navy);">${a.title}</div>
-              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${fallbackFormatTime(a.created_at)}</div>
-            </div>
-            <i class="bi bi-chevron-right text-muted" style="font-size:14px;"></i>
-          </div>`;
-      });
-      if (h.lastElementChild) h.lastElementChild.style.borderBottom = 'none';
-    }
-
-    // NEW: WINDOW ACCESSIBLE INTERACTION FUNCTION FOR FULL MODAL EXPLORATION
-    window.readFullMessageText = function(notificationId) {
-        const item = notificationCacheMemory.find(n => n.id === notificationId);
-        if (!item) return;
-
-        const modal = document.getElementById('bulletin-read-modal');
-        const mIcon = document.getElementById('modal-icon-container');
-        const mTitle = document.getElementById('modal-msg-title');
-        const mTime = document.getElementById('modal-msg-time');
-        const mBody = document.getElementById('modal-msg-body');
-
-        const isEmergency = item.type === 'emergency';
-        
-        // Update color themes based on warning severity context parameters 
-        mIcon.style.background = isEmergency ? 'var(--red-light)' : 'var(--yellow-light)';
-        mIcon.style.color = isEmergency ? 'var(--red)' : 'var(--yellow-dark)';
-        mIcon.innerHTML = isEmergency ? '<i class="bi bi-exclamation-triangle-fill"></i>' : '<i class="bi bi-megaphone-fill"></i>';
-
-        mTitle.textContent = item.title;
-        mTime.textContent = fallbackFormatTime(item.created_at);
-        mBody.textContent = item.message;
-
-        modal.classList.add('active');
-    };
-
-    window.setDist = async function(el, val) {
-      document.querySelectorAll('.distance-btn').forEach(b => b.classList.remove('active'));
-      el.classList.add('active');
-      document.getElementById('selected-dist').textContent = val;
-
-      const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from('profiles').update({ alert_distance: val }).eq('id', user.id);
-      
-      if (!error) showToast(`Alert radius updated to ${val}`, 'success');
-    };
-
-    window.saveNotificationPrefs = async function() {
-      try {
-          const { data: { user } } = await supabase.auth.getUser();
-          
-          const pushVal = document.getElementById('push-toggle').checked;
-          const smsVal = document.getElementById('sms-toggle').checked;
-          const emailVal = document.getElementById('email-toggle').checked;
-
-          const { error } = await supabase.from('profiles').update({
-              push_enabled: pushVal,
-              sms_enabled: smsVal,
-              email_enabled: emailVal
-          }).eq('id', user.id);
-
-          if (!error) {
-              showToast('Safety routing preferences successfully locked to database.', 'success');
-          } else {
-              throw error;
-          }
-      } catch (err) {
-          console.error("Failed to commit settings updates:", err.message);
-          showToast("Preference write synchronization stalled.", "error");
-      }
-    };
-
-    function showToast(msg, type='info') {
-      const c = document.getElementById('toast-container');
-      if (!c) return;
-      const t = document.createElement('div');
-      t.className = `toast ${type} active`;
-      t.textContent = msg;
-      c.appendChild(t);
-      setTimeout(() => t.remove(), 3500);
-    }
-
-    initAlertsPage();
+  function showToast(msg, type = 'info') {
+    const c = document.getElementById('toast-container');
+    if (!c) return;
+    const t = document.createElement('div');
+    t.className = `toast ${type} active`;
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
 </script>
 </body>
 </html>

@@ -7,36 +7,24 @@
   <link rel="icon" type="image/png" href="../assets/images/logo.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/admin.css"> <!-- Blueprint Layout -->
-  <link rel="stylesheet" href="../assets/css/parent.css"> <!-- Original Logic -->
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <link rel="stylesheet" href="../assets/css/parent.css">
   <style>
     .report-container { max-width: 800px; margin: 0 auto; }
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    
-    /* Ensure the form elements match the blueprint theme */
-    .form-control { 
-        background: var(--bg); 
-        border: 1.5px solid var(--border); 
-        padding: 12px 16px; 
-        border-radius: var(--r-md);
-        font-size: 14px;
-        width: 100%;
-        margin-top: 6px;
-    }
+    .form-control { background: var(--bg); border: 1.5px solid var(--border); padding: 12px 16px; border-radius: var(--r-md); font-size: 14px; width: 100%; margin-top: 6px; }
     .form-label { font-weight: 700; font-size: 13px; color: var(--navy); display: block; margin-top: 16px; }
   </style>
 </head>
 <body>
 
 <div class="admin-layout">
-  <!-- SIDEBAR: Admin Blueprint -->
   <aside class="admin-sidebar desktop-only">
     <div class="sidebar-logo">
       <img src="../assets/images/logo.png" alt="Logo">
-      <div class="logo-text">School Bus Track Pro <small>Parent Portal</small></div>
+      <div class="logo-text" id="sidebar-school-name">School Bus Track Pro <small>Parent Portal</small></div>
     </div>
-    
     <nav class="sidebar-nav">
       <div class="nav-group-label">Safety Tracking</div>
       <a href="map.html" class="nav-link"><i class="bi bi-radar"></i><span>Live Tracking</span></a>
@@ -45,105 +33,101 @@
       <a href="alerts.html" class="nav-link"><i class="bi bi-bell"></i><span>Alert Settings</span></a>
       <a href="profile.html" class="nav-link"><i class="bi bi-person-gear"></i><span>Profile</span></a>
     </nav>
-
     <div class="sidebar-footer">
       <div class="admin-user">
         <div class="admin-avatar" id="sidebar-initial">P</div>
-        <div class="admin-user-info" style="color:white; font-size: 13px;">
+        <div class="admin-user-info" style="color:white;font-size:13px;">
           <div style="font-weight:800;" id="sidebar-parent-name">Guardian</div>
-          <div style="opacity:0.6; font-size:11px;">Verified Account</div>
+          <div style="opacity:0.6;font-size:11px;">Verified Account</div>
         </div>
       </div>
     </div>
   </aside>
 
-  <!-- MAIN VIEWPORT -->
   <main class="admin-main">
     <header class="admin-topbar">
       <div class="d-flex align-center gap-12">
-        <a href="map.html" class="text-navy" style="font-size: 22px;"><i class="bi bi-arrow-left-circle"></i></a>
+        <a href="map.html" class="text-navy" style="font-size:22px;"><i class="bi bi-arrow-left-circle"></i></a>
         <div>
           <h1 class="topbar-title">Safety Incident Report</h1>
-          <p style="font-size: 13px; color: var(--text-secondary);">Direct channel to the School Safety Officer</p>
+          <p style="font-size:13px;color:var(--text-secondary);">Direct channel to the School Safety Officer</p>
         </div>
       </div>
     </header>
 
     <div class="admin-content">
       <div class="report-container">
-        
-        <!-- FORM VIEW -->
+
+        <!-- Form -->
         <div id="report-form-view" class="bento-grid">
-            <div class="tile tile-12">
-                <div class="report-danger-banner" style="margin: 20px; border-radius: var(--r-lg);">
-                    <div class="title"><i class="bi bi-shield-lock-fill" style="margin-right:8px;"></i>Secure Submission</div>
-                    <div class="sub">Your report is handled with strict confidentiality.</div>
-                </div>
-
-                <form id="incident-form" style="padding: 0 24px 24px;">
-                    <div class="grid-2-col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <div class="form-group">
-                            <label class="form-label">Incident Category</label>
-                            <select class="form-control" id="report-type" required>
-                                <option value="" disabled selected>Choose type...</option>
-                                <option value="bullying">Bullying / Harassment</option>
-                                <option value="driving">Unsafe Driving</option>
-                                <option value="technical">Vehicle Technical Issue</option>
-                                <option value="conduct">Driver/Staff Conduct</option>
-                                <option value="other">Other Concern</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Bus Unit ID</label>
-                            <input type="text" id="bus-info" class="form-control" placeholder="e.g. SB-102" value="SB-102">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Occurrence Date & Time</label>
-                        <input type="datetime-local" class="form-control" id="incident-time" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Detailed Description</label>
-                        <textarea class="form-control" id="report-details" rows="5" placeholder="Please provide specific details about the incident..." required></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Supporting Evidence (Optional)</label>
-                        <div class="upload-box" onclick="document.getElementById('report-image').click()" style="margin-top: 6px;">
-                            <i class="bi bi-camera-fill"></i>
-                            <p>Tap to upload photo or document</p>
-                            <input type="file" id="report-image" accept="image/*" style="display:none;" onchange="window.showFile(this)">
-                            <div id="file-preview" style="margin-top:8px; display:none;">
-                                <span class="badge badge-green" id="file-name"></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-red btn-full btn-lg" id="submit-btn" style="margin-top: 24px; padding: 16px;">
-                        <i class="bi bi-shield-exclamation"></i> Submit Encrypted Report
-                    </button>
-                </form>
+          <div class="tile tile-12">
+            <div class="report-danger-banner" style="margin:20px;border-radius:var(--r-lg);">
+              <div class="title"><i class="bi bi-shield-lock-fill" style="margin-right:8px;"></i>Secure Submission</div>
+              <div class="sub">Your report is handled with strict confidentiality.</div>
             </div>
+
+            <form id="incident-form" style="padding:0 24px 24px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <div class="form-group">
+                  <label class="form-label">Incident Category</label>
+                  <select class="form-control" id="report-type" required>
+                    <option value="" disabled selected>Choose type...</option>
+                    <option value="bullying">Bullying / Harassment</option>
+                    <option value="driving">Unsafe Driving</option>
+                    <option value="technical">Vehicle Technical Issue</option>
+                    <option value="conduct">Driver/Staff Conduct</option>
+                    <option value="other">Other Concern</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Bus Unit ID</label>
+                  <input type="text" id="bus-info" class="form-control" placeholder="e.g. SB-102">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Occurrence Date & Time</label>
+                <input type="datetime-local" class="form-control" id="incident-time" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Detailed Description</label>
+                <textarea class="form-control" id="report-details" rows="5" placeholder="Describe the incident in detail..." required></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Supporting Evidence (Optional)</label>
+                <div class="upload-box" onclick="document.getElementById('report-image').click()" style="margin-top:6px;">
+                  <i class="bi bi-camera-fill"></i>
+                  <p>Tap to upload photo or document</p>
+                  <input type="file" id="report-image" accept="image/*" style="display:none;" onchange="window.showFile(this)">
+                  <div id="file-preview" style="margin-top:8px;display:none;">
+                    <span class="badge badge-green" id="file-name"></span>
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-red btn-full btn-lg" id="submit-btn" style="margin-top:24px;padding:16px;">
+                <i class="bi bi-shield-exclamation"></i> Submit Encrypted Report
+              </button>
+            </form>
+          </div>
         </div>
 
-        <!-- SUCCESS VIEW -->
-        <div id="success-view" class="tile tile-12" style="display:none; padding:48px 24px; text-align:center;">
-            <div style="width:80px; height:80px; background:var(--green-light); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 24px;">
-                <i class="bi bi-shield-check" style="font-size:40px; color:var(--green-dark);"></i>
-            </div>
-            <h2 style="font-family:var(--font-display); font-size:24px; font-weight:800; margin-bottom:8px;">Report Logged</h2>
-            <p style="color:var(--text-secondary); margin-bottom:32px;">The safety office has been alerted. We will investigate this immediately.</p>
-            
-            <div style="background:var(--bg); border-radius:var(--r-lg); padding:20px; text-align:left; max-width:400px; margin:0 auto 32px; border:1px solid var(--border);">
-                <div style="font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Reference ID</div>
-                <div style="font-family:var(--font-display); font-size:20px; font-weight:800; color:var(--navy);" id="ref-number">---</div>
-            </div>
-
-            <a href="map.html" class="btn btn-navy" style="padding: 12px 32px;">
-                <i class="bi bi-arrow-left"></i> Return to Map
-            </a>
+        <!-- Success -->
+        <div id="success-view" class="tile tile-12" style="display:none;padding:48px 24px;text-align:center;">
+          <div style="width:80px;height:80px;background:var(--green-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+            <i class="bi bi-shield-check" style="font-size:40px;color:var(--green-dark);"></i>
+          </div>
+          <h2 style="font-size:24px;font-weight:800;margin-bottom:8px;">Report Logged</h2>
+          <p style="color:var(--text-secondary);margin-bottom:32px;">The safety office has been alerted. We will investigate immediately.</p>
+          <div style="background:var(--bg);border-radius:var(--r-lg);padding:20px;text-align:left;max-width:400px;margin:0 auto 32px;border:1px solid var(--border);">
+            <div style="font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Reference ID</div>
+            <div style="font-size:20px;font-weight:800;color:var(--navy);" id="ref-number">---</div>
+          </div>
+          <a href="map.html" class="btn btn-navy" style="padding:12px 32px;">
+            <i class="bi bi-arrow-left"></i> Return to Map
+          </a>
         </div>
 
       </div>
@@ -151,69 +135,97 @@
   </main>
 </div>
 
-<!-- Mobile Nav -->
 <nav class="bottom-nav mobile-only">
-    <a href="map.html"><i class="bi bi-map-fill"></i>Track</a>
-    <a href="attendance.html"><i class="bi bi-clock-history"></i>History</a>
-    <a href="alerts.html"><i class="bi bi-bell-fill"></i>Alerts</a>
-    <a href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
+  <a href="map.html"><i class="bi bi-map-fill"></i>Track</a>
+  <a href="attendance.html"><i class="bi bi-clock-history"></i>History</a>
+  <a href="alerts.html"><i class="bi bi-bell-fill"></i>Alerts</a>
+  <a href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
 </nav>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
-    import { supabase } from '../js/config.js';
+  import { supabase, getUserProfile } from '../js/config.js';
+  import { requireAuth, signOut } from '../js/auth.js';
 
-    // Set default time to now
-    document.getElementById('incident-time').value = new Date().toISOString().slice(0, 16);
+  // ── 0. Auth gate ───────────────────────────────────────────────────────
+  await requireAuth();
+  const profile = await getUserProfile();
 
-    async function loadIdentity() {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-            if(p) {
-                document.getElementById('sidebar-parent-name').textContent = p.full_name;
-                document.getElementById('sidebar-initial').textContent = p.full_name.charAt(0);
-            }
-        }
+  if (!profile || !profile.organization_id) {
+    setTimeout(() => signOut(), 2000);
+    throw new Error('No organization_id on profile.');
+  }
+
+  const ORG_ID  = profile.organization_id;
+  const USER_ID = profile.id;
+
+  // ── 1. Sidebar ─────────────────────────────────────────────────────────
+  const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
+  if (org) {
+    const el = document.getElementById('sidebar-school-name');
+    if (el) el.innerHTML = `${org.name} <small>Parent Portal</small>`;
+  }
+  document.getElementById('sidebar-parent-name').textContent = profile.full_name || 'Guardian';
+  document.getElementById('sidebar-initial').textContent     = (profile.full_name || 'G').charAt(0);
+
+  // Set default time
+  document.getElementById('incident-time').value = new Date().toISOString().slice(0, 16);
+
+  window.showFile = function(input) {
+    const file = input.files[0];
+    if (file) {
+      document.getElementById('file-preview').style.display = 'block';
+      document.getElementById('file-name').innerHTML = '<i class="bi bi-paperclip-fill"></i> ' + file.name;
+    }
+  };
+
+  // ── 2. Submit — writes to incident_reports scoped to org ──────────────
+  document.getElementById('incident-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn     = document.getElementById('submit-btn');
+    const type    = document.getElementById('report-type').value;
+    const details = document.getElementById('report-details').value.trim();
+    const time    = document.getElementById('incident-time').value;
+    const busInfo = document.getElementById('bus-info').value.trim();
+
+    if (!type || !details) {
+      alert('Please fill in the incident category and description.');
+      return;
     }
 
-    window.showFile = function(input) {
-        const file = input.files[0];
-        if (file) {
-            document.getElementById('file-preview').style.display = 'block';
-            document.getElementById('file-name').innerHTML = '<i class="bi bi-paperclip-fill"></i> ' + file.name;
-        }
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Submitting...';
+
+    const refNumber = 'RPT-' + Date.now().toString().slice(-8);
+
+    // ── Correct table: incident_reports (NOT notifications) ───────────
+    const { error } = await supabase.from('incident_reports').insert([{
+      report_type:      type,
+      details:          `Bus: ${busInfo || 'N/A'} | ${details}`,
+      incident_time:    time ? new Date(time).toISOString() : new Date().toISOString(),
+      reference:        refNumber,
+      status:           'open',
+      submitted_at:     new Date().toISOString(),
+      organization_id:  ORG_ID                   // ← scoped to tenant
+      // No user_id — anonymous by design
+    }]);
+
+    if (!error) {
+      // Fire realtime broadcast so crisis center sees it instantly
+      supabase.channel('global-fleet-broadcast').send({
+        type: 'broadcast', event: 'incident-report-submitted',
+        payload: { reference: refNumber, report_type: type, details, submitted_at: new Date().toISOString() }
+      });
+
+      document.getElementById('report-form-view').style.display = 'none';
+      document.getElementById('success-view').style.display     = 'block';
+      document.getElementById('ref-number').textContent         = refNumber;
+    } else {
+      btn.disabled  = false;
+      btn.innerHTML = '<i class="bi bi-shield-exclamation"></i> Submit Encrypted Report';
+      alert('Submission failed: ' + error.message);
     }
-
-    const form = document.getElementById('incident-form');
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('submit-btn');
-        btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> PROCESSING...';
-        btn.disabled = true;
-
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        // Push to Notifications table as an 'emergency' type
-        const { error } = await supabase.from('notifications').insert([{
-            user_id: user ? user.id : null,
-            title: `REPORT: ${document.getElementById('report-type').value.toUpperCase()}`,
-            message: `Bus: ${document.getElementById('bus-info').value} | Details: ${document.getElementById('report-details').value}`,
-            type: 'emergency'
-        }]);
-
-        if (!error) {
-            document.getElementById('report-form-view').style.display = 'none';
-            document.getElementById('success-view').style.display = 'block';
-            document.getElementById('ref-number').textContent = 'SBTP-' + Math.random().toString(36).substr(2, 7).toUpperCase();
-        } else {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-shield-exclamation"></i> Submit Secure Report';
-            alert('Submission failed. Please check connection.');
-        }
-    });
-
-    loadIdentity();
+  });
 </script>
 </body>
 </html>

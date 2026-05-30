@@ -3,168 +3,122 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Crisis Center | School Bus Track Pro Admin</title>
+  <title>Emergency Crisis Command Terminal | Bex Central Admin</title>
   <link rel="icon" type="image/png" href="../assets/images/logo.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="../assets/css/main.css">
   <link rel="stylesheet" href="../assets/css/admin.css">
   <style>
-    /* Global layout consistency */
-    html, body { height: 100%; margin: 0; overflow: hidden; }
-    .admin-layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
-    .admin-main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--bg); }
-    .admin-content { flex: 1; overflow-y: auto; padding: 24px; scrollbar-width: thin; }
-
-    /* --- KPI Grid Optimization --- */
-    .kpi-grid { 
-        display: grid; 
-        grid-template-columns: repeat(5, 1fr); 
-        gap: 12px; 
-        margin-bottom: 24px; 
-    }
-    .kpi-card { 
-        padding: 12px; 
-        min-height: 90px; 
-        display: flex; 
-        flex-direction: column; 
-        justify-content: center; 
-        border-radius: 16px;
-    }
-    .kpi-value { font-size: 24px; font-weight: 800; }
-    .kpi-label { font-size: 11px; margin-bottom: 4px; }
-
-    /* Crisis Specific Elements */
-    .chip { 
-        padding: 6px 14px; 
-        border-radius: var(--r-full); 
-        border: 1.5px solid var(--border); 
-        font-size: 11px; 
-        font-weight: 700; 
-        cursor: pointer; 
-        transition: all 0.2s; 
-        color: var(--text-secondary); 
-        background: var(--white); 
-        text-transform: uppercase;
-    }
-    .chip.active { background: var(--navy); border-color: var(--navy); color: var(--white); }
+    /* --- ADVANCED COMMAND DECK LAYOUT MATRIX --- */
+    .crisis-workspace { display: flex; flex-direction: column; height: calc(100vh - 120px); gap: 20px; }
+    .crisis-split-deck { display: grid; grid-template-columns: 1fr 440px; gap: 20px; flex: 1; min-height: 0; }
     
-    /* Incident Stream Cards */
-    .incident-card {
-      background: white; border-radius: 12px; border: 1px solid var(--border);
-      padding: 12px 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 15px;
-      transition: all 0.2s ease; border-left: 5px solid var(--border);
-      box-shadow: var(--shadow-sm);
+    .emergency-stream-container { display: flex; flex-direction: column; gap: 12px; height: 100%; overflow-y: auto; padding-right: 4px; scrollbar-width: thin; }
+    
+    /* --- HIGH-VISIBILITY SOPHISTICATED EMERGENCY CARDS --- */
+    .emergency-pulse-card { 
+        background: white; border: 1px solid var(--border); border-radius: var(--r-xl); padding: 18px; 
+        cursor: pointer; transition: var(--transition); border-left: 5px solid #dc2626; position: relative; overflow: hidden;
     }
-    .incident-card.type-emergency { border-left-color: var(--red); background: #fffcfc; }
-    .incident-card.type-info { border-left-color: var(--navy); }
-    .incident-card.resolved { border-left-color: var(--green); opacity: 0.8; background: #f0fdf4; }
+    .emergency-pulse-card::after {
+        content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(239, 68, 68, 0.03) 0%, rgba(255,255,255,0) 100%); pointer-events: none;
+    }
+    .emergency-pulse-card:hover, .emergency-pulse-card.selected-active-crisis { 
+        border-color: #ef4444; box-shadow: 0 12px 20px -8px rgba(239, 68, 68, 0.25); background: #fef2f2; transform: translateY(-2px);
+    }
+    
+    /* --- DISPATCH PANEL LAYER --- */
+    .dispatch-control-tower { background: var(--navy); color: white; border-radius: var(--r-xl); padding: 24px; display: flex; flex-direction: column; justify-content: space-between; height: 100%; overflow-y: auto; border: 1px solid rgba(255,255,255,0.05); }
+    .dispatch-field { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); padding: 14px; border-radius: var(--r-md); margin-bottom: 12px; transition: var(--transition); }
+    .dispatch-field:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); }
+    .dispatch-label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--yellow); letter-spacing: 0.8px; }
+    .dispatch-value { font-size: 14px; font-weight: 700; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    .stream-icon {
-      width: 36px; height: 36px; border-radius: 8px;
-      display: flex; align-items: center; justify-content: center; font-size: 18px;
-    }
-    .stream-details h4 { font-size: 13px; font-weight: 800; color: var(--navy); margin-bottom: 2px; }
-    .stream-details p { font-size: 11px; color: var(--text-muted); line-height: 1.4; margin: 0; }
+    /* --- CLEAN SOLID WHITE METRICS DASHBOARD CARDS GRID --- */
+    .infra-grid-matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; margin: 12px 0; }
+    .infra-data-node { background: white !important; border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px 12px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: var(--shadow-sm); min-height: 90px; }
+    .infra-title-text { font-size: 10px !important; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); font-weight: 700; line-height: 1.3; margin-bottom: 6px; }
+    .infra-value-text { font-size: 24px !important; font-weight: 900; color: var(--navy); line-height: 1; margin-top: auto; }
 
-    .alert-scroll-area { height: 550px; overflow-y: auto; padding: 4px; scrollbar-width: thin; }
+    #crisis-radar-map { width: 100%; height: 100%; border-radius: var(--r-xl); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
 
-    /* SOS Pulsing Animation */
-    .emergency-pulse { 
-        animation: alertPulse 3s infinite;
-    }
-    @keyframes alertPulse {
-        0% { box-shadow: 0 0 0 0px rgba(239, 68, 68, 0.2); }
-        50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-        100% { box-shadow: 0 0 0 0px rgba(239, 68, 68, 0); }
-    }
+    /* --- RADAR WAVE PROPAGATION EFFECT --- */
+    .radar-pulse-marker { background: rgba(239, 68, 68, 0.4); border: 2px solid #ef4444; border-radius: 50%; animation: radarWave 1.5s infinite ease-out; }
+    @keyframes radarWave { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
 
-    /* Broadcast Modal Styling */
-    .broadcast-overlay {
-        display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-        z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(5px);
-    }
-    .broadcast-overlay.active { display: flex; }
-    .broadcast-card { background: white; width: 90%; max-width: 450px; padding: 30px; border-radius: 20px; box-shadow: var(--shadow-xl); }
-
-    /* --- MOBILE RESPONSIVENESS --- */
-    @media (max-width: 1024px) {
-        .kpi-grid { grid-template-columns: repeat(3, 1fr); }
-    }
+    /* --- PREMIUM MOBILE-FIRST RESPONSIVE CONFIGURATIONS --- */
     @media (max-width: 768px) {
-        .admin-sidebar { display: none; }
-        .admin-main { padding-bottom: 100px; height: auto; overflow: visible; }
-        .admin-content { overflow: visible; padding: 12px; }
+        .admin-sidebar { display: none !important; }
+        .admin-main { margin-left: 0 !important; padding: 16px 16px 100px 16px !important; overflow-x: hidden !important; }
+        .desktop-only { display: none !important; }
+        .topbar-title { font-size: 22px !important; font-weight: 900; }
         
-        .kpi-grid { 
-            grid-template-columns: repeat(2, 1fr); 
-            gap: 10px; 
-        }
-        .kpi-card:last-child { 
-            grid-column: span 2; 
-            min-height: 60px; 
-            flex-direction: row; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 0 20px; 
-        }
-
-        .tile-8, .tile-4 { grid-column: span 12 !important; }
-        #crisis-map { height: 250px !important; border-radius: 16px; margin-bottom: 10px; }
+        /* OVERRIDE HEIGHT BOUNDS ON MOBILE TO ALLOW NATURAL VERTICAL EXPANSION */
+        .crisis-workspace { height: auto !important; min-height: auto !important; gap: 16px !important; }
+        .crisis-split-deck { grid-template-columns: 1fr !important; display: flex !important; flex-direction: column !important; gap: 16px !important; height: auto !important; min-height: auto !important; }
         
-        .incident-card { 
-            padding: 10px 12px; 
-            gap: 12px; 
-            border-radius: 10px;
-        }
-        .stream-icon { width: 32px; height: 32px; font-size: 16px; }
-        .stream-details h4 { font-size: 12px; }
-        .stream-details p { font-size: 10px; -webkit-line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+        .admin-topbar { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; margin-bottom: 16px !important; }
+        .emergency-stream-container { height: auto !important; max-height: none !important; overflow-y: visible !important; }
         
-        .alert-scroll-area { height: auto; max-height: 500px; }
+        /* UNLOCK DOCK FOR FULL UNCONSTRAINED SCROLLING DOWN SATELLITE BLOCKS */
+        .dispatch-control-tower { height: auto !important; min-height: auto !important; overflow-y: visible !important; padding: 20px 16px !important; }
+        
+        /* Force operational counters grid to stack horizontally into clean items rows on phone dimensions */
+        .infra-grid-matrix { grid-template-columns: 1fr !important; gap: 12px !important; margin: 8px 0 20px 0 !important; }
+        .infra-data-node { padding: 14px 16px !important; min-height: auto !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; }
+        .infra-title-text { margin-bottom: 0 !important; text-align: left !important; max-width: 70% !important; }
+        .infra-value-text { font-size: 22px !important; margin-top: 0 !important; }
+        
+        #crisis-radar-map { height: 320px !important; min-height: 320px !important; }
+        
+        /* SINGLE-ROW ULTRA-SLIM 7-LINK MENU CONFIGURATION FOR MOBILE VIEWS */
+        .bottom-nav.mobile-only { 
+            height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center !important; background: var(--navy) !important;
+        }
+        .bottom-nav.mobile-only a { 
+            flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0px !important; color: rgba(255, 255, 255, 0.6) !important;
+        }
+        .bottom-nav.mobile-only a i { font-size: 22px !important; }
+        .bottom-nav.mobile-only a.active { color: var(--yellow) !important; background: rgba(255, 255, 255, 0.04) !important; }
     }
   </style>
 </head>
 <body>
 
-<div id="broadcast-modal" class="broadcast-overlay">
-    <div class="broadcast-card">
-        <h2 style="font-weight: 800; margin-bottom: 10px;"><i class="bi bi-megaphone-fill text-red"></i> Fleet Broadcast Notice</h2>
-        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">This message pushes an immediate notification banner onto active driver terminals.</p>
-        <textarea id="broadcast-msg-input" style="width:100%; padding:15px; border-radius:12px; margin-bottom:20px; border:2px solid var(--border); font-family: inherit;" rows="4" placeholder="Type instructions here..."></textarea>
-        <div style="display: flex; gap: 10px;">
-            <button class="btn btn-navy btn-full" id="confirm-broadcast">Dispatch to Fleet</button>
-            <button class="btn btn-ghost" onclick="document.getElementById('broadcast-modal').classList.remove('active')">Cancel</button>
-        </div>
-    </div>
-</div>
-
 <div class="admin-layout">
-  <aside class="admin-sidebar">
+  
+  <aside class="admin-sidebar" style="display: flex; flex-direction: column; height: 100vh;">
     <div class="sidebar-logo">
       <img src="../assets/images/logo.png" alt="Logo">
-      <div class="logo-text">School Bus Track Pro <small>Admin Command</small></div>
+      <div class="logo-text">Bex Central Hub <small>SaaS Superuser Console</small></div>
     </div>
     
-    <nav class="sidebar-nav">
-      <div class="nav-group-label">Fleet Operations</div>
-      <a href="fleet.html" class="nav-link"><i class="bi bi-radar"></i><span>Live Fleet</span></a>
+    <nav class="sidebar-nav" style="flex: 1; overflow-y: auto;">
+      <div class="nav-group-label">Enterprise Monitoring</div>
+      <a href="bex-dashboard.html" class="nav-link"><i class="bi bi-radar"></i><span>Global Fleet</span></a>
       <a href="crisis-center.html" class="nav-link active"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis Center</span></a>
+      <a href="schools-management.html" class="nav-link"><i class="bi bi-building"></i><span>Tenant Schools</span></a>
+      
       <div class="nav-group-label">System Management</div>
-      <a href="users.html" class="nav-link"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
-      <a href="routes.html" class="nav-link"><i class="bi bi-map-fill"></i><span>Route Control</span></a>
-      <a href="analytics.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics</span></a>
+      <a href="users-directory.html" class="nav-link"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
+      <a href="analytics-room.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics Room</span></a>
+      <a href="billing-usage.html" class="nav-link"><i class="bi bi-envelope-check-fill"></i><span>Resend Gateway</span></a>
+      <a href="audit-logs.html" class="nav-link"><i class="bi bi-journal-text"></i><span>System Audit</span></a>
     </nav>
 
     <div class="sidebar-footer">
-      <div class="admin-user">
-        <div class="admin-avatar">A</div>
+      <a href="tel:+2348114875252" class="btn btn-sm btn-yellow btn-full" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; text-decoration: none; font-weight: 800;">
+        <i class="bi bi-telephone-outbound-fill"></i> Directors Hotline
+      </a>
+      <div class="admin-user" style="display: flex; align-items: center; gap: 12px;">
+        <div class="admin-avatar" id="avatar-char" style="width: 36px; height: 36px; background: var(--yellow); color: var(--navy); border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; font-weight: 800;">B</div>
         <div class="admin-user-info" style="color:white; font-size: 13px;">
-          <div style="font-weight:800;">Administrator</div>
-          <div style="opacity:0.6; font-size:11px;">System Superuser</div>
+          <div style="font-weight:800;" id="admin-user-name">Bex Administrator</div>
+          <div style="opacity:0.6; font-size:11px;">Global Platform Controller</div>
         </div>
       </div>
-      <button id="signout-btn" class="btn btn-red btn-full btn-sm" style="margin-top: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);">
+      <button id="signout-btn" class="btn btn-red btn-full btn-sm" style="margin-top: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); width: 100%;">
         <i class="bi bi-power"></i> Log Out
       </button>
     </div>
@@ -173,85 +127,99 @@
   <main class="admin-main">
     <header class="admin-topbar">
       <div>
-        <h1 class="topbar-title">Crisis Center</h1>
-        <p style="font-size: 13px; color: var(--text-secondary);">Fleet safety and incident response coordination</p>
+        <h1 class="topbar-title" style="color: #dc2626;"><i class="bi bi-shield-fill-exclamation"></i> Crisis Control Center</h1>
+        <p style="font-size: 13px; color: var(--text-secondary);">Real-time isolation tracking desk for active multi-tenant telemetry exceptions.</p>
       </div>
-      <div style="display: flex; gap: 12px; align-items: center;">
-        <div id="active-alert-pill" style="display:none; align-items:center; gap:6px; font-size:11px; font-weight:800; color:var(--red); background:var(--red-light); padding:8px 16px; border-radius:var(--r-full);">
-          <span class="live-dot"></span> <span id="active-count-text">0</span> CRITICAL SOS
-        </div>
-        <button class="btn btn-yellow btn-sm desktop-only" onclick="window.print()"><i class="bi bi-file-earmark-arrow-down"></i> Export Logs</button>
+      <div class="desktop-only" style="background: #fee2e2; color: #dc2626; padding: 8px 16px; border-radius: var(--r-full); font-size: 12px; font-weight: 800; border: 1px solid #fca5a5;">
+        <span class="live-dot" style="background: #dc2626;"></span> GEOSPATIAL RADAR ACTIVE
       </div>
     </header>
 
     <div class="admin-content">
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <div class="kpi-label">Active SOS</div>
-          <div class="kpi-value text-red" id="kpi-sos">0</div>
+      <div class="crisis-workspace">
+        
+        <div class="infra-grid-matrix">
+          <div class="infra-data-node">
+            <div class="infra-title-text" style="color: #dc2626;">Active Intercepted Crises</div>
+            <div class="infra-value-text" id="crisis-count-active" style="color: #dc2626;">0</div>
+          </div>
+          <div class="infra-data-node">
+            <div class="infra-title-text">Awaiting Response Node</div>
+            <div class="infra-value-text" id="crisis-count-pending" style="color: var(--yellow);">0</div>
+          </div>
+          <div class="infra-data-node">
+            <div class="infra-title-text">Resolved Platform Dispatches</div>
+            <div class="infra-value-text" id="crisis-count-resolved" style="color: var(--green);">0</div>
+          </div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Resolved SOS</div>
-          <div class="kpi-value text-green" id="kpi-resolved-sos">0</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Open Reports</div>
-          <div class="kpi-value" id="kpi-reports">0</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Resolved Reports</div>
-          <div class="kpi-value text-green" id="kpi-resolved-reports">0</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Avg Response</div>
-          <div class="kpi-value text-yellow" id="kpi-response">--</div>
-        </div>
-      </div>
 
-      <div class="bento-grid">
-        <div class="tile tile-8">
-          <div class="table-header">
-            <div class="table-title">Incident Stream Telemetry</div>
-            <div style="display:flex; gap:10px;" id="filter-container">
-              <button class="chip active" data-filter="all">All Logs</button>
-              <button class="chip" data-filter="emergency">SOS Only</button>
-              <button class="chip" data-filter="report">Reports</button>
+        <div class="crisis-split-deck">
+          
+          <div style="display: flex; flex-direction: column; gap: 20px; height: 100%;">
+            <div style="flex: 1; min-height: 280px; position: relative;">
+              <div id="crisis-radar-map"></div>
+            </div>
+            
+            <div style="flex: 1; min-height: 0; display: flex; flex-direction: column;">
+              <div class="table-header" style="padding: 4px 0;"><div class="table-title">Active Emergency Queues</div></div>
+              <div class="emergency-stream-container" id="emergency-list-container" style="flex: 1;">
+                <div style="text-align: center; color: var(--text-muted); padding-top: 50px;">
+                  <i class="bi bi-arrow-clockwise spin" style="font-size: 24px; display: block; margin-bottom: 8px;"></i>
+                  Polling platform exceptions layer...
+                </div>
+              </div>
             </div>
           </div>
-          <div class="alert-scroll-area" id="alert-feed">
-             <div style="text-align:center; padding:100px; color:var(--text-muted);"><i class="bi bi-arrow-clockwise spin" style="font-size: 2rem;"></i> Syncing fleet stream...</div>
-          </div>
-        </div>
 
-        <div class="tile tile-4" style="background:transparent; border:none; box-shadow:none; gap:20px; display: flex; flex-direction: column;">
-          <div class="tile" style="flex:1;">
-            <div class="table-header"><div class="table-title">Emergency Locator</div></div>
-            <div id="crisis-map" style="height:350px; width:100%; border-radius: 0 0 16px 16px;"></div>
-          </div>
+          <div class="dispatch-control-tower">
+            <div>
+              <div style="font-weight: 900; font-size: 13px; color: var(--yellow); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px;">
+                <i class="bi bi-broadcast"></i> Telemetry Dispatch Deck
+              </div>
+              
+              <div class="dispatch-field">
+                <div class="dispatch-label">Target School Workspace</div>
+                <div class="dispatch-value" id="tower-tenant" style="color: white;">Select an incident...</div>
+              </div>
+              <div class="dispatch-field">
+                <div class="dispatch-label">Bus Target Node</div>
+                <div class="dispatch-value" id="tower-bus">---</div>
+              </div>
+              <div class="dispatch-field">
+                <div class="dispatch-label">Satellite Exception Payload</div>
+                <div class="dispatch-value" id="tower-headline" style="white-space: normal; line-height: 1.4; font-size: 13px;">---</div>
+              </div>
+              <div class="dispatch-field">
+                <div class="dispatch-label">Coordinate Vector Position</div>
+                <div class="dispatch-value" id="tower-coords" style="font-family: monospace; color: #fca5a5;">---</div>
+              </div>
+            </div>
 
-          <div class="tile" style="padding:24px;">
-            <div class="section-title" style="margin-bottom:16px; font-weight:800; font-size:14px; text-transform: uppercase; letter-spacing: 1px;">Command Actions</div>
-            <div style="display:flex; flex-direction:column; gap:12px;">
-              <button class="btn btn-red btn-full btn-lg" id="broadcast-trigger-btn">
-                  <i class="bi bi-megaphone-fill"></i> BROADCAST ALERT
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+              <button class="btn btn-yellow btn-full" id="btn-tower-locate" style="font-weight: 800; width: 100%;" disabled>
+                <i class="bi bi-geo-alt-fill"></i> Locate Telemetry Node
               </button>
-              <a class="btn btn-yellow btn-full btn-lg" href="tel:+2348114875252" style="display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; font-weight:700;">
-                  <i class="bi bi-telephone-fill"></i> DIRECTOR HOTLINE
-              </a>
+              <button class="btn btn-full" id="btn-tower-resolve" style="background: var(--green); color: white; font-weight: 800; width: 100%; border: none;" disabled>
+                <i class="bi bi-check-circle-fill"></i> Acknowledge & Resolve
+              </button>
             </div>
           </div>
+
         </div>
       </div>
     </div>
   </main>
-
-  <nav class="bottom-nav mobile-only">
-    <a href="fleet.html"><i class="bi bi-radar"></i><span>Fleet</span></a>
-    <a href="crisis-center.html" class="active"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis</span></a>
-    <a href="users.html"><i class="bi bi-people-fill"></i><span>Users</span></a>
-    <a href="analytics.html"><i class="bi bi-graph-up-arrow"></i><span>Analytics</span></a>
-  </nav>
 </div>
+
+<nav class="bottom-nav mobile-only">
+    <a href="bex-dashboard.html" title="Global Fleet"><i class="bi bi-radar"></i></a>
+    <a href="crisis-center.html" class="active" title="Crisis Center"><i class="bi bi-exclamation-octagon-fill"></i></a>
+    <a href="schools-management.html" title="Tenant Schools"><i class="bi bi-building"></i></a>
+    <a href="users-directory.html" title="User Directory"><i class="bi bi-people-fill"></i></a>
+    <a href="analytics-room.html" title="Analytics Room"><i class="bi bi-graph-up-arrow"></i></a>
+    <a href="billing-usage.html" title="Resend Gateway"><i class="bi bi-envelope-check-fill"></i></a>
+    <a href="audit-logs.html" title="System Audit"><i class="bi bi-journal-text"></i></a>
+</nav>
 
 <div id="toast-container"></div>
 
@@ -260,236 +228,238 @@
 
 <script type="module">
   import { supabase } from '../js/config.js';
-  import { signOut } from '../js/auth.js';
+  import { signOut, requireAuth } from '../js/auth.js';
 
-  const cmap = L.map('crisis-map', { zoomControl:false, attributionControl:false }).setView([6.5244, 3.3792], 12);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(cmap);
-  
-  let mapMarkers = [];
-  let currentFilter = 'all';
-  let cachedNotifications = [];
-  let cachedReports = [];
+  const map = L.map('crisis-radar-map', { zoomControl: true, attributionControl: false }).setView([6.5244, 3.3792], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
-  async function initCrisisCenter() {
-    await refreshFeed();
-    
-    // Postgres Realtime Sync for Instant UI Response across disparate data pools
-    supabase.channel('crisis-sync-primary')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => refreshFeed())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'incident_reports' }, () => refreshFeed())
-      .subscribe();
-      
-    setupEventListeners();
+  let activeIncidentMarkers = {};
+  let schoolMapIndex = {};
+  let localizedCrisisCache = [];
+  let currentSelectedIncidentId = null;
+
+  async function verifyAdminAuth() {
+    const session = await requireAuth();
+    if (!session) return;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', session.user.id)
+      .single();
+
+    const activeRole = profile?.role || session.user.user_metadata?.role;
+    if (activeRole === 'super_admin' || activeRole === 'admin' || session.user.email?.includes('admin')) {
+        setTimeout(() => { bootstrapCrisisCenterDeck(); }, 50);
+    } else {
+        window.location.href = '../index.html';
+    }
   }
 
-  async function refreshFeed() {
-    // 1. Fetch True SOS Signals (Filtering out logging configurations)
-    const { data: notifications, error: notifError } = await supabase
+  async function bootstrapCrisisCenterDeck() {
+    await fetchTenantProfiles();
+    await fetchCrisisDataArrays();
+
+    supabase.channel('crisis-realtime-deck')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+          fetchCrisisDataArrays();
+      })
+      .subscribe();
+  }
+
+  async function fetchTenantProfiles() {
+    const { data } = await supabase.from('organizations').select('id, name');
+    if (data) {
+      data.forEach(s => { schoolMapIndex[s.id] = s.name; });
+    }
+  }
+
+  async function fetchCrisisDataArrays() {
+    try {
+      const { data: logs, error } = await supabase
         .from('notifications')
         .select('*')
         .eq('type', 'emergency')
-        .order('created_at', { ascending: false });
+        .order('id', { ascending: false });
 
-    // 2. Fetch Anonymous Parent Incident Reports Container 
-    const { data: incidentReports, error: incidentError } = await supabase
-        .from('incident_reports')
-        .select('*')
-        .order('submitted_at', { ascending: false });
+      if (error) throw error;
+      localizedCrisisCache = logs || [];
 
-    if (notifError || incidentError) {
-        console.error("Data Fetch Error:", notifError?.message || incidentError?.message);
-        return;
-    }
+      updateAggregatePerformanceCounters(localizedCrisisCache);
+      renderCrisisIncidentRoll(localizedCrisisCache);
+      syncCrisisMarkersToMap(localizedCrisisCache);
 
-    cachedNotifications = notifications || [];
-    cachedReports = incidentReports || [];
-
-    // Separate calculations cleanly
-    const activeSOS = cachedNotifications.filter(n => !n.resolved_at);
-    const resolvedSOS = cachedNotifications.filter(n => !!n.resolved_at);
-    const openReports = cachedReports.filter(r => r.status === 'open');
-    const resolvedReports = cachedReports.filter(r => r.status === 'resolved');
-
-    updateKPIs(activeSOS, resolvedSOS, openReports, resolvedReports);
-    buildCombinedStream();
-    updateMapMarkers(activeSOS);
+      if (currentSelectedIncidentId) {
+        const structuralRecordCheck = localizedCrisisCache.find(i => i.id === currentSelectedIncidentId);
+        if (structuralRecordCheck) selectActiveCrisisRow(currentSelectedIncidentId);
+      }
+    } catch (err) { console.error(err.message); }
   }
 
-  function updateKPIs(activeSOS, resolvedSOS, openReports, resolvedReports) {
-    document.getElementById('kpi-sos').textContent = activeSOS.length;
-    document.getElementById('kpi-resolved-sos').textContent = resolvedSOS.length;
-    document.getElementById('kpi-reports').textContent = openReports.length;
-    document.getElementById('kpi-resolved-reports').textContent = resolvedReports.length;
-    
-    if (resolvedSOS.length > 0) {
-        let totalMs = 0;
-        resolvedSOS.forEach(r => {
-            const start = new Date(r.created_at);
-            const end = new Date(r.resolved_at);
-            totalMs += (end - start);
-        });
-        const avgMin = Math.floor((totalMs / resolvedSOS.length) / 60000);
-        document.getElementById('kpi-response').textContent = avgMin > 60 ? `${(avgMin/60).toFixed(1)}h` : `${avgMin}m`;
-    } else {
-        document.getElementById('kpi-response').textContent = "--";
-    }
+  function updateAggregatePerformanceCounters(incidents) {
+    const activeCount = incidents.filter(i => i.status === 'active').length;
+    const pendingCount = incidents.filter(i => i.status === 'pending' || i.status === 'logged').length;
+    const resolvedCount = incidents.filter(i => i.status === 'resolved' || i.status === 'cleared').length;
 
-    const pill = document.getElementById('active-alert-pill');
-    pill.style.display = activeSOS.length > 0 ? 'flex' : 'none';
-    document.getElementById('active-count-text').textContent = activeSOS.length;
+    document.getElementById('crisis-count-active').textContent = activeCount;
+    document.getElementById('crisis-count-pending').textContent = pendingCount;
+    document.getElementById('crisis-count-resolved').textContent = resolvedCount;
   }
 
-  function buildCombinedStream() {
-    const feed = document.getElementById('alert-feed');
-    
-    // Normalize data definitions into a unified rendering object layout
-    const formattedSOS = cachedNotifications.map(n => ({
-        id: n.id,
-        title: "🚨 EMERGENCY SOS SIGNAL",
-        message: n.message,
-        type: 'emergency',
-        timestamp: new Date(n.created_at),
-        isResolved: !!n.resolved_at,
-        refCode: n.id.split('-')[0].toUpperCase()
-    }));
+  function renderCrisisIncidentRoll(incidents) {
+    const container = document.getElementById('emergency-list-container');
+    const activeAlerts = incidents.filter(i => i.status === 'active');
 
-    const formattedReports = cachedReports.map(r => ({
-        id: r.id,
-        title: `Incident: ${r.report_type}`,
-        message: r.details,
-        type: 'report',
-        timestamp: new Date(r.submitted_at),
-        isResolved: r.status === 'resolved',
-        refCode: r.reference || r.id.split('-')[0].toUpperCase()
-    }));
-
-    // Combine and sort chronologically
-    let combined = [...formattedSOS, ...formattedReports].sort((a, b) => b.timestamp - a.timestamp);
-
-    // Apply strict navigational filter toggles
-    if (currentFilter !== 'all') {
-        combined = combined.filter(item => item.type === currentFilter);
+    if (activeAlerts.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; color: var(--text-muted); padding: 50px 20px;">
+          <i class="bi bi-shield-fill-check text-green" style="font-size: 32px; display: block; margin-bottom: 8px;"></i>
+          <span style="font-weight:700; color:var(--navy); display:block; margin-bottom:4px;">All Channels Clear</span>
+          No active multi-tenant exceptions emitting emergency telemetry signals.
+        </div>`;
+      clearTowerControlPanel();
+      return;
     }
 
-    if (combined.length === 0) {
-        feed.innerHTML = '<div style="text-align:center; padding:100px; color:var(--text-muted);"><i class="bi bi-shield-check" style="font-size:3rem; display:block; margin-bottom:10px;"></i>No active tracking anomalies discovered.</div>';
-        return;
-    }
-
-    feed.innerHTML = combined.map(item => {
-      const isSOS = item.type === 'emergency';
-      const timeStr = item.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    container.innerHTML = activeAlerts.map(incident => {
+      const schoolTenantLabel = schoolMapIndex[incident.organization_id || incident.school_id] || "Global Base Node";
+      const isSelectedClass = incident.id === currentSelectedIncidentId ? 'selected-active-crisis' : '';
       
       return `
-      <div class="incident-card type-${isSOS ? 'emergency' : 'info'} ${item.isResolved ? 'resolved' : ''} ${isSOS && !item.isResolved ? 'emergency-pulse' : ''}">
-        <div class="stream-icon" style="background: ${isSOS ? 'var(--red-light)' : 'var(--bg)'}; color: ${isSOS ? 'var(--red)' : 'var(--navy)'}">
-            <i class="bi ${isSOS ? 'bi-broadcast-pin' : 'bi-person-exclamation'}"></i>
+        <div class="emergency-pulse-card ${isSelectedClass}" id="crisis-card-${incident.id}" onclick="window.selectActiveCrisisRow(${incident.id})">
+          <div style="display:flex; justify-content:space-between; align-items:start; gap:12px;">
+            <div style="flex:1; min-width:0;">
+              <strong style="font-size:14px; color:var(--navy); display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${incident.title}</strong>
+              <div style="font-size:12px; color:var(--text-secondary); margin-top:4px; line-height:1.4;">${incident.message}</div>
+              <div style="font-size:11px; font-weight:800; color:var(--navy); margin-top:10px; display:flex; align-items:center; gap:6px;">
+                <i class="bi bi-building-fill text-yellow"></i> ${schoolTenantLabel}
+              </div>
+            </div>
+            <div style="text-align:right; display:flex; flex-direction:column; gap:8px;">
+              <span class="badge" style="background:#dc2626; color:white; font-size:9px; font-weight:800; padding:4px 8px; border-radius:4px;">SOS ALERT</span>
+              <button class="btn btn-ghost btn-sm" style="padding:2px 6px; font-size:11px; font-weight:700;" onclick="event.stopPropagation(); window.selectActiveCrisisRow(${incident.id}); window.executeGeospatialNodeLocate();">
+                <i class="bi bi-crosshairs"></i> Locate
+              </button>
+            </div>
+          </div>
         </div>
-        <div class="stream-details" style="flex:1">
-            <h4 style="display:flex; justify-content:space-between;">
-                <span>${item.title}</span>
-                <span style="font-size:9px; opacity:0.4; font-family:monospace;">REF: ${item.refCode}</span>
-            </h4>
-            <p><strong>Status:</strong> ${item.isResolved ? 'RESOLVED' : 'ACTIVE'} · <strong>Received:</strong> ${timeStr}</p>
-            <p style="margin-top:6px; opacity:0.9; font-size:12px; line-height:1.5;">${item.message}</p>
-        </div>
-        <div style="display:flex; gap:8px;">
-            ${!item.isResolved ? `<button class="btn btn-navy btn-sm" style="padding:6px 14px; font-size:11px;" onclick="resolveItem('${item.id}', '${item.type}')">Resolve</button>` : `<i class="bi bi-check-all text-green" style="font-size:24px;"></i>`}
-            <button class="btn btn-ghost btn-sm" style="padding:6px 14px; font-size:11px;" onclick="window.locateIncident('${item.message}')">Locate</button>
-        </div>
-      </div>`;
+      `;
     }).join('');
   }
 
-  function setupEventListeners() {
-    document.querySelectorAll('#filter-container .chip').forEach(chip => {
-      chip.onclick = () => {
-        document.querySelectorAll('#filter-container .chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        currentFilter = chip.dataset.filter;
-        buildCombinedStream();
-      };
+  function syncCrisisMarkersToMap(incidents) {
+    Object.keys(activeIncidentMarkers).forEach(id => {
+      map.removeLayer(activeIncidentMarkers[id]);
+      delete activeIncidentMarkers[id];
     });
 
-    document.getElementById('broadcast-trigger-btn').onclick = () => {
-        document.getElementById('broadcast-modal').classList.add('active');
-    };
+    incidents.forEach(incident => {
+      if (incident.status !== 'active') return;
 
-    document.getElementById('confirm-broadcast').onclick = async () => {
-        const input = document.getElementById('broadcast-msg-input');
-        const msg = input.value.trim();
-        if (!msg) return;
-        
-        // Dispatches broadcast metadata channel event silently via WebSocket channels
-        const broadcastChannel = supabase.channel('global-fleet-broadcast');
-        broadcastChannel.send({
-            type: 'broadcast',
-            event: 'urgent-alert',
-            payload: { title: "🚨 SYSTEM DIRECTIVE", message: msg, timestamp: new Date().toISOString() }
-        });
+      const lat = incident.current_lat || incident.lat || 6.5244;
+      const lng = incident.current_lng || incident.lng || 3.3792;
 
-        // Store to historical logs table under hidden state rules
-        await supabase.from('notifications').insert([{
-            title: "🚨 ADMIN BROADCAST",
-            message: msg,
-            type: 'broadcast',
-            status: 'logged'
-        }]);
+      const customRadarIcon = L.divIcon({
+        className: 'radar-pulse-marker',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
 
-        input.value = '';
-        document.getElementById('broadcast-modal').classList.remove('active');
-        window.showToast("Emergency broadcast dispatched to driver terminals.", "success");
-        refreshFeed();
-    };
-
-    document.getElementById('signout-btn').onclick = () => signOut();
-  }
-
-  window.locateIncident = (msg) => {
-      const coordMatch = msg.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
-      if (coordMatch) {
-          cmap.flyTo([parseFloat(coordMatch[1]), parseFloat(coordMatch[2])], 17);
-      } else {
-          window.showToast("GPS telemetry metadata missing from text payload.", "warning");
-      }
-  };
-
-  function updateMapMarkers(alerts) {
-    mapMarkers.forEach(m => cmap.removeLayer(m));
-    mapMarkers = [];
-    alerts.forEach((a) => {
-      const coordMatch = a.message.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
-      if (coordMatch) {
-          const marker = L.marker([parseFloat(coordMatch[1]), parseFloat(coordMatch[2])], { 
-              icon: L.divIcon({ 
-                  html: `<div style="background:var(--red); width:32px; height:32px; border-radius:50%; border:2px solid white; color:white; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-lg);"><i class="bi bi-broadcast"></i></div>`, 
-                  className:'' 
-              }) 
-          }).addTo(cmap);
-          mapMarkers.push(marker);
-      }
+      const markerNode = L.marker([lat, lng], { icon: customRadarIcon }).addTo(map)
+        .bindPopup(`<b>${incident.title}</b><br>${schoolMapIndex[incident.organization_id || incident.school_id] || 'Active Workspace'}`);
+      
+      activeIncidentMarkers[incident.id] = markerNode;
     });
   }
 
-  window.resolveItem = async (id, type) => {
-    if(!confirm("Verify incident resolution parameters?")) return;
+  window.selectActiveCrisisRow = function(id) {
+    currentSelectedIncidentId = id;
     
-    if (type === 'emergency') {
-        await supabase.from('notifications')
-            .update({ resolved_at: new Date().toISOString() })
-            .eq('id', id);
-    } else {
-        await supabase.from('incident_reports')
-            .update({ status: 'resolved' })
-            .eq('id', id);
-    }
-    refreshFeed();
+    document.querySelectorAll('.emergency-pulse-card').forEach(c => c.classList.remove('selected-active-crisis'));
+    const targetedCardElem = document.getElementById(`crisis-card-${id}`);
+    if (targetedCardElem) targetedCardElem.classList.add('selected-active-crisis');
+
+    const selectedLogData = localizedCrisisCache.find(i => i.id === id);
+    if (!selectedLogData) return;
+
+    const tenantLabelStr = schoolMapIndex[selectedLogData.organization_id || selectedLogData.school_id] || "Global Central Space";
+    const parsedTargetLat = selectedLogData.current_lat || selectedLogData.lat || 6.5244;
+    const parsedTargetLng = selectedLogData.current_lng || selectedLogData.lng || 3.3792;
+
+    document.getElementById('tower-tenant').textContent = tenantLabelStr;
+    document.getElementById('tower-bus').textContent = selectedLogData.title || "Tracking Node-UX";
+    document.getElementById('tower-headline').textContent = selectedLogData.message || "---";
+    document.getElementById('tower-coords').textContent = `${parsedTargetLat.toFixed(5)}, ${parsedTargetLng.toFixed(5)}`;
+
+    document.getElementById('btn-tower-locate').disabled = false;
+    document.getElementById('btn-tower-resolve').disabled = false;
   };
 
-  // Expose methods globally for execution contexts
-  window.resolveItem = resolveItem;
+  window.executeGeospatialNodeLocate = function() {
+    if (!currentSelectedIncidentId) return;
+    const activeLogNode = localizedCrisisCache.find(i => i.id === currentSelectedIncidentId);
+    if (!activeLogNode) return;
 
-  initCrisisCenter();
+    const finalLat = activeLogNode.current_lat || activeLogNode.lat || 6.5244;
+    const finalLng = activeLogNode.current_lng || activeLogNode.lng || 3.3792;
+
+    map.flyTo([finalLat, finalLng], 17, { animate: true, duration: 1.2 });
+    window.showToast(`Tracking vector pinned onto coordinates: ${finalLat.toFixed(4)}, ${finalLng.toFixed(4)}`, "info");
+  };
+
+  document.getElementById('btn-tower-locate').onclick = () => window.executeGeospatialNodeLocate();
+
+  document.getElementById('btn-tower-resolve').onclick = async () => {
+    if (!currentSelectedIncidentId) return;
+
+    const confirmationHandshake = confirm(`Commit physical system resolution authorization trace for Incident reference token ID: #${currentSelectedIncidentId}?`);
+    if (!confirmationHandshake) return;
+
+    const resolveBtn = document.getElementById('btn-tower-resolve');
+    const locateBtn = document.getElementById('btn-tower-locate');
+    
+    resolveBtn.disabled = true;
+    locateBtn.disabled = true;
+    resolveBtn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Terminating Crisis...';
+
+    const { error } = await supabase
+      .from('notifications')
+      .update({ status: 'resolved' })
+      .eq('id', currentSelectedIncidentId);
+
+    if (!error) {
+      window.showToast("Incident status safely logged as RESOLVED. Cloud matrices updated.", "success");
+      currentSelectedIncidentId = null;
+      await fetchCrisisDataArrays();
+    } else {
+      window.showToast(`Serverless rejection trace: ${error.message}`, "error");
+      resolveBtn.disabled = false;
+      locateBtn.disabled = false;
+    }
+    resolveBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Acknowledge & Resolve';
+  };
+
+  function clearTowerControlPanel() {
+    document.getElementById('tower-tenant').textContent = "Select an incident...";
+    document.getElementById('tower-bus').textContent = "---";
+    document.getElementById('tower-headline').textContent = "---";
+    document.getElementById('tower-coords').textContent = "---";
+    document.getElementById('btn-tower-locate').disabled = true;
+    document.getElementById('btn-tower-resolve').disabled = true;
+  }
+
+  window.showToast = (msg, type='info') => {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type} active`;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  };
+
+  document.getElementById('signout-btn').onclick = () => signOut();
+  verifyAdminAuth();
 </script>
 </body>
 </html>

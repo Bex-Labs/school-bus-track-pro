@@ -8,89 +8,34 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/admin.css"> <link rel="stylesheet" href="../assets/css/parent.css"> <style>
-    /* FIX: Bento Tile & Map Container Positioning */
-    .tile-8 {
-        display: flex;
-        flex-direction: column;
-        overflow: hidden; /* Prevents map spillover */
-        min-height: 550px; 
-    }
-
-    #parent-live-map { 
-        flex: 1; /* Forces map to fill the remaining space in the tile */
-        width: 100%; 
-        border-radius: 0 0 16px 16px;
-        z-index: 1; 
-        position: relative !important; /* Overrides Leaflet absolute defaults */
-        background: #f8fafc;
-    }
-
-    /* Pulse animation for the live bus marker */
-    .bus-marker-pulse {
-        background: var(--yellow);
-        width: 44px; height: 44px;
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 22px;
-        box-shadow: 0 0 0 0 rgba(253, 184, 19, 0.7);
-        animation: pulse-yellow 2s infinite;
-        border: 3px solid white;
-        color: var(--navy);
-    }
-
-    @keyframes pulse-yellow {
-        0% { box-shadow: 0 0 0 0 rgba(253, 184, 19, 0.4); }
-        70% { box-shadow: 0 0 0 15px rgba(253, 184, 19, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(253, 184, 19, 0); }
-    }
-
-    /* --- BROADCAST ALERT TOAST PANELS --- */
-    #parent-broadcast-toast {
-        position: fixed;
-        top: -100px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 92%;
-        max-width: 420px;
-        background: var(--navy);
-        color: white;
-        padding: 16px 20px;
-        border-radius: var(--r-lg);
-        box-shadow: var(--shadow-xl);
-        z-index: 99999;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        border-left: 5px solid var(--yellow);
-    }
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <link rel="stylesheet" href="../assets/css/parent.css">
+  <style>
+    .tile-8 { display: flex; flex-direction: column; overflow: hidden; min-height: 550px; }
+    #parent-live-map { flex: 1; width: 100%; border-radius: 0 0 16px 16px; z-index: 1; position: relative !important; background: #f8fafc; }
+    .bus-marker-pulse { background: var(--yellow); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 0 0 0 rgba(253,184,19,0.7); animation: pulse-yellow 2s infinite; border: 3px solid white; color: var(--navy); }
+    @keyframes pulse-yellow { 0% { box-shadow: 0 0 0 0 rgba(253,184,19,0.4); } 70% { box-shadow: 0 0 0 15px rgba(253,184,19,0); } 100% { box-shadow: 0 0 0 0 rgba(253,184,19,0); } }
+    #parent-broadcast-toast { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; background: var(--navy); color: white; padding: 16px 20px; border-radius: var(--r-lg); box-shadow: var(--shadow-xl); z-index: 99999; display: flex; align-items: center; gap: 15px; transition: top 0.5s cubic-bezier(0.175,0.885,0.32,1.275); border-left: 5px solid var(--yellow); }
     #parent-broadcast-toast.active { top: 20px; }
-
-    @media (max-width: 1024px) {
-        .tile-8 { min-height: 400px; }
-        .admin-content { padding-bottom: 100px; }
-    }
+    @media (max-width: 1024px) { .tile-8 { min-height: 400px; } .admin-content { padding-bottom: 100px; } }
   </style>
 </head>
 <body>
 
 <div id="parent-broadcast-toast">
-    <i class="bi bi-megaphone-fill" style="color: var(--yellow); font-size: 24px;"></i>
-    <div>
-        <div style="font-size: 10px; font-weight: 800; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px;">Fleet Logistics Update</div>
-        <div id="parent-broadcast-msg" style="font-size: 13px; font-weight: 600; line-height: 1.4;">Syncing incoming system bulletin...</div>
-    </div>
+  <i class="bi bi-megaphone-fill" style="color:var(--yellow);font-size:24px;"></i>
+  <div>
+    <div style="font-size:10px;font-weight:800;opacity:0.7;text-transform:uppercase;letter-spacing:1px;">Fleet Update</div>
+    <div id="parent-broadcast-msg" style="font-size:13px;font-weight:600;line-height:1.4;">Loading...</div>
+  </div>
 </div>
 
 <div class="admin-layout">
-  
   <aside class="admin-sidebar desktop-only">
     <div class="sidebar-logo">
       <img src="../assets/images/logo.png" alt="Logo">
-      <div class="logo-text">School Bus Track Pro <small>Parent Portal</small></div>
+      <div class="logo-text" id="sidebar-school-name">School Bus Track Pro <small>Parent Portal</small></div>
     </div>
-    
     <nav class="sidebar-nav">
       <div class="nav-group-label">Safety Tracking</div>
       <a href="map.html" class="nav-link active"><i class="bi bi-radar"></i><span>Live Tracking</span></a>
@@ -99,16 +44,15 @@
       <a href="alerts.html" class="nav-link"><i class="bi bi-bell"></i><span>Alert Settings</span></a>
       <a href="profile.html" class="nav-link"><i class="bi bi-person-gear"></i><span>Profile</span></a>
     </nav>
-
     <div class="sidebar-footer">
       <div class="admin-user">
         <div class="admin-avatar" id="sidebar-initial">P</div>
-        <div class="admin-user-info" style="color:white; font-size: 13px;">
+        <div class="admin-user-info" style="color:white;font-size:13px;">
           <div style="font-weight:800;" id="sidebar-parent-name">Guardian</div>
-          <div style="opacity:0.6; font-size:11px;">Verified Account</div>
+          <div style="opacity:0.6;font-size:11px;">Verified Account</div>
         </div>
       </div>
-      <button id="sidebar-logout" class="btn btn-red btn-full btn-sm" style="margin-top: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);">
+      <button id="sidebar-logout" class="btn btn-red btn-full btn-sm" style="margin-top:16px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);">
         <i class="bi bi-power"></i> Sign Out
       </button>
     </div>
@@ -118,7 +62,7 @@
     <header class="admin-topbar">
       <div>
         <h1 class="topbar-title">Student Safety Monitor</h1>
-        <p style="font-size: 13px; color: var(--text-secondary);">Tracking: <span id="child-status-top" style="font-weight: 800; color: var(--navy);">Locating...</span></p>
+        <p style="font-size:13px;color:var(--text-secondary);">Tracking: <span id="child-status-top" style="font-weight:800;color:var(--navy);">Locating...</span></p>
       </div>
       <div class="live-indicator desktop-only">
         <span class="live-dot"></span> <span id="connection-status">CONNECTING...</span>
@@ -127,92 +71,69 @@
 
     <div class="admin-content">
       <div class="kpi-grid">
-        <div class="kpi-card">
-          <div class="kpi-label">Estimated Arrival</div>
-          <div class="kpi-value" id="eta-display">--:--</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Current Velocity</div>
-          <div class="kpi-value text-yellow" id="speed-val">0 <small style="font-size:14px">km/h</small></div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Bus Unit</div>
-          <div class="kpi-value" id="bus-id-display">...</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-label">Student Status</div>
-            <div class="kpi-value text-green" id="boarding-status" style="font-size: 16px;">PENDING</div>
-        </div>
+        <div class="kpi-card"><div class="kpi-label">Estimated Arrival</div><div class="kpi-value" id="eta-display">--:--</div></div>
+        <div class="kpi-card"><div class="kpi-label">Current Velocity</div><div class="kpi-value text-yellow" id="speed-val">0 <small style="font-size:14px">km/h</small></div></div>
+        <div class="kpi-card"><div class="kpi-label">Bus Unit</div><div class="kpi-value" id="bus-id-display">...</div></div>
+        <div class="kpi-card"><div class="kpi-label">Student Status</div><div class="kpi-value text-green" id="boarding-status" style="font-size:16px;">PENDING</div></div>
       </div>
 
       <div class="bento-grid">
         <div class="tile tile-8">
-            <div class="table-header">
-                <div class="table-title"><i class="bi bi-geo-alt-fill text-yellow"></i> Live Location Map</div>
-            </div>
-            <div id="parent-live-map"></div>
+          <div class="table-header">
+            <div class="table-title"><i class="bi bi-geo-alt-fill text-yellow"></i> Live Location Map</div>
+          </div>
+          <div id="parent-live-map"></div>
         </div>
 
         <div class="tile tile-4">
-            <div class="table-header">
-                <div class="table-title">Transit Unit Directory</div>
+          <div class="table-header"><div class="table-title">Transit Unit Directory</div></div>
+          <div style="padding:24px;">
+            <div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;">
+              <div id="driver-initial" style="width:46px;height:46px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:var(--navy);border:1.5px solid var(--border);flex-shrink:0;">?</div>
+              <div style="flex:1;">
+                <small style="display:block;font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Assigned Driver</small>
+                <div id="driver-name-display" style="font-weight:700;font-size:14px;color:var(--navy);">Loading...</div>
+              </div>
+              <a href="#" class="btn-call" id="driver-phone-link" style="width:36px;height:36px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--navy);border:1px solid var(--border);text-decoration:none;">
+                <i class="bi bi-telephone-fill" style="font-size:14px;"></i>
+              </a>
             </div>
-            <div style="padding: 24px;">
-                
-                <div class="driver-mini" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-                    <div id="driver-initial" style="width:46px;height:46px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:var(--navy);border:1.5px solid var(--border);flex-shrink:0;">?</div>
-                    <div style="flex:1">
-                        <small style="display:block; font-size:10px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Assigned Driver</small>
-                        <div class="driver-name" id="driver-name-display" style="font-weight:700; font-size:14px; color:var(--navy);">Fetching Details...</div>
-                    </div>
-                    <a href="tel:+2348114875252" class="btn-call" id="driver-phone-link" style="width:36px; height:36px; border-radius:50%; background:var(--bg); display:flex; align-items:center; justify-content:center; color:var(--navy); border:1px solid var(--border); text-decoration:none;">
-                        <i class="bi bi-telephone-fill" style="font-size:14px;"></i>
-                    </a>
-                </div>
 
-                <div class="hotline-mini" style="display: flex; align-items: center; gap: 15px; padding: 14px; background: rgba(253, 184, 19, 0.08); border: 1px solid rgba(253, 184, 19, 0.2); border-radius: 12px; margin-bottom: 24px;">
-                    <div style="width:36px; height:36px; background:var(--yellow); color:var(--navy); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;">
-                        <i class="bi bi-shield-fill-check"></i>
-                    </div>
-                    <div style="flex:1;">
-                        <div style="font-size:12px; font-weight:800; color:var(--navy);">School HQ Hotline</div>
-                        <div style="font-size:11px; color:var(--text-secondary); font-weight:600; margin-top:1px;">Direct Administration Desk</div>
-                    </div>
-                    <a href="tel:+2348114875252" style="width:32px; height:32px; border-radius:50%; background:var(--navy); display:flex; align-items:center; justify-content:center; color:white; text-decoration:none; box-shadow:var(--shadow-sm);">
-                        <i class="bi bi-headset" style="font-size:13px;"></i>
-                    </a>
-                </div>
-                
-                <div class="divider" style="font-size:11px; font-weight:800; text-transform:uppercase; color:var(--text-muted); letter-spacing:1px; margin-bottom:12px;">Safety Interfaces</div>
-                <div class="sheet-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
-                    <a href="report.html" class="sheet-action danger" style="display:flex; flex-direction:column; align-items:center; gap:8px; padding:14px; background:#fff5f5; border:1px solid #fee2e2; border-radius:12px; color:var(--red); font-weight:700; text-decoration:none; font-size:12px;">
-                        <i class="bi bi-shield-exclamation" style="font-size:18px;"></i>File Report
-                    </a>
-                    <a href="attendance.html" class="sheet-action primary" style="display:flex; flex-direction:column; align-items:center; gap:8px; padding:14px; background:var(--bg); border:1px solid var(--border); border-radius:12px; color:var(--navy); font-weight:700; text-decoration:none; font-size:12px;">
-                        <i class="bi bi-calendar-check-fill" style="font-size:18px;"></i>Boarding Logs
-                    </a>
-                </div>
-
-                <div class="proximity-row" style="display:flex; justify-content:space-between; align-items:center; background:var(--bg); border:1px solid var(--border); padding:12px 16px; border-radius:12px;">
-                    <div>
-                        <div class="proximity-label" style="font-size:12px; font-weight:800; color:var(--navy);">Proximity Alert Engine</div>
-                        <div class="proximity-sub" style="font-size:10px; color:var(--text-muted); font-weight:600; margin-top:1px;">Push notification at 1 km radius</div>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="geofence-toggle" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
+            <div style="display:flex;align-items:center;gap:15px;padding:14px;background:rgba(253,184,19,0.08);border:1px solid rgba(253,184,19,0.2);border-radius:12px;margin-bottom:24px;">
+              <div style="width:36px;height:36px;background:var(--yellow);color:var(--navy);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;"><i class="bi bi-shield-fill-check"></i></div>
+              <div style="flex:1;">
+                <div style="font-size:12px;font-weight:800;color:var(--navy);">School HQ Hotline</div>
+                <div style="font-size:11px;color:var(--text-secondary);font-weight:600;margin-top:1px;">Direct Administration Desk</div>
+              </div>
+              <a href="tel:+2348114875252" style="width:32px;height:32px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;color:white;text-decoration:none;">
+                <i class="bi bi-headset" style="font-size:13px;"></i>
+              </a>
             </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+              <a href="report.html" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px;background:#fff5f5;border:1px solid #fee2e2;border-radius:12px;color:var(--red);font-weight:700;text-decoration:none;font-size:12px;">
+                <i class="bi bi-shield-exclamation" style="font-size:18px;"></i>File Report
+              </a>
+              <a href="attendance.html" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:12px;color:var(--navy);font-weight:700;text-decoration:none;font-size:12px;">
+                <i class="bi bi-calendar-check-fill" style="font-size:18px;"></i>Boarding Logs
+              </a>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);border:1px solid var(--border);padding:12px 16px;border-radius:12px;">
+              <div>
+                <div style="font-size:12px;font-weight:800;color:var(--navy);">Proximity Alert Engine</div>
+                <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-top:1px;">Push notification at 1 km radius</div>
+              </div>
+              <label class="switch"><input type="checkbox" id="geofence-toggle" checked><span class="slider"></span></label>
+            </div>
+          </div>
         </div>
 
         <div class="tile tile-12">
-            <div class="table-header">
-                <div class="table-title">Upcoming Route Progress</div>
-            </div>
-            <div style="padding: 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px;" id="stops-container">
-                <div style="color: var(--text-muted); font-size: 13px;">Waiting for trip data...</div>
-            </div>
+          <div class="table-header"><div class="table-title">Upcoming Route Stops</div></div>
+          <div style="padding:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;" id="stops-container">
+            <div style="color:var(--text-muted);font-size:13px;">Waiting for trip data...</div>
+          </div>
         </div>
       </div>
     </div>
@@ -220,141 +141,182 @@
 </div>
 
 <nav class="bottom-nav mobile-only">
-    <a href="map.html" class="active"><i class="bi bi-map-fill"></i>Track</a>
-    <a href="attendance.html"><i class="bi bi-clock-history"></i>History</a>
-    <a href="alerts.html"><i class="bi bi-bell-fill"></i>Alerts</a>
-    <a href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
+  <a href="map.html" class="active"><i class="bi bi-map-fill"></i>Track</a>
+  <a href="attendance.html"><i class="bi bi-clock-history"></i>History</a>
+  <a href="alerts.html"><i class="bi bi-bell-fill"></i>Alerts</a>
+  <a href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
 </nav>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script type="module">
-    import { supabase } from '../js/config.js';
-    import { signOut } from '../js/auth.js';
-    import { getDistance, calcETA } from '../js/utils.js';
+  import { supabase, getUserProfile } from '../js/config.js';
+  import { requireAuth, signOut } from '../js/auth.js';
 
-    const homeCoords = [6.5290, 3.3850]; 
-    let busId = null;
-    let busMarker = null;
+  // ── 0. Auth gate ───────────────────────────────────────────────────────
+  await requireAuth();
+  const profile = await getUserProfile();
 
-    // Initialize Map with Specific Tiles
-    const map = L.map('parent-live-map', { zoomControl: true, attributionControl: false }).setView(homeCoords, 14);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+  if (!profile || !profile.organization_id) {
+    setTimeout(() => signOut(), 2000);
+    throw new Error('No organization_id on profile.');
+  }
 
-    window.addEventListener('load', () => {
-        setTimeout(() => { map.invalidateSize(); }, 500);
-    });
+  const ORG_ID  = profile.organization_id;
+  const USER_ID = profile.id;
 
-    const busIcon = L.divIcon({
-        html: '<div class="bus-marker-pulse"><i class="bi bi-bus-front-fill"></i></div>',
-        iconSize: [44,44], iconAnchor: [22,22], className: ''
-    });
+  // ── 1. Sidebar ─────────────────────────────────────────────────────────
+  const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
+  if (org) {
+    const el = document.getElementById('sidebar-school-name');
+    if (el) el.innerHTML = `${org.name} <small>Parent Portal</small>`;
+  }
+  document.getElementById('sidebar-parent-name').textContent = profile.full_name || 'Guardian';
+  document.getElementById('sidebar-initial').textContent     = (profile.full_name || 'G').charAt(0);
+  document.getElementById('sidebar-logout').onclick = () => {
+    if (confirm('Sign out?')) signOut();
+  };
 
-    const homeIcon = L.divIcon({
-        html: '<div style="background:var(--navy);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:3px solid white;color:white;"><i class="bi bi-house-door-fill"></i></div>',
-        iconSize: [36,36], iconAnchor: [18,18], className: ''
-    });
+  // ── 2. Map ─────────────────────────────────────────────────────────────
+  // Use parent's stored home coords if available
+  const { data: parentFull } = await supabase
+    .from('profiles')
+    .select('home_lat, home_lng')
+    .eq('id', USER_ID)
+    .single();
 
-    L.marker(homeCoords, { icon: homeIcon }).addTo(map);
+  const homeCoords = [
+    parentFull?.home_lat || 6.5290,
+    parentFull?.home_lng || 3.3850
+  ];
 
-    // Fetch User & Sync Realtime Data
-    async function initPortal() {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { window.location.href = '../index.html'; return; }
+  const map = L.map('parent-live-map', { zoomControl: true, attributionControl: false }).setView(homeCoords, 14);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+  window.addEventListener('load', () => setTimeout(() => map.invalidateSize(), 500));
 
-        // Fetch Parent Profile
-        const { data: parent } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        if(parent) {
-            document.getElementById('sidebar-parent-name').textContent = parent.full_name;
-            document.getElementById('sidebar-initial').textContent = parent.full_name.charAt(0);
+  const busIcon = L.divIcon({
+    html: '<div class="bus-marker-pulse"><i class="bi bi-bus-front-fill"></i></div>',
+    iconSize: [44, 44], iconAnchor: [22, 22], className: ''
+  });
+  const homeIcon = L.divIcon({
+    html: '<div style="background:var(--navy);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:3px solid white;color:white;"><i class="bi bi-house-door-fill"></i></div>',
+    iconSize: [36, 36], iconAnchor: [18, 18], className: ''
+  });
+  L.marker(homeCoords, { icon: homeIcon }).addTo(map);
+
+  let busMarker = null;
+
+  // ── 3. Load student + bus — bus must belong to this org ────────────────
+  const { data: student } = await supabase
+    .from('students')
+    .select('*, bus_id(id, current_lat, current_lng, speed, organization_id, driver_id(full_name, phone))')
+    .eq('parent_id', USER_ID)
+    .eq('organization_id', ORG_ID)
+    .single();
+
+  if (student && student.bus_id) {
+    const busData = student.bus_id;
+
+    // Safety check: bus must belong to the same org
+    if (busData.organization_id !== ORG_ID) {
+      console.warn('Bus org mismatch — refusing to display.');
+    } else {
+      const busId = busData.id;
+      document.getElementById('bus-id-display').textContent   = busId;
+      document.getElementById('child-status-top').textContent = `${student.full_name} · ON ROUTE`;
+      document.getElementById('boarding-status').textContent  = 'ON BUS';
+
+      const driver = busData.driver_id;
+      if (driver) {
+        document.getElementById('driver-name-display').textContent = driver.full_name;
+        document.getElementById('driver-initial').textContent       = driver.full_name.charAt(0);
+        if (driver.phone) {
+          const phone = driver.phone.trim().replace(/^0/, '+234');
+          document.getElementById('driver-phone-link').href = `tel:${phone}`;
         }
+      }
 
-        // Fetch Student & Assigned Bus with Joined Data
-        const { data: student, error } = await supabase.from('students')
-            .select('*, bus_id(id, current_lat, current_lng, speed, driver_id(full_name, phone))')
-            .eq('parent_id', user.id)
-            .single();
+      updateMap(busData);
 
-        if (student && student.bus_id) {
-            const busData = student.bus_id;
-            busId = busData.id;
-            
-            document.getElementById('bus-id-display').textContent = busId;
-            document.getElementById('child-status-top').textContent = `${student.full_name} · ON ROUTE`;
-            document.getElementById('boarding-status').textContent = "ON BUS";
-            
-            // Driver UI Details
-            const driver = busData.driver_id;
-            if(driver) {
-                document.getElementById('driver-name-display').textContent = driver.full_name;
-                document.getElementById('driver-initial').textContent = driver.full_name.charAt(0);
-                if (driver.phone) {
-                    const cleanPhone = driver.phone.trim().replace(/^0/, '+234');
-                    document.getElementById('driver-phone-link').href = `tel:${cleanPhone}`;
-                }
-            }
+      // Load route stops scoped to this org
+      const { data: routes } = await supabase
+        .from('routes')
+        .select('id')
+        .eq('bus_id', busId)
+        .eq('organization_id', ORG_ID)
+        .limit(1);
 
-            updateRealtimeUI(busData);
-            subscribeToBusUpdates(busId);
+      if (routes && routes.length > 0) {
+        const { data: stops } = await supabase
+          .from('stops')
+          .select('*')
+          .eq('route_id', routes[0].id)
+          .eq('organization_id', ORG_ID)
+          .order('order_index', { ascending: true });
+
+        if (stops && stops.length > 0) {
+          const container = document.getElementById('stops-container');
+          container.innerHTML = stops.map((s, i) => `
+            <div style="padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:12px;">
+              <div style="font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Stop ${i + 1}</div>
+              <div style="font-weight:700;color:var(--navy);font-size:14px;">${s.name}</div>
+              <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;"><i class="bi bi-clock"></i> ${s.arrival_time || '--:--'} · ${s.students || 0} students</div>
+            </div>`).join('');
         }
+      }
 
-        // --- ZERO-LATENCY WEBSOCKET INTERCEPTION DISPATCH FOR PARENTS ---
-        const broadcastChannel = supabase.channel('global-fleet-broadcast');
-        broadcastChannel
-          .on('broadcast', { event: 'urgent-alert' }, payload => {
-              handleIncomingFleetBroadcast(payload.payload);
-          })
-          .subscribe((status) => {
-              if (status === 'SUBSCRIBED') {
-                  document.getElementById('connection-status').textContent = "LIVE DATA";
-              }
-          });
+      // Realtime bus updates — bus belongs to this org so filter is safe
+      supabase.channel(`bus-parent-${busId}`)
+        .on('postgres_changes', {
+          event: 'UPDATE', schema: 'public', table: 'buses',
+          filter: `id=eq.${busId}`
+        }, payload => updateMap(payload.new))
+        .subscribe();
     }
+  } else {
+    document.getElementById('child-status-top').textContent = 'No bus assigned';
+    document.getElementById('boarding-status').textContent  = 'UNASSIGNED';
+  }
 
-    function subscribeToBusUpdates(id) {
-        supabase.channel('bus-realtime')
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'buses', filter: `id=eq.${id}` }, 
-            payload => updateRealtimeUI(payload.new))
-            .subscribe();
-    }
+  function updateMap(data) {
+    const lat   = data.current_lat;
+    const lng   = data.current_lng;
+    const speed = data.speed || 0;
 
-    function updateRealtimeUI(data) {
-        const { current_lat, current_lng, speed } = data;
-        const pos = [current_lat, current_lng];
+    if (!lat || !lng) return;
 
-        if (busMarker) busMarker.setLatLng(pos);
-        else busMarker = L.marker(pos, { icon: busIcon }).addTo(map);
-        
-        map.flyTo(pos, 15);
+    if (busMarker) busMarker.setLatLng([lat, lng]);
+    else busMarker = L.marker([lat, lng], { icon: busIcon }).addTo(map);
 
-        // Update KPIs
-        document.getElementById('speed-val').innerHTML = `${Math.round(speed || 0)} <small style="font-size:14px">km/h</small>`;
-        
-        const dist = getDistance(current_lat, current_lng, homeCoords[0], homeCoords[1]);
-        document.getElementById('eta-display').textContent = calcETA(dist, speed || 30);
-    }
+    map.flyTo([lat, lng], 15);
+    document.getElementById('speed-val').innerHTML = `${Math.round(speed)} <small style="font-size:14px">km/h</small>`;
 
-    function handleIncomingFleetBroadcast(notif) {
-        const toast = document.getElementById('parent-broadcast-toast');
-        const msgEl = document.getElementById('parent-broadcast-msg');
-        
-        msgEl.textContent = notif.message;
-        toast.classList.add('active');
+    // Simple ETA calc
+    const R    = 6371;
+    const dLat = (homeCoords[0] - lat) * Math.PI / 180;
+    const dLng = (homeCoords[1] - lng) * Math.PI / 180;
+    const a    = Math.sin(dLat/2)**2 + Math.cos(lat * Math.PI/180) * Math.cos(homeCoords[0] * Math.PI/180) * Math.sin(dLng/2)**2;
+    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const mins = Math.round((dist / (speed > 5 ? speed : 30)) * 60);
+    const eta  = new Date(Date.now() + mins * 60000);
+    document.getElementById('eta-display').textContent = eta.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
 
-        const alertChime = new Audio('../assets/audio/broadcast-alert.mp3');
-        alertChime.play().catch(e => console.log("System audio bypass whitelisted."));
-
-        setTimeout(() => {
-            toast.classList.remove('active');
-        }, 7500);
-    }
-
-    document.getElementById('sidebar-logout').onclick = () => {
-        if(confirm("Sign out from your tracking profile?")) signOut();
-    }
-
-    initPortal();
+  // ── 4. Broadcast listener ──────────────────────────────────────────────
+  supabase.channel('global-fleet-broadcast')
+    .on('broadcast', { event: 'urgent-alert' }, payload => {
+      const toast = document.getElementById('parent-broadcast-toast');
+      document.getElementById('parent-broadcast-msg').textContent = payload.payload.message;
+      toast.classList.add('active');
+      new Audio('../assets/audio/broadcast-alert.mp3').play().catch(() => {});
+      setTimeout(() => toast.classList.remove('active'), 7500);
+    })
+    .subscribe(status => {
+      if (status === 'SUBSCRIBED') {
+        document.getElementById('connection-status').textContent = 'LIVE DATA';
+      }
+    });
 </script>
 </body>
 </html>

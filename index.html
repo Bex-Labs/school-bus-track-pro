@@ -9,33 +9,65 @@
   <link rel="stylesheet" href="assets/css/main.css">
   <link rel="stylesheet" href="assets/css/auth.css">
   <style>
-    /* Fix overlapping descriptions on extreme high-density mobile layout wrappers */
+    /* ── ROLE SELECTOR ── */
+    .role-selector {
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      gap: 8px !important;
+      margin-bottom: 24px !important;
+      width: 100% !important;
+    }
+    .role-pill {
+      flex: 1 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 10px 4px !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      line-height: 1.2 !important;
+      text-align: center !important;
+      white-space: nowrap !important;
+      gap: 4px !important;
+    }
+    .role-pill i { font-size: 16px !important; }
+
     @media (max-width: 768px) {
-        .auth-form-panel { padding: 20px !important; }
-        .auth-card { width: 100% !important; max-width: 100% !important; }
-        .auth-heading { font-size: 24px !important; line-height: 1.3 !important; margin-bottom: 6px !important; }
-        .auth-subtext { font-size: 13px !important; line-height: 1.4 !important; margin-bottom: 20px !important; }
+      .auth-form-panel  { padding: 20px !important; }
+      .auth-card        { width: 100% !important; max-width: 100% !important; }
+      .auth-heading     { font-size: 24px !important; line-height: 1.3 !important; margin-bottom: 6px !important; }
+      .auth-subtext     { font-size: 13px !important; line-height: 1.4 !important; margin-bottom: 20px !important; }
+      .role-selector    { gap: 4px !important; margin-bottom: 16px !important; }
+      .role-pill        { padding: 8px 2px !important; font-size: 10px !important; }
+      .role-pill i      { font-size: 14px !important; }
     }
   </style>
 </head>
 <body>
   <div class="auth-page">
-    
+
+    <!-- ── Visual Panel ── -->
     <div class="auth-visual-panel">
       <div class="auth-bg-shapes">
         <div class="shape shape-1"></div>
         <div class="shape shape-2"></div>
       </div>
-      
       <div class="visual-content">
-        <img src="assets/images/logo.png" alt="Logo" style="width: 100px; margin-bottom: 40px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));">
+        <img src="assets/images/logo.png" alt="Logo"
+             style="width:100px;margin-bottom:40px;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.3));">
         <h2>Safety first.<br>Tracking made simple.</h2>
-        <p id="visual-dynamic-subtext">Your centralized gateway for driver management, parent updates, and real-time fleet analytics.</p>
+        <p id="visual-dynamic-subtext">
+          Your centralized gateway for driver management, parent updates, and real-time fleet analytics.
+        </p>
       </div>
     </div>
 
+    <!-- ── Form Panel ── -->
     <div class="auth-form-panel">
       <div class="auth-card">
+
         <div class="auth-logo">
           <div class="logo-text" id="login-school-title">
             School Bus Track Pro
@@ -44,36 +76,47 @@
         </div>
 
         <h1 class="auth-heading" id="auth-title">Welcome back</h1>
-        <p class="auth-subtext" id="auth-subtext">Sign in to your portal — Driver, Parent, or Admin.</p>
+        <p class="auth-subtext" id="auth-subtext">
+          Sign in to your portal — Driver, Parent, or Tenant Manager.
+        </p>
 
+        <!-- Role Selector -->
         <div class="role-selector" id="role-selector">
           <button class="role-pill" data-role="driver" onclick="selectRole('driver')">
-            <i class="bi bi-truck-front-fill"></i>
-            Driver
+            <i class="bi bi-truck-front-fill"></i>Driver
           </button>
           <button class="role-pill active" data-role="parent" onclick="selectRole('parent')">
-            <i class="bi bi-person-heart"></i>
-            Parent
+            <i class="bi bi-person-heart"></i>Parent
           </button>
-          <button class="role-pill" data-role="admin" onclick="selectRole('admin')">
-            <i class="bi bi-shield-lock-fill"></i>
-            Admin
+          <button class="role-pill" data-role="school_manager" onclick="selectRole('school_manager')">
+            <i class="bi bi-building-gear"></i>Manager
+          </button>
+          <button class="role-pill" data-role="super_admin" onclick="selectRole('super_admin')">
+            <i class="bi bi-shield-lock-fill"></i>Bex Admin
           </button>
         </div>
 
+        <!-- Google Button -->
         <button class="btn-google" id="google-btn">
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
           <span id="google-text">Continue with Google</span>
         </button>
 
         <div class="divider" id="divider-text">or sign in with email</div>
 
+        <!-- ── LOGIN FORM ── -->
         <form id="login-form">
           <div class="form-group">
             <label class="form-label">Email Address</label>
             <div class="input-wrap">
               <i class="bi bi-envelope input-icon"></i>
-              <input type="email" id="email" class="form-control" placeholder="name@school.edu" required autocomplete="email">
+              <input type="email" id="email" class="form-control"
+                     placeholder="name@school.edu" required autocomplete="email">
             </div>
           </div>
 
@@ -81,8 +124,10 @@
             <label class="form-label">Password</label>
             <div class="input-wrap">
               <i class="bi bi-shield-lock input-icon"></i>
-              <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
-              <i class="bi bi-eye eye-toggle" id="eye-toggle" onclick="togglePassword('password', 'eye-toggle')"></i>
+              <input type="password" id="password" class="form-control"
+                     placeholder="••••••••" required autocomplete="current-password">
+              <i class="bi bi-eye eye-toggle" id="eye-toggle"
+                 onclick="togglePassword('password','eye-toggle')"></i>
             </div>
           </div>
 
@@ -95,50 +140,80 @@
           </div>
 
           <button type="submit" class="btn btn-yellow btn-full btn-lg" id="login-btn">
-            Login <i class="bi bi-arrow-right-short" style="font-size: 22px;"></i>
+            Login <i class="bi bi-arrow-right-short" style="font-size:22px;"></i>
           </button>
         </form>
 
-        <form id="signup-form" style="display: none;">
-          <div class="form-group" id="tenant-code-group">
-            <label class="form-label">Organization Code</label>
+        <!-- ── SIGN UP FORM ── -->
+        <form id="signup-form" style="display:none;">
+
+          <!-- School Name — shown for school_manager only -->
+          <div class="form-group" id="school-name-group" style="display:none;">
+            <label class="form-label">School Name</label>
             <div class="input-wrap">
               <i class="bi bi-building input-icon"></i>
-              <input type="text" id="signup-tenant-code" class="form-control" placeholder="e.g. greenwood-academy">
+              <input type="text" id="signup-school-name" class="form-control"
+                     placeholder="e.g. Greenwood Academy">
             </div>
+            <small style="color:var(--text-secondary);font-size:11px;margin-top:4px;display:block;">
+              This becomes your school's unique ID code.
+            </small>
           </div>
+
+          <!-- School Code — shown for driver/parent only -->
+          <div class="form-group" id="tenant-code-group" style="display:none;">
+            <label class="form-label">School ID / Code</label>
+            <div class="input-wrap">
+              <i class="bi bi-key input-icon"></i>
+              <input type="text" id="signup-tenant-code" class="form-control"
+                     placeholder="e.g. greenwood-academy">
+            </div>
+            <small style="color:var(--text-secondary);font-size:11px;margin-top:4px;display:block;">
+              Get this code from your School Manager.
+            </small>
+          </div>
+
           <div class="form-group">
             <label class="form-label">Full Name</label>
             <div class="input-wrap">
               <i class="bi bi-person input-icon"></i>
-              <input type="text" id="signup-name" class="form-control" placeholder="Enter your name" required>
+              <input type="text" id="signup-name" class="form-control"
+                     placeholder="Enter your name" required autocomplete="name">
             </div>
           </div>
+
           <div class="form-group">
             <label class="form-label">Email Address</label>
             <div class="input-wrap">
               <i class="bi bi-envelope input-icon"></i>
-              <input type="email" id="signup-email" class="form-control" placeholder="name@school.edu" required>
+              <input type="email" id="signup-email" class="form-control"
+                     placeholder="name@school.edu" required autocomplete="email">
             </div>
           </div>
+
           <div class="form-group">
             <label class="form-label">Create Password</label>
             <div class="input-wrap">
               <i class="bi bi-shield-lock input-icon"></i>
-              <input type="password" id="signup-password" class="form-control" placeholder="••••••••" required>
-              <i class="bi bi-eye eye-toggle" id="signup-eye-toggle" onclick="togglePassword('signup-password', 'signup-eye-toggle')"></i>
+              <input type="password" id="signup-password" class="form-control"
+                     placeholder="••••••••" required autocomplete="new-password">
+              <i class="bi bi-eye eye-toggle" id="signup-eye-toggle"
+                 onclick="togglePassword('signup-password','signup-eye-toggle')"></i>
             </div>
           </div>
+
           <button type="submit" class="btn btn-yellow btn-full btn-lg" id="signup-btn">
-            Create Profile <i class="bi bi-check-circle" style="margin-left: 8px;"></i>
+            Create Profile <i class="bi bi-check-circle" style="margin-left:8px;"></i>
           </button>
         </form>
 
         <div class="auth-footer">
           <p id="toggle-text">
-            Don't have an account? <a href="javascript:void(0)" onclick="toggleAuthMode('signup')">Register here</a>
+            Don't have an account?
+            <a href="javascript:void(0)" onclick="toggleAuthMode('signup')">Register here</a>
           </p>
         </div>
+
       </div>
     </div>
   </div>
@@ -146,55 +221,99 @@
   <div id="toast-container"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script>
     window.selectedRole = 'parent';
-    window.authMode = 'login';
+    window.authMode     = 'login';
+
+    // ── Update signup form fields based on selected role ──────────────────
+    function updateSignupFields() {
+      const role             = window.selectedRole;
+      const schoolNameGroup  = document.getElementById('school-name-group');
+      const tenantCodeGroup  = document.getElementById('tenant-code-group');
+
+      if (!schoolNameGroup || !tenantCodeGroup) return;
+
+      if (window.authMode !== 'signup') {
+        schoolNameGroup.style.display = 'none';
+        tenantCodeGroup.style.display = 'none';
+        return;
+      }
+
+      if (role === 'super_admin') {
+        // BEX Admin: no school affiliation needed
+        schoolNameGroup.style.display = 'none';
+        tenantCodeGroup.style.display = 'none';
+
+      } else if (role === 'school_manager') {
+        // Manager: creates a new school
+        schoolNameGroup.style.display = 'block';
+        tenantCodeGroup.style.display = 'none';
+
+      } else {
+        // Driver / Parent: join an existing school
+        // If tenant is already resolved from subdomain, no code needed
+        if (window.activeTenantId) {
+          schoolNameGroup.style.display = 'none';
+          tenantCodeGroup.style.display = 'none';
+        } else {
+          schoolNameGroup.style.display = 'none';
+          tenantCodeGroup.style.display = 'block';
+        }
+      }
+    }
 
     function selectRole(role) {
       window.selectedRole = role;
       document.querySelectorAll('.role-pill').forEach(p => p.classList.remove('active'));
-      document.querySelector(`[data-role="${role}"]`).classList.add('active');
+      const pill = document.querySelector(`[data-role="${role}"]`);
+      if (pill) pill.classList.add('active');
+      updateSignupFields();
     }
 
     function toggleAuthMode(mode) {
       window.authMode = mode;
-      const lForm = document.getElementById('login-form');
-      const sForm = document.getElementById('signup-form');
-      const title = document.getElementById('auth-title');
-      const sub = document.getElementById('auth-subtext');
-      const tText = document.getElementById('toggle-text');
-      const gText = document.getElementById('google-text');
+      const lForm  = document.getElementById('login-form');
+      const sForm  = document.getElementById('signup-form');
+      const title  = document.getElementById('auth-title');
+      const sub    = document.getElementById('auth-subtext');
+      const tText  = document.getElementById('toggle-text');
+      const gText  = document.getElementById('google-text');
+      const divider = document.getElementById('divider-text');
 
       if (mode === 'signup') {
-        lForm.style.display = 'none'; sForm.style.display = 'block';
-        title.textContent = 'Join the Fleet';
-        sub.textContent = 'Create your account to start managing school routes.';
-        gText.textContent = 'Sign up with Google';
-        tText.innerHTML = 'Already registered? <a href="javascript:void(0)" onclick="toggleAuthMode(\'login\')">Sign in here</a>';
-        
-        // Hide org code input if already locked into a subdomain tenant env
-        if (window.activeTenantId) {
-            document.getElementById('tenant-code-group').style.display = 'none';
-        }
+        lForm.style.display  = 'none';
+        sForm.style.display  = 'block';
+        title.textContent    = 'Join the Fleet';
+        sub.textContent      = 'Create your account to get started.';
+        gText.textContent    = 'Sign up with Google';
+        if (divider) divider.textContent = 'or sign up with email';
+        tText.innerHTML      = 'Already registered? <a href="javascript:void(0)" onclick="toggleAuthMode(\'login\')">Sign in here</a>';
+        updateSignupFields();
       } else {
-        lForm.style.display = 'block'; sForm.style.display = 'none';
-        title.textContent = 'Welcome back';
-        sub.textContent = 'Sign in to your portal — Driver, Parent, or Admin.';
-        gText.textContent = 'Continue with Google';
-        tText.innerHTML = 'Don\'t have an account? <a href="javascript:void(0)" onclick="toggleAuthMode(\'signup\')">Register here</a>';
+        lForm.style.display  = 'block';
+        sForm.style.display  = 'none';
+        title.textContent    = 'Welcome back';
+        sub.textContent      = 'Sign in to your portal — Driver, Parent, or Tenant Manager.';
+        gText.textContent    = 'Continue with Google';
+        if (divider) divider.textContent = 'or sign in with email';
+        tText.innerHTML      = 'Don\'t have an account? <a href="javascript:void(0)" onclick="toggleAuthMode(\'signup\')">Register here</a>';
       }
     }
 
     function togglePassword(inputId, iconId) {
-      const pw = document.getElementById(inputId);
+      const pw   = document.getElementById(inputId);
       const icon = document.getElementById(iconId);
       if (pw.type === 'password') {
-        pw.type = 'text'; icon.className = 'bi bi-eye-slash eye-toggle';
+        pw.type = 'text';
+        icon.className = 'bi bi-eye-slash eye-toggle';
       } else {
-        pw.type = 'password'; icon.className = 'bi bi-eye eye-toggle';
+        pw.type = 'password';
+        icon.className = 'bi bi-eye eye-toggle';
       }
     }
   </script>
+
   <script src="js/config.js" type="module"></script>
   <script src="js/auth.js" type="module"></script>
 </body>

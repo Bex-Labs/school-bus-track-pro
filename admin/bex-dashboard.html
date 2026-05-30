@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Global Fleet Command | Bex Central Platform</title>
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <style>
+    /* --- MULTI-TENANT ENTERPRISE OPERATIONAL STYLES --- */
+    .bus-scroll-area { height: 320px; overflow-y: auto; padding: 4px; scrollbar-width: thin; }
+    .bus-card { background: var(--bg); padding: 14px; border-radius: var(--r-lg); border: 1px solid var(--border); display: flex; align-items: center; gap: 14px; margin-bottom: 10px; cursor: pointer; transition: var(--transition); }
+    .bus-card:hover { transform: translateX(6px); border-color: var(--yellow); background: white; }
+    .bus-card.active-unit { border-left: 4px solid var(--green); }
+    .bus-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .bus-icon.online { background: var(--green-light); color: var(--green); }
+    .bus-icon.offline { background: #e2e8f0; color: var(--text-muted); }
+
+    .broadcast-box { background: var(--navy); color: white; padding: 18px; border-radius: var(--r-xl); margin-top: 16px; }
+    .broadcast-input { width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: var(--r-md); padding: 10px; margin: 10px 0; outline: none; font-size: 13px; }
+    .metric-sublabel { font-size: 11px; color: var(--text-secondary); margin-top: 4px; display: block; }
+
+    /* --- LIVE CRITICAL CRISIS STATUS CARD ANIMATIONS --- */
+    .crisis-card-stable { background: white; border: 1px solid var(--border); transition: var(--transition); }
+    .crisis-card-active { background: #fee2e2 !important; border: 2px solid #ef4444 !important; animation: pulseBorder 2s infinite ease-in-out; }
+    @keyframes pulseBorder { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+
+    /* --- REAL-TIME LIVE UPDATE TICKER STREAM --- */
+    .ticker-container { height: 180px; overflow-y: auto; scrollbar-width: thin; display: flex; flex-direction: column; gap: 8px; }
+    .ticker-item { padding: 10px; border-radius: var(--r-md); background: var(--bg); border: 1px solid var(--border); font-size: 12px; display: flex; gap: 10px; align-items: start; animation: fadeInItem 0.4s ease; cursor: pointer; transition: var(--transition); }
+    .ticker-item:hover { background: white; border-color: var(--yellow); }
+    @keyframes fadeInItem { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* --- COMPACT INFRATRUCTURE CONTAINER MATRIX --- */
+    .infra-table-matrix { width: 100%; border-collapse: separate !important; border-spacing: 10px 0px !important; margin: 8px -10px 0 -10px; table-layout: fixed; }
+    .infra-data-node { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 6px !important; text-align: center; vertical-align: middle; }
+    .infra-title-text { font-size: 9px !important; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-secondary); font-weight: 700; }
+    .infra-value-text { font-size: 20px !important; font-weight: 900; margin-top: 4px; }
+
+    .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* --- PREMIUM MOBILE-FIRST RESPONSIVE BREAKPOINTS --- */
+    @media (max-width: 768px) {
+        .admin-sidebar { display: none !important; }
+        .admin-main { margin-left: 0 !important; padding: 16px 16px 100px 16px !important; }
+        .desktop-only { display: none !important; }
+        .topbar-title { font-size: 22px !important; font-weight: 900; }
+        .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+        .bento-grid { display: flex !important; flex-direction: column !important; gap: 16px !important; }
+        .tile-4, .tile-8, .tile-12 { width: 100% !important; }
+        
+        /* Collapse metrics cleanly on mobile views */
+        .infra-table-matrix, .infra-table-matrix tbody, .infra-table-matrix tr, .infra-data-node { display: block !important; width: 100% !important; margin: 0 0 8px 0 !important; }
+        #admin-fleet-map { min-height: 320px !important; height: 320px !important; }
+        
+        /* SINGLE-ROW ULTRA-SLIM 7-LINK MENU CONFIGURATION FOR MOBILE PHONES */
+        .bottom-nav.mobile-only { 
+            height: 64px !important; 
+            padding: 0 !important; 
+            display: flex !important; 
+            flex-direction: row !important; 
+            justify-content: space-around !important; 
+            align-items: center !important; 
+            gap: 0 !important;
+            background: var(--navy) !important;
+        }
+        .bottom-nav.mobile-only a { 
+            flex: 1 !important;
+            height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            align-items: center !important;
+            font-size: 0px !important; /* Strips text labels cleanly to save space on mobile width bounds */
+            padding: 0 !important;
+            margin: 0 !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+        }
+        .bottom-nav.mobile-only a i { 
+            font-size: 22px !important; /* Enlarges pure interface action icons inside wide touch spaces */
+            margin: 0 !important;
+        }
+        .bottom-nav.mobile-only a.active {
+            color: var(--yellow) !important;
+            background: rgba(255, 255, 255, 0.04) !important;
+        }
+    }
+  </style>
+</head>
+<body>
+
+<div class="admin-layout">
+  
+  <aside class="admin-sidebar" style="display: flex; flex-direction: column; height: 100vh;">
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png" alt="Logo">
+      <div class="logo-text">Bex Central Hub <small>SaaS Superuser Console</small></div>
+    </div>
+    
+    <nav class="sidebar-nav" style="flex: 1; overflow-y: auto;">
+      <div class="nav-group-label">Enterprise Monitoring</div>
+      <a href="bex-dashboard.html" class="nav-link active"><i class="bi bi-radar"></i><span>Global Fleet</span></a>
+      <a href="crisis-center.html" class="nav-link"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis Center</span></a>
+      <a href="schools-management.html" class="nav-link"><i class="bi bi-building"></i><span>Tenant Schools</span></a>
+      
+      <div class="nav-group-label">System Management</div>
+      <a href="users-directory.html" class="nav-link"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
+      <a href="analytics-room.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics Room</span></a>
+      <a href="billing-usage.html" class="nav-link"><i class="bi bi-envelope-check-fill"></i><span>Resend Gateway</span></a>
+      <a href="audit-logs.html" class="nav-link"><i class="bi bi-journal-text"></i><span>System Audit</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="tel:+2348114875252" class="btn btn-sm btn-yellow btn-full" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; text-decoration: none; font-weight: 800;">
+        <i class="bi bi-telephone-outbound-fill"></i> Directors Hotline
+      </a>
+      <div class="admin-user" style="display: flex; align-items: center; gap: 12px;">
+        <div class="admin-avatar" id="avatar-char" style="width: 36px; height: 36px; background: var(--yellow); color: var(--navy); border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; font-weight: 800;">B</div>
+        <div class="admin-user-info" style="color:white; font-size: 13px;">
+          <div style="font-weight:800;" id="admin-user-name">Bex Administrator</div>
+          <div style="opacity:0.6; font-size:11px;">Global Platform Controller</div>
+        </div>
+      </div>
+      <button id="signout-btn" class="btn btn-red btn-full btn-sm" style="margin-top: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); width: 100%;">
+        <i class="bi bi-power"></i> Log Out
+      </button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1 class="topbar-title">Global Fleet Command Center</h1>
+        <p style="font-size: 13px; color: var(--text-secondary);">Aggregate cross-tenant vehicle tracking grid and real-time telemetry pipelines.</p>
+      </div>
+      <div class="desktop-only" style="display: flex; gap: 12px; align-items: center;">
+        <div style="background: var(--green-light); color: var(--green); padding: 8px 16px; border-radius: var(--r-full); font-size: 12px; font-weight: 800;">
+          <span class="live-dot"></span> SAAS CLOUD ONLINE
+        </div>
+        <button class="btn btn-yellow btn-sm" onclick="window.print()"><i class="bi bi-file-earmark-arrow-down"></i> Export Logs</button>
+      </div>
+    </header>
+
+    <div class="admin-content">
+      
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Active Tenants</div>
+          <div class="kpi-value text-yellow" id="kpi-schools">0</div>
+          <span class="metric-sublabel">Provisioned multi-schools</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Global Active Fleet</div>
+          <div class="kpi-value" id="kpi-active">0</div>
+          <span class="metric-sublabel">Nodes emitting telemetry</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Total System Load</div>
+          <div class="kpi-value text-green" id="kpi-metering">0</div>
+          <span class="metric-sublabel">Aggregated tracking entities</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Active Crisis Incidents</div>
+          <div class="kpi-value text-red" id="kpi-alerts">0</div>
+          <span class="metric-sublabel">Unacknowledged SOS alerts</span>
+        </div>
+      </div>
+
+      <div class="bento-grid">
+        
+        <div class="tile tile-8">
+            <div class="table-header">
+                <div class="table-title"><i class="bi bi-geo-alt-fill text-yellow"></i> Global Cross-Tenant Geospatial View</div>
+            </div>
+            <div id="admin-fleet-map" style="flex: 1; min-height: 440px; border-radius: 12px;"></div>
+        </div>
+
+        <div class="tile tile-4" style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="flex: 1; min-height: 200px;">
+              <div class="table-header"><div class="table-title">Global Fleet Roll</div></div>
+              <div class="bus-scroll-area" id="bus-list-sidebar">
+                <div style="text-align: center; color: var(--text-muted); padding-top: 40px;">
+                  <i class="bi bi-arrow-clockwise spin" style="font-size: 20px; display: block; margin-bottom: 6px;"></i>
+                  Connecting cluster streams...
+                </div>
+              </div>
+            </div>
+
+            <div style="height: 220px; border-top: 1px solid var(--border); padding-top: 16px;">
+              <div class="table-header" style="margin-bottom: 10px;">
+                <div class="table-title" style="color: var(--red);"><span class="live-dot" style="background: var(--red);"></span> Live Crisis Updates</div>
+              </div>
+              <div class="ticker-container" id="crisis-live-ticker">
+                <div style="font-size: 11px; color: var(--text-secondary); text-align: center; padding-top: 30px;">
+                  Awaiting operational transmission log arrays...
+                </div>
+              </div>
+            </div>
+        </div>
+
+        <div class="tile tile-4">
+          <div class="broadcast-box" style="margin-top: 0; height: 100%; display: flex; flex-direction: column; justify-content: center;">
+              <div style="font-weight: 800; font-size: 13px; color: var(--yellow);">
+                  <i class="bi bi-megaphone-fill"></i> PLATFORM OVERRIDE BROADCAST
+              </div>
+              <input type="text" id="broadcast-input" class="broadcast-input" placeholder="Type system advisory message...">
+              <button class="btn btn-yellow btn-full btn-sm" id="btn-send-broadcast" style="width: 100%;">
+                  <i class="bi bi-send-fill"></i> Dispatch Across All Tenants
+              </button>
+          </div>
+        </div>
+
+        <div class="tile tile-8">
+          <div class="table-header"><div class="table-title"><i class="bi bi-shield-fill-check text-green"></i> Cloud Infrastructure Metrics</div></div>
+          
+          <table class="infra-table-matrix">
+            <tr>
+              <td class="infra-data-node">
+                <div class="infra-title-text">Drivers Active</div>
+                <div class="infra-value-text text-navy" id="metrics-drivers" style="color: var(--navy);">0</div>
+              </td>
+              <td class="infra-data-node">
+                <div class="infra-title-text">Mail Transmissions</div>
+                <div class="infra-value-text text-green" id="metrics-mail" style="color: var(--green);">0</div>
+              </td>
+              <td class="infra-data-node">
+                <div class="infra-title-text">Log Mutations</div>
+                <div class="infra-value-text text-navy" id="metrics-logs" style="color: var(--navy);">0</div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="tile tile-12">
+            <div class="table-header"><div class="table-title">Comprehensive Multi-Tenant Telemetry Grid</div></div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tenant Organization</th>
+                            <th>Bus Reference Identifier</th>
+                            <th>Service Status</th>
+                            <th>Current Velocity</th>
+                            <th>Coordinate Vector Pair</th>
+                            <th>Last Synchronization Sync</th>
+                            <th style="text-align:right;">Control Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fleet-table-body">
+                      <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                          Awaiting cloud socket handshake data layers...
+                        </td>
+                      </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav mobile-only">
+    <a href="bex-dashboard.html" class="active" title="Global Fleet"><i class="bi bi-radar"></i></a>
+    <a href="crisis-center.html" title="Crisis Center"><i class="bi bi-exclamation-octagon-fill"></i></a>
+    <a href="schools-management.html" title="Tenant Schools"><i class="bi bi-building"></i></a>
+    <a href="users-directory.html" title="User Directory"><i class="bi bi-people-fill"></i></a>
+    <a href="analytics-room.html" title="Analytics Room"><i class="bi bi-graph-up-arrow"></i></a>
+    <a href="billing-usage.html" title="Resend Gateway"><i class="bi bi-envelope-check-fill"></i></a>
+    <a href="audit-logs.html" title="System Audit"><i class="bi bi-journal-text"></i></a>
+</nav>
+
+<div id="toast-container"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script type="module">
+  import { supabase } from '../js/config.js';
+  import { signOut, requireAuth } from '../js/auth.js';
+
+  const map = L.map('admin-fleet-map', { zoomControl: true, attributionControl: false }).setView([6.5244, 3.3792], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+
+  let busMarkers = {};
+  let schoolMapIndex = {}; 
+
+  const broadcastChannel = supabase.channel('global-fleet-broadcast');
+  broadcastChannel.subscribe();
+
+  async function verifyAdminAuth() {
+    const session = await requireAuth();
+    if (!session) return;
+
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', session.user.id)
+      .single();
+
+    const activeRole = profile?.role || session.user.user_metadata?.role;
+    const nameStr = profile?.full_name || session.user.user_metadata?.full_name || "Bex Operator";
+
+    if (activeRole === 'super_admin' || activeRole === 'admin' || session.user.email?.includes('admin')) {
+        const charElem = document.getElementById('avatar-char');
+        const nameElem = document.getElementById('admin-user-name');
+        if (nameElem) nameElem.textContent = nameStr;
+        if (charElem) charElem.textContent = nameStr.charAt(0).toUpperCase();
+        
+        if (!profile && error?.code === 'PGRST116') {
+          await supabase.from('profiles').insert([{
+             id: session.user.id,
+             full_name: nameStr,
+             email: session.user.email,
+             role: 'super_admin'
+          }]);
+        }
+
+        setTimeout(() => { startCommandCenter(); }, 50);
+    } else {
+       window.showToast("Administrative verification failed. Relocating context...", 'error');
+       setTimeout(async () => {
+           await supabase.auth.signOut();
+           window.location.href = '../index.html';
+       }, 100);
+    }
+  }
+
+  async function startCommandCenter() {
+      await fetchOrganizationDirectory();
+      await fetchGlobalData();
+      await fetchInfrastructureAnalytics();
+      await fetchCrisisUpdateTicker();
+
+      supabase.channel('fleet-master-saas')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'buses' }, () => {
+            fetchGlobalData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+            fetchInfrastructureAnalytics();
+            fetchCrisisUpdateTicker();
+        })
+        .subscribe();
+  }
+
+  async function fetchOrganizationDirectory() {
+    try {
+      const { data: schools, error } = await supabase.from('organizations').select('id, name');
+      if (error) return;
+      if (schools) {
+        const countElem = document.getElementById('kpi-schools');
+        if (countElem) countElem.textContent = schools.length;
+        schools.forEach(s => { schoolMapIndex[s.id] = s.name; });
+      }
+    } catch(e) { console.error(e); }
+  }
+
+  async function fetchInfrastructureAnalytics() {
+    try {
+      const { count: driversCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'driver');
+      const { count: logsCount } = await supabase.from('notifications').select('*', { count: 'exact', head: true });
+      const { count: mailCount } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('type', 'broadcast');
+
+      const dElem = document.getElementById('metrics-drivers');
+      const mElem = document.getElementById('metrics-mail');
+      const lElem = document.getElementById('metrics-logs');
+
+      if (dElem) dElem.textContent = driversCount || 0;
+      if (mElem) mElem.textContent = mailCount || 0;
+      if (lElem) lElem.textContent = logsCount || 0;
+    } catch (err) { console.error(err); }
+  }
+
+  async function fetchCrisisUpdateTicker() {
+    try {
+      const { data: criticalLogs, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('type', 'emergency')
+        .order('id', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      const tickerContainer = document.getElementById('crisis-live-ticker');
+      const activeAlertsCount = criticalLogs.filter(l => l.status === 'active').length;
+
+      const crisisCard = document.getElementById('crisis-status-card');
+      const alertsKPI = document.getElementById('kpi-alerts');
+      const cardTitle = document.getElementById('crisis-card-title');
+      const cardActionSlot = document.getElementById('crisis-card-action');
+
+      if (alertsKPI) alertsKPI.textContent = activeAlertsCount;
+
+      if (activeAlertsCount > 0) {
+        if (crisisCard) {
+          crisisCard.className = "kpi-card crisis-card-active";
+          crisisCard.style.background = "#fee2e2";
+        }
+        if (cardTitle) cardTitle.style.color = "#dc2626";
+        if (cardActionSlot) {
+          cardActionSlot.innerHTML = `
+            <a href="crisis-center.html" class="btn btn-sm btn-red btn-full" style="margin-top:8px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:6px; background:#ef4444; color:white; text-decoration:none; border-radius:var(--r-md);">
+              <i class="bi bi-exclamation-octagon-fill"></i> Launch Crisis Room
+            </a>`;
+        }
+      } else {
+        if (crisisCard) {
+          crisisCard.className = "kpi-card crisis-card-stable";
+          crisisCard.style.background = "white";
+        }
+        if (cardTitle) cardTitle.style.color = "var(--text-muted)";
+        if (cardActionSlot) {
+          cardActionSlot.innerHTML = `<span class="metric-sublabel">No active system emergencies</span>`;
+        }
+      }
+
+      if (!criticalLogs || criticalLogs.length === 0) {
+        tickerContainer.innerHTML = `<div style="font-size: 11px; color: var(--text-muted); text-align: center; padding-top: 40px;">No operational crisis signals recorded.</div>`;
+        return;
+      }
+
+      tickerContainer.innerHTML = criticalLogs.map(log => {
+        const tenantName = schoolMapIndex[log.organization_id || log.school_id] || "Global Base Node";
+        const isUnresolved = log.status === 'active';
+        
+        return `
+          <div class="ticker-item" onclick="window.location.href='crisis-center.html'">
+            <i class="bi ${isUnresolved ? 'bi-exclamation-triangle-fill text-red' : 'bi-check-circle-fill text-green'}" style="font-size:16px; margin-top:2px;"></i>
+            <div style="flex:1;">
+              <div style="font-weight:800; display:flex; justify-content:space-between;">
+                <span>${log.title}</span>
+                <span style="font-size:10px; opacity:0.6; font-weight:normal;">${isUnresolved ? 'ACTIVE' : 'RESOLVED'}</span>
+              </div>
+              <div style="font-size:11px; opacity:0.8; margin-top:2px; color:var(--text-secondary);">${log.message}</div>
+              <div style="font-size:10px; color:var(--navy); font-weight:700; margin-top:4px;"><i class="bi bi-building"></i> ${tenantName}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+    } catch (err) { console.error("Crisis feed stream inquiry lock fault:", err); }
+  }
+
+  document.getElementById('btn-send-broadcast').onclick = async () => {
+      const input = document.getElementById('broadcast-input');
+      const broadcastMsg = input.value?.trim();
+      if (!broadcastMsg) return;
+
+      const btn = document.getElementById('btn-send-broadcast');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Dispatching Override...';
+
+      broadcastChannel.send({
+          type: 'broadcast',
+          event: 'urgent-alert',
+          payload: { 
+              title: "🚨 PLATFORM OVERRIDE ALERT", 
+              message: broadcastMsg,
+              timestamp: new Date().toISOString()
+          }
+      });
+
+      await supabase.from('notifications').insert([{
+          title: "GLOBAL ADMIN OVERRIDE BROADCAST",
+          message: broadcastMsg,
+          type: 'broadcast',
+          status: 'logged'
+      }]);
+
+      window.showToast("Platform advisory override transmitted system-wide instantly.", "success");
+      input.value = '';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-send-fill"></i> Dispatch Across All Tenants';
+  };
+
+  async function fetchGlobalData() {
+    try {
+        const { data: buses, error } = await supabase.from('buses').select('*').order('id');
+        if (error) {
+          const body = document.getElementById('fleet-table-body');
+          if (body) body.innerHTML = `<tr><td colspan='7' style='text-align:center;color:var(--text-muted);'>Handshaking socket telemetry pipelines...</td></tr>`;
+          return;
+        }
+
+        if (buses) {
+          renderGlobalDirectory(buses);
+          renderGlobalTelemetryTable(buses);
+          
+          const activeKPI = document.getElementById('kpi-active');
+          const meterKPI = document.getElementById('kpi-metering');
+          const onlineCount = buses.filter(b => b.status === 'active').length;
+
+          if (activeKPI) activeKPI.textContent = onlineCount;
+          if (meterKPI) meterKPI.textContent = buses.length;
+
+          buses.forEach(bus => syncGlobalMarker(bus));
+        }
+    } catch (e) { console.error(e.message); }
+  }
+
+  function syncGlobalMarker(bus) {
+    const lat = bus.current_lat || 6.5244;
+    const lng = bus.current_lng || 3.3792;
+    const isLive = bus.status === 'active';
+    const markerColor = isLive ? '#22C55E' : '#EF4444';
+    const associatedSchoolName = schoolMapIndex[bus.school_id || bus.organization_id] || "Global Workspace Node";
+
+    if (busMarkers[bus.id]) {
+        busMarkers[bus.id].setLatLng([lat, lng]);
+    } else {
+        const icon = L.divIcon({
+            html: `<div style="background:${markerColor}; width:34px; height:34px; border-radius:10px; border:3px solid white; display:flex; align-items:center; justify-content:center; color:white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                    <i class="bi bi-bus-front-fill"></i>
+                  </div>`,
+            className: '', iconSize: [34, 34]
+        });
+        busMarkers[bus.id] = L.marker([lat, lng], { icon }).addTo(map).bindPopup(`<b>Unit Identifier: ${bus.id}</b><br>Tenant: ${associatedSchoolName}<br>Velocity: ${bus.speed || 0} km/h`);
+    }
+  }
+
+  function renderGlobalDirectory(buses) {
+    const list = document.getElementById('bus-list-sidebar');
+    if (!list) return;
+    
+    if (buses.length === 0) {
+      list.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding-top:30px;">No registered fleet units online.</div>`;
+      return;
+    }
+
+    list.innerHTML = buses.map(bus => {
+      const isLive = bus.status === 'active';
+      const tenantAffiliationLabel = schoolMapIndex[bus.school_id || bus.organization_id] || "Global Base Node";
+      
+      return `
+      <div class="bus-card ${isLive ? 'active-unit' : ''}" onclick="window.focusUnit(${bus.current_lat}, ${bus.current_lng})">
+        <div class="bus-icon ${isLive ? 'online' : 'offline'}">
+          <i class="bi bi-truck-front-fill"></i>
+        </div>
+        <div style="flex:1; min-width: 0;">
+          <div style="font-weight:800; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${bus.id}</div>
+          <div style="font-size:11px; opacity:0.7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${tenantAffiliationLabel}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:800; font-size:12px;">${bus.speed || 0} km/h</div>
+          <span class="badge ${isLive ? 'badge-green' : 'badge-red'}">${isLive ? 'LIVE' : 'OFF'}</span>
+        </div>
+      </div>
+    `}).join('');
+  }
+
+  function renderGlobalTelemetryTable(buses) {
+    const body = document.getElementById('fleet-table-body');
+    if (!body) return;
+
+    if (buses.length === 0) {
+      body.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No fleet unit data records mapped to active cloud nodes.</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = buses.map(bus => {
+      const isLive = bus.status === 'active';
+      const tenantOrgLabel = schoolMapIndex[bus.school_id || bus.organization_id] || "Global Base Node";
+      
+      return `
+      <tr>
+        <td><span style="font-weight: 700; color: var(--navy);">${tenantOrgLabel}</span></td>
+        <td><strong>${bus.id}</strong></td>
+        <td><span class="badge ${isLive ? 'badge-green' : 'badge-red'}">${bus.status.toUpperCase()}</span></td>
+        <td>${bus.speed || 0} km/h</td>
+        <td style="font-family: monospace; font-size: 11px;">${(bus.current_lat || 0).toFixed(4)}, ${(bus.current_lng || 0).toFixed(4)}</td>
+        <td>${bus.last_seen ? new Date(bus.last_seen).toLocaleTimeString() : '---'}</td>
+        <td style="text-align:right;"><button class="btn btn-ghost btn-sm" onclick="window.focusUnit(${bus.current_lat}, ${bus.current_lng})">Locate</button></td>
+      </tr>
+    `}).join('');
+  }
+
+  window.focusUnit = (la, ln) => {
+      if(la && ln) map.flyTo([la, ln], 16);
+  };
+
+  window.showToast = (m, t='info') => {
+    const c = document.getElementById('toast-container');
+    if (!c) return;
+    const d = document.createElement('div');
+    d.className = `toast ${t} active`;
+    d.textContent = m;
+    c.appendChild(d);
+    setTimeout(() => d.remove(), 4000);
+  };
+
+  document.getElementById('signout-btn').onclick = () => signOut();
+  
+  verifyAdminAuth();
+</script>
+</body>
+</html>

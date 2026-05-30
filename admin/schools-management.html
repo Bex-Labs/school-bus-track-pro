@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tenant Schools Provisioning | Bex Central Admin</title>
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <style>
+    /* --- MULTI-TENANT SWITCHBOARD LAYERS --- */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); z-index: 2000; backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+    .modal-overlay.active { display: flex; }
+    .modal-card { background: white; width: 100%; max-width: 520px; padding: 28px; border-radius: var(--r-xl); border: 1px solid var(--border); box-shadow: var(--shadow-lg); }
+    .form-input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--r-md); margin-top: 4px; margin-bottom: 14px; outline: none; font-size: 13px; color: var(--navy); background: var(--bg); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    
+    .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* --- CLEAN SOLID WHITE INFRASTRUCTURE CARDS GRID --- */
+    .infra-grid-matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; margin: 12px 0 24px 0; }
+    .infra-data-node { background: white !important; border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px 12px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: var(--shadow-sm); min-height: 90px; }
+    .infra-title-text { font-size: 10px !important; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); font-weight: 700; line-height: 1.3; margin-bottom: 6px; }
+    .infra-value-text { font-size: 24px !important; font-weight: 900; color: var(--navy); line-height: 1; margin-top: auto; }
+
+    /* --- ENTERPRISE INTERFACE CONTROL BUTTONS --- */
+    .toggle-btn { padding: 4px 10px; font-size: 11px; font-weight: 800; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; transition: var(--transition); background: var(--bg); color: var(--text-secondary); }
+    .toggle-btn.active-feat { background: var(--green-light); border-color: var(--green); color: var(--green); }
+
+    /* --- PREMIUM MOBILE-FIRST RESPONSIVE BREAKPOINTS --- */
+    @media (max-width: 768px) {
+        .admin-sidebar { display: none !important; }
+        .admin-main { margin-left: 0 !important; padding: 16px 16px 100px 16px !important; overflow-x: hidden !important; }
+        .desktop-only { display: none !important; }
+        .topbar-title { font-size: 22px !important; font-weight: 900; }
+        .form-row { grid-template-columns: 1fr; gap: 0; }
+        
+        /* CLEAN PORTRAIT HEADER SYSTEM ADJUSTMENTS */
+        .admin-topbar { flex-direction: column !important; align-items: stretch !important; gap: 14px !important; margin-bottom: 20px !important; height: auto !important; }
+        .admin-topbar .btn-sm { width: 100% !important; padding: 12px !important; font-size: 13px !important; display: flex !important; justify-content: center !important; align-items: center !important; gap: 6px !important; height: auto !important; }
+
+        /* MULTI-TENANT SHARD GRID BLOCK RE-ARRANGEMENTS */
+        .infra-grid-matrix { grid-template-columns: 1fr !important; gap: 12px !important; margin: 8px 0 20px 0 !important; }
+        .infra-data-node { padding: 14px 16px !important; min-height: auto !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; }
+        .infra-title-text { margin-bottom: 0 !important; text-align: left !important; max-width: 70% !important; }
+        .infra-value-text { font-size: 22px !important; margin-top: 0 !important; }
+
+        /* SINGLE-ROW ULTRA-SLIM 7-LINK NAV MENU FOR MOBILE VIEWPORTS */
+        .bottom-nav.mobile-only { 
+            height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center !important; gap: 0 !important; background: var(--navy) !important;
+        }
+        .bottom-nav.mobile-only a { 
+            flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0px !important; padding: 0 !important; margin: 0 !important; color: rgba(255, 255, 255, 0.6) !important;
+        }
+        .bottom-nav.mobile-only a i { font-size: 22px !important; margin: 0 !important; }
+        .bottom-nav.mobile-only a.active { color: var(--yellow) !important; background: rgba(255, 255, 255, 0.04) !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- PROVISION NEW TENANT MULTI-SCHOOL WORKSPACE MODAL -->
+<div class="modal-overlay" id="provision-modal">
+  <div class="modal-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h3 style="font-weight:900; font-size:18px; color:var(--navy);"><i class="bi bi-building-plus-fill text-yellow"></i> Provision Tenant Base</h3>
+      <i class="bi bi-x-lg" style="cursor:pointer;" onclick="toggleModal(false)"></i>
+    </div>
+    <form id="provision-form">
+      <div class="form-row">
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">School System Name</label>
+          <input type="text" id="school-name" class="form-input" placeholder="Greenwood Academy" required>
+        </div>
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">Subdomain Gateway</label>
+          <input type="text" id="school-subdomain" class="form-input" placeholder="greenwood" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">Custom White-label Domain</label>
+          <input type="text" id="school-custom-domain" class="form-input" placeholder="parents.greenwood.edu">
+        </div>
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">Subscription SaaS Tier</label>
+          <select id="school-tier" class="form-input" style="height: 40px;">
+            <option value="Basic">Basic Tracking Package</option>
+            <option value="Premium" selected>Premium Enterprise Fleet</option>
+            <option value="Custom">Custom Institutional Tier</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">Brand Assets Primary Color</label>
+          <input type="text" id="school-color" class="form-input" value="#0F172A" placeholder="#0F172A">
+        </div>
+        <div>
+          <label style="font-size:11px; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">API Map Metering Limit (Monthly)</label>
+          <input type="number" id="school-meter-limit" class="form-input" value="50000" placeholder="50000">
+        </div>
+      </div>
+      
+      <div style="display:flex; gap:12px; margin-top:10px;">
+        <button type="submit" class="btn btn-yellow btn-full" id="btn-submit-school" style="font-weight:800;">Deploy Workspace Partition</button>
+        <button type="button" class="btn btn-ghost" onclick="toggleModal(false)">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="admin-layout">
+  
+  <!-- DESKTOP SIDEBAR PANEL -->
+  <aside class="admin-sidebar" style="display: flex; flex-direction: column; height: 100vh;">
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png" alt="Logo">
+      <div class="logo-text">Bex Central Hub <small>SaaS Superuser Console</small></div>
+    </div>
+    
+    <nav class="sidebar-nav" style="flex: 1; overflow-y: auto;">
+      <div class="nav-group-label">Enterprise Monitoring</div>
+      <a href="bex-dashboard.html" class="nav-link"><i class="bi bi-radar"></i><span>Global Fleet</span></a>
+      <a href="crisis-center.html" class="nav-link"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis Center</span></a>
+      <a href="schools-management.html" class="nav-link active"><i class="bi bi-building"></i><span>Tenant Schools</span></a>
+      
+      <div class="nav-group-label">System Management</div>
+      <a href="users-directory.html" class="nav-link"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
+      <a href="analytics-room.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics Room</span></a>
+      <a href="billing-usage.html" class="nav-link"><i class="bi bi-envelope-check-fill"></i><span>Resend Gateway</span></a>
+      <a href="audit-logs.html" class="nav-link"><i class="bi bi-journal-text"></i><span>System Audit</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="tel:+2348114875252" class="btn btn-sm btn-yellow btn-full" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; text-decoration: none; font-weight: 800;">
+        <i class="bi bi-telephone-outbound-fill"></i> Directors Hotline
+      </a>
+      <div class="admin-user" style="display: flex; align-items: center; gap: 12px;">
+        <div class="admin-avatar" id="avatar-char" style="width: 36px; height: 36px; background: var(--yellow); color: var(--navy); border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; font-weight: 800;">B</div>
+        <div class="admin-user-info" style="color:white; font-size: 13px;">
+          <div style="font-weight:800;" id="admin-user-name">Bex Administrator</div>
+          <div style="opacity:0.6; font-size:11px;">Global Platform Controller</div>
+        </div>
+      </div>
+      <button id="signout-btn" class="btn btn-red btn-full btn-sm" style="margin-top: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); width: 100%;">
+        <i class="bi bi-power"></i> Log Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN OPERATIONAL TRACK -->
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1 class="topbar-title">Tenant Schools</h1>
+        <p style="font-size: 13px; color: var(--text-secondary);">Provision localized network branches, manage feature flagging, and monitor subdomain allocations.</p>
+      </div>
+      <button class="btn btn-yellow btn-sm" onclick="toggleModal(true)"><i class="bi bi-plus-circle-fill"></i> Provision School</button>
+    </header>
+
+    <div class="admin-content">
+      
+      <!-- INFRA GRID MATRIX ENFORCED FOR PROPORTIONAL RENDERING -->
+      <div class="infra-grid-matrix">
+        <div class="infra-data-node">
+          <div class="infra-title-text">Active Tenants</div>
+          <div class="infra-value-text" id="metrics-schools-active">0</div>
+        </div>
+        <div class="infra-data-node">
+          <div class="infra-title-text">Email Channels</div>
+          <div class="infra-value-text" id="metrics-email-active">0</div>
+        </div>
+        <div class="infra-data-node">
+          <div class="infra-title-text">Premium Accounts</div>
+          <div class="infra-value-text" id="metrics-premium-count">0</div>
+        </div>
+      </div>
+
+      <!-- MINIMALIST LEDGER INSTANCE TABLE -->
+      <div class="tile tile-12" style="margin-top: 10px;">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>School System Identity Name</th>
+                <th>Gateway Routing</th>
+                <th>SaaS Tier</th>
+                <th>Communication Node</th>
+                <th>Account Status</th>
+                <th style="text-align:right;">Global Overrides</th>
+              </tr>
+            </thead>
+            <tbody id="schools-matrix-body">
+              <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:30px;">Polling database instance tables...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- FLOATING ICON NAVIGATION BAR FOR MOBILE CONFIGURATIONS — 1 ROW ONLY -->
+<nav class="bottom-nav mobile-only">
+    <a href="bex-dashboard.html" title="Global Fleet"><i class="bi bi-radar"></i></a>
+    <a href="crisis-center.html" title="Crisis Center"><i class="bi bi-exclamation-octagon-fill"></i></a>
+    <a href="schools-management.html" class="active" title="Tenant Schools"><i class="bi bi-building"></i></a>
+    <a href="users-directory.html" title="User Directory"><i class="bi bi-people-fill"></i></a>
+    <a href="analytics-room.html" title="Analytics Room"><i class="bi bi-graph-up-arrow"></i></a>
+    <a href="billing-usage.html" title="Resend Gateway"><i class="bi bi-envelope-check-fill"></i></a>
+    <a href="audit-logs.html" title="System Audit"><i class="bi bi-journal-text"></i></a>
+</nav>
+
+<div id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script type="module">
+  import { supabase } from '../js/config.js';
+  import { signOut, requireAuth } from '../js/auth.js';
+
+  window.toggleModal = (show) => {
+    document.getElementById('provision-modal').classList.toggle('active', show);
+    if (!show) document.getElementById('provision-form').reset();
+  };
+
+  async function verifyAdminAuth() {
+    const session = await requireAuth();
+    if (!session) return;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', session.user.id)
+      .single();
+
+    const activeRole = profile?.role || session.user.user_metadata?.role;
+    const nameStr = profile?.full_name || session.user.user_metadata?.full_name || "Bex Operator";
+
+    if (activeRole === 'super_admin' || activeRole === 'admin' || session.user.email?.includes('admin')) {
+        document.getElementById('admin-user-name').textContent = nameStr;
+        document.getElementById('avatar-char').textContent = nameStr.charAt(0).toUpperCase();
+        
+        setTimeout(() => { bootstrapSchoolsConsole(); }, 50);
+    } else {
+        window.location.href = '../index.html';
+    }
+  }
+
+  async function bootstrapSchoolsConsole() {
+    await fetchActiveTenantPartitions();
+
+    supabase.channel('schools-directory-clean-matrix')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'organizations' }, () => {
+          fetchActiveTenantPartitions();
+      })
+      .subscribe();
+  }
+
+  async function fetchActiveTenantPartitions() {
+    try {
+      const { data: schools, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      calculateAdvancedSaaSKPIs(schools || []);
+      renderTenantMatrixBody(schools || []);
+
+    } catch (err) { window.showToast(`Database query error: ${err.message}`, 'error'); }
+  }
+
+  function calculateAdvancedSaaSKPIs(schools) {
+    const totalActive = schools.filter(s => s.account_status !== 'suspended').length;
+    const totalEmailGates = schools.filter(s => s.push_enabled === true).length;
+    const totalPremiumTiers = schools.filter(s => s.subscription_tier === 'Premium' || !s.subscription_tier).length;
+
+    document.getElementById('metrics-schools-active').textContent = totalActive;
+    document.getElementById('metrics-email-active').textContent = totalEmailGates;
+    document.getElementById('metrics-premium-count').textContent = totalPremiumTiers;
+  }
+
+  function renderTenantMatrixBody(schools) {
+    const tableBody = document.getElementById('schools-matrix-body');
+
+    if (schools.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:30px;">No registered partition workspaces provisioned.</td></tr>`;
+      return;
+    }
+
+    tableBody.innerHTML = schools.map(school => {
+      const isSuspended = school.account_status === 'suspended';
+      const isEmailOn = school.push_enabled === true;
+      
+      const assignedTier = school.subscription_tier || 'Premium';
+      const brandColorHex = school.primary_color || '#0F172A';
+      const secondaryRoutingText = school.custom_domain ? school.custom_domain : `${school.subdomain || 'unmapped'}.bexlabs.com`;
+      const meterLimitInt = school.metering_limit ? school.metering_limit.toLocaleString() : '50,000';
+
+      return `
+        <tr>
+          <td>
+            <span style="font-weight:800; color:var(--navy);">${school.name}</span>
+            <div style="font-size:10px; color:var(--text-secondary); font-family:monospace; margin-top:2px;">ID: ${school.id.substring(0,8)} | Theme: ${brandColorHex.toUpperCase()}</div>
+          </td>
+          <td style="font-family:monospace; font-size:12px; color:var(--navy); font-weight:700;">${secondaryRoutingText}</td>
+          <td><span style="font-size:12px; color:var(--text-secondary); font-weight:700;">${assignedTier}</span></td>
+          <td>
+            <button class="toggle-btn ${isEmailOn ? 'active-feat' : ''}" style="font-size:10px; padding:4px 12px;" onclick="window.toggleFeatureFlag('${school.id}', 'push_enabled', ${isEmailOn})">
+              <i class="bi bi-envelope-fill"></i> Email Gateway
+            </button>
+          </td>
+          <td><span class="badge ${isSuspended ? 'badge-red' : 'badge-green'}">${school.account_status?.toUpperCase() || 'ACTIVE'}</span></td>
+          <td style="text-align:right;">
+            <div style="display:inline-flex; gap:8px; align-items:center;">
+              <span style="font-family:monospace; font-size:11px; color:var(--text-muted);" title="Monthly API Threshold">Limit: ${meterLimitInt}</span>
+              <button class="btn btn-ghost btn-sm ${isSuspended ? 'text-green' : 'text-red'}" style="font-weight:800; padding:4px 8px; font-size:12px;" onclick="window.toggleTenantStatus('${school.id}', '${school.account_status || 'active'}')">
+                ${isSuspended ? 'Restore' : 'Suspend'}
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  window.toggleFeatureFlag = async function(id, column, currentVal) {
+    const nextVal = !currentVal;
+    const { error } = await supabase.from('organizations').update({ [column]: nextVal }).eq('id', id);
+    if (!error) {
+      window.showToast("Email relay configuration state saved.", "success");
+      await fetchActiveTenantPartitions();
+    } else { window.showToast(`Flag error: ${error.message}`, "error"); }
+  };
+
+  window.toggleTenantStatus = async function(id, currentStatus) {
+    const targetNextStatus = currentStatus === 'suspended' ? 'active' : 'suspended';
+    const confirmation = confirm(`Forcefully change SaaS runtime availability to [${targetNextStatus.toUpperCase()}] for instance node token: ${id}?`);
+    if (!confirmation) return;
+
+    const { error = null } = await supabase.from('organizations').update({ account_status: targetNextStatus }).eq('id', id);
+    if (!error) {
+      window.showToast("Instance lifecycle updated successfully.", "success");
+      await fetchActiveTenantPartitions();
+    } else { window.showToast(`Lifecycle error: ${error.message}`, "error"); }
+  };
+
+  document.getElementById('provision-form').onsubmit = async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-submit-school');
+    
+    const name = document.getElementById('school-name').value.trim();
+    const subdomain = document.getElementById('school-subdomain').value.toLowerCase().trim().replace(/\s+/g, '-');
+    const customDomain = document.getElementById('school-custom-domain').value.trim() || null;
+    const tier = document.getElementById('school-tier').value;
+    const primaryColor = document.getElementById('school-color').value.trim();
+    const meteringLimit = parseInt(document.getElementById('school-meter-limit').value) || 50000;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Initializing Partition...';
+
+    const { error } = await supabase
+      .from('organizations')
+      .insert([{
+          name,
+          subdomain,
+          custom_domain: customDomain,
+          subscription_tier: tier,
+          primary_color: primaryColor,
+          metering_limit: meteringLimit,
+          account_status: 'active',
+          sms_enabled: false,
+          push_enabled: true
+      }]);
+
+    if (!error) {
+      window.showToast("Workspace initialized successfully.", "success");
+      toggleModal(false);
+      await fetchActiveTenantPartitions();
+    } else {
+      alert(`Provisioning error trace: ${error.message}`);
+    }
+    btn.disabled = false;
+    btn.innerHTML = 'Deploy Workspace Partition';
+  };
+
+  window.showToast = (msg, type='info') => {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type} active`;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  };
+
+  document.getElementById('signout-btn').onclick = () => signOut();
+  verifyAdminAuth();
+</script>
+</body>
+</html>

@@ -7,40 +7,17 @@
   <link rel="icon" type="image/png" href="../assets/images/logo.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/admin.css"> <!-- Blueprint for Layout -->
+  <link rel="stylesheet" href="../assets/css/admin.css">
   <link rel="stylesheet" href="../assets/css/driver.css">
   <style>
-    /* Profile Specific Bento Adjustments */
-    .profile-hero-tile { 
-      background: var(--navy); 
-      padding: 40px; 
-      text-align: center; 
-      color: white; 
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    
-    /* Input Styling Integrated with Bento Tiles */
+    .profile-hero-tile { background: var(--navy); padding: 40px; text-align: center; color: white; display: flex; flex-direction: column; align-items: center; }
     .input-group { position: relative; margin-bottom: 24px; border-bottom: 1.5px solid var(--border); }
     .input-group i { position: absolute; left: 0; top: 12px; color: var(--navy); opacity: 0.6; font-size: 18px; }
-    .input-group input { 
-        width: 100%; border: none; 
-        padding: 10px 10px 10px 32px; font-size: 15px; font-weight: 600; 
-        color: var(--navy); background: transparent;
-    }
+    .input-group input { width: 100%; border: none; padding: 10px 10px 10px 32px; font-size: 15px; font-weight: 600; color: var(--navy); background: transparent; }
     .input-group input:focus { outline: none; }
     .input-group label { position: absolute; left: 32px; top: -10px; font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-
-    .save-floating-btn {
-        position: fixed; bottom: 100px; right: 30px; z-index: 99;
-        background: var(--yellow); color: var(--navy); width: 60px; height: 60px;
-        border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        box-shadow: var(--shadow-lg); border: none; font-size: 26px;
-        cursor: pointer; transition: transform 0.2s;
-    }
-    .save-floating-btn:hover { transform: scale(1.1); background: var(--yellow-dark); }
-    
+    .save-floating-btn { position: fixed; bottom: 100px; right: 30px; z-index: 99; background: var(--yellow); color: var(--navy); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-lg); border: none; font-size: 26px; cursor: pointer; transition: transform 0.2s; }
+    .save-floating-btn:hover { transform: scale(1.1); }
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   </style>
@@ -48,104 +25,87 @@
 <body>
 
 <div class="admin-layout">
-  <!-- SIDEBAR: Matches Dashboard Blueprint -->
   <aside class="admin-sidebar">
     <div class="sidebar-logo">
       <img src="../assets/images/logo.png" alt="Logo">
-      <div class="logo-text">School Bus Track Pro <small>Driver Hub</small></div>
+      <div class="logo-text" id="sidebar-school-name">School Bus Track Pro <small>Driver Hub</small></div>
     </div>
-    
     <nav class="sidebar-nav">
       <div class="nav-group-label">Operations</div>
       <a href="dashboard.html" class="nav-link"><i class="bi bi-geo-alt-fill"></i><span>Live Drive</span></a>
       <a href="schedule.html" class="nav-link"><i class="bi bi-calendar-check-fill"></i><span>Manifest</span></a>
-      
       <div class="nav-group-label">System</div>
       <a href="stats.html" class="nav-link"><i class="bi bi-bar-chart-fill"></i><span>Statistics</span></a>
       <a href="profile.html" class="nav-link active"><i class="bi bi-person-gear"></i><span>Settings</span></a>
     </nav>
-
     <div class="sidebar-footer">
       <div class="admin-user">
-        <div class="admin-avatar" id="sidebar-initial">V</div>
-        <div class="admin-user-info" style="color:white; font-size: 13px;">
-          <div style="font-weight:800;" id="sidebar-name">VITO</div>
-          <div style="opacity:0.6; font-size:11px;" id="sidebar-bus">Bus Assigned</div>
+        <div class="admin-avatar" id="sidebar-initial">D</div>
+        <div class="admin-user-info" style="color:white;font-size:13px;">
+          <div style="font-weight:800;" id="sidebar-name">Driver</div>
+          <div style="opacity:0.6;font-size:11px;" id="sidebar-bus">Bus Assigned</div>
         </div>
       </div>
     </div>
   </aside>
 
-  <!-- MAIN AREA -->
   <main class="admin-main">
     <header class="admin-topbar">
       <div>
         <h1 class="topbar-title">Driver Profile</h1>
-        <p style="font-size: 13px; color: var(--text-secondary);">Manage your personal information and credentials</p>
+        <p style="font-size:13px;color:var(--text-secondary);">Manage your personal information</p>
       </div>
     </header>
 
     <div class="admin-content">
       <div class="bento-grid">
-        
-        <!-- TILE: Hero Identity (Tile-12) -->
+
         <div class="tile tile-12 profile-hero-tile">
-            <div style="position: relative; width: 120px; margin-bottom: 20px;">
-                <div id="p-avatar" style="width:120px; height:120px; border-radius:50%; background:var(--yellow); display:flex; align-items:center; justify-content:center; font-size:48px; font-weight:800; color:var(--navy); border:5px solid rgba(255,255,255,0.2); background-size: cover; background-position: center;">?</div>
-                <label for="p-upload" style="position:absolute; bottom:5px; right:5px; background:var(--white); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--navy); border:2px solid var(--navy); cursor:pointer;"><i class="bi bi-camera-fill"></i></label>
-                <input type="file" id="p-upload" style="display:none;" accept="image/*">
-            </div>
-            <h2 id="p-name-head" style="font-family: var(--font-display); font-size: 28px; font-weight: 800; margin-bottom: 5px;">---</h2>
-            <p id="p-bus-head" style="font-size: 14px; opacity: 0.7; font-weight: 600;">Assignment Pending</p>
+          <div style="position:relative;width:120px;margin-bottom:20px;">
+            <div id="p-avatar" style="width:120px;height:120px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:800;color:var(--navy);border:5px solid rgba(255,255,255,0.2);background-size:cover;background-position:center;">?</div>
+            <label for="p-upload" style="position:absolute;bottom:5px;right:5px;background:white;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--navy);border:2px solid var(--navy);cursor:pointer;"><i class="bi bi-camera-fill"></i></label>
+            <input type="file" id="p-upload" style="display:none;" accept="image/*">
+          </div>
+          <h2 id="p-name-head" style="font-size:28px;font-weight:800;margin-bottom:5px;">---</h2>
+          <p id="p-bus-head" style="font-size:14px;opacity:0.7;font-weight:600;">Assignment Pending</p>
+          <p id="p-school-head" style="font-size:12px;opacity:0.5;margin-top:4px;"></p>
         </div>
 
-        <!-- TILE: Personal Vitals (Tile-8) -->
         <div class="tile tile-8">
-            <div class="table-header">
-                <div class="table-title">Driver Vitals</div>
+          <div class="table-header"><div class="table-title">Driver Vitals</div></div>
+          <div style="padding:30px;">
+            <div class="input-group">
+              <i class="bi bi-person"></i><label>Full Name</label>
+              <input type="text" id="p-name" placeholder="Name on License">
             </div>
-            <div style="padding: 30px;">
-                <div class="input-group">
-                    <i class="bi bi-person"></i>
-                    <label>Full Name</label>
-                    <input type="text" id="p-name" placeholder="Name on License">
-                </div>
-                <div class="input-group">
-                    <i class="bi bi-envelope"></i>
-                    <label>Work Email</label>
-                    <input type="email" id="p-email" readonly style="opacity: 0.6;">
-                </div>
-                <div class="input-group">
-                    <i class="bi bi-telephone"></i>
-                    <label>Contact Phone</label>
-                    <input type="tel" id="p-phone" placeholder="+234 ...">
-                </div>
+            <div class="input-group">
+              <i class="bi bi-envelope"></i><label>Work Email</label>
+              <input type="email" id="p-email" readonly style="opacity:0.6;">
             </div>
+            <div class="input-group">
+              <i class="bi bi-telephone"></i><label>Contact Phone</label>
+              <input type="tel" id="p-phone" placeholder="+234 ...">
+            </div>
+          </div>
         </div>
 
-        <!-- TILE: Operational Details & Logout (Tile-4) -->
         <div class="tile tile-4">
-            <div class="table-header">
-                <div class="table-title">System Actions</div>
+          <div class="table-header"><div class="table-title">System Actions</div></div>
+          <div style="padding:24px;">
+            <div class="input-group">
+              <i class="bi bi-hash"></i><label>Assigned Unit</label>
+              <input type="text" id="p-bus" readonly style="opacity:0.6;">
             </div>
-            <div style="padding: 24px;">
-                <div class="input-group">
-                    <i class="bi bi-hash"></i>
-                    <label>Assigned Unit</label>
-                    <input type="text" id="p-bus" readonly style="opacity: 0.6;">
-                </div>
-                <div class="input-group">
-                    <i class="bi bi-geo-alt"></i>
-                    <label>Residential Address</label>
-                    <input type="text" id="p-address" placeholder="Current address">
-                </div>
-                
-                <div style="margin-top: 20px;">
-                    <button id="p-logout" class="btn btn-red btn-full" style="padding: 15px; border-radius: 12px;">
-                        <i class="bi bi-box-arrow-right"></i> SIGN OUT
-                    </button>
-                </div>
+            <div class="input-group">
+              <i class="bi bi-geo-alt"></i><label>Residential Address</label>
+              <input type="text" id="p-address" placeholder="Current address">
             </div>
+            <div style="margin-top:20px;">
+              <button id="p-logout" class="btn btn-red btn-full" style="padding:15px;border-radius:12px;">
+                <i class="bi bi-box-arrow-right"></i> SIGN OUT
+              </button>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -153,108 +113,124 @@
   </main>
 </div>
 
-<!-- Mobile Bottom Navigation -->
 <nav class="bottom-nav mobile-only">
-    <a href="dashboard.html"><i class="bi bi-geo-alt-fill"></i>Drive</a>
-    <a href="schedule.html"><i class="bi bi-calendar-check-fill"></i>Schedule</a>
-    <a href="stats.html"><i class="bi bi-bar-chart-fill"></i>Stats</a>
-    <a href="profile.html" class="active"><i class="bi bi-person-fill"></i>Profile</a>
+  <a href="dashboard.html"><i class="bi bi-geo-alt-fill"></i>Drive</a>
+  <a href="schedule.html"><i class="bi bi-calendar-check-fill"></i>Schedule</a>
+  <a href="stats.html"><i class="bi bi-bar-chart-fill"></i>Stats</a>
+  <a href="profile.html" class="active"><i class="bi bi-person-fill"></i>Profile</a>
 </nav>
 
 <button class="save-floating-btn" id="p-save" title="Save Profile"><i class="bi bi-check-lg"></i></button>
 
 <div id="toast-container"></div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script type="module">
-    import { supabase } from '../js/config.js';
-    import { signOut } from '../js/auth.js';
+  import { supabase, getUserProfile } from '../js/config.js';
+  import { requireAuth, signOut } from '../js/auth.js';
 
-    let uid = null;
+  // ── 0. Auth gate ───────────────────────────────────────────────────────
+  await requireAuth();
+  const profile = await getUserProfile();
 
-    async function loadProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { window.location.href = '../index.html'; return; }
-      uid = user.id;
+  if (!profile || !profile.organization_id) {
+    setTimeout(() => signOut(), 2000);
+    throw new Error('No organization_id on profile.');
+  }
 
-      const { data: p } = await supabase.from('profiles').select('*').eq('id', uid).single();
-      
-      if (p) {
-        document.getElementById('sidebar-name').textContent = p.full_name || 'VITO';
-        document.getElementById('sidebar-initial').textContent = (p.full_name || 'V').charAt(0);
-        document.getElementById('p-name-head').textContent = p.full_name || 'Driver';
-        document.getElementById('p-name').value = p.full_name || '';
-        document.getElementById('p-email').value = user.email;
-        document.getElementById('p-phone').value = p.phone || '';
-        document.getElementById('p-address').value = p.address || '';
-        document.getElementById('p-bus').value = p.bus_id || 'Unassigned';
-        document.getElementById('p-bus-head').textContent = p.bus_id ? `Active Unit: ${p.bus_id}` : 'Unit Assignment Pending';
-        if(p.bus_id) document.getElementById('sidebar-bus').textContent = `BUS ${p.bus_id} · ONLINE`;
+  const ORG_ID  = profile.organization_id;
+  const USER_ID = profile.id;
 
-        const av = document.getElementById('p-avatar');
-        if (p.avatar_url) {
-            av.style.backgroundImage = `url(${p.avatar_url})`;
-            av.textContent = '';
-        } else {
-            av.style.backgroundImage = 'none';
-            av.textContent = (p.full_name || 'D').charAt(0);
-        }
-      }
+  // ── 1. Sidebar + org name ──────────────────────────────────────────────
+  const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
+  if (org) {
+    const el = document.getElementById('sidebar-school-name');
+    if (el) el.innerHTML = `${org.name} <small>Driver Hub</small>`;
+    document.getElementById('p-school-head').textContent = org.name;
+  }
+
+  // ── 2. Load profile ────────────────────────────────────────────────────
+  const { data: { user } } = await supabase.auth.getUser();
+
+  async function loadProfile() {
+    const { data: p } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', USER_ID)
+      .eq('organization_id', ORG_ID)
+      .single();
+
+    if (p) {
+      const name = p.full_name || 'Driver';
+      document.getElementById('sidebar-name').textContent   = name;
+      document.getElementById('sidebar-initial').textContent = name.charAt(0);
+      document.getElementById('sidebar-bus').textContent    = p.bus_id ? `BUS ${p.bus_id} · ONLINE` : 'No bus assigned';
+      document.getElementById('p-name-head').textContent    = name;
+      document.getElementById('p-bus-head').textContent     = p.bus_id ? `Active Unit: ${p.bus_id}` : 'Unit Assignment Pending';
+      document.getElementById('p-name').value               = name;
+      document.getElementById('p-email').value              = user?.email || '';
+      document.getElementById('p-phone').value              = p.phone || '';
+      document.getElementById('p-address').value            = p.address || '';
+      document.getElementById('p-bus').value                = p.bus_id || 'Unassigned';
+
+      const av = document.getElementById('p-avatar');
+      if (p.avatar_url) { av.style.backgroundImage = `url(${p.avatar_url})`; av.textContent = ''; }
+      else { av.style.backgroundImage = 'none'; av.textContent = name.charAt(0); }
     }
+  }
 
-    document.getElementById('p-save').onclick = async () => {
-        const btn = document.getElementById('p-save');
-        btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
+  loadProfile();
 
-        const upData = {
-            full_name: document.getElementById('p-name').value,
-            phone: document.getElementById('p-phone').value,
-            address: document.getElementById('p-address').value,
-            updated_at: new Date().toISOString()
-        };
+  // ── 3. Save profile ────────────────────────────────────────────────────
+  document.getElementById('p-save').onclick = async () => {
+    const btn = document.getElementById('p-save');
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
 
-        const { error } = await supabase.from('profiles').update(upData).eq('id', uid);
-        btn.innerHTML = '<i class="bi bi-check-lg"></i>';
-        if(!error) {
-            showToast("Profile Secured", "success");
-            loadProfile();
-        } else {
-            showToast("Update Failed", "error");
-        }
-    };
+    const { error } = await supabase.from('profiles').update({
+      full_name:   document.getElementById('p-name').value,
+      phone:       document.getElementById('p-phone').value,
+      address:     document.getElementById('p-address').value,
+      updated_at:  new Date().toISOString()
+    }).eq('id', USER_ID).eq('organization_id', ORG_ID);
 
-    document.getElementById('p-upload').onchange = async (e) => {
-        const file = e.target.files[0];
-        if(!file) return;
-        showToast("Uploading Identity Photo...", "info");
-        const fileExt = file.name.split('.').pop();
-        const path = `${uid}/${Date.now()}.${fileExt}`;
-        const { error: upErr } = await supabase.storage.from('driver-avatars').upload(path, file);
-        
-        if(!upErr) {
-            const { data: { publicUrl } } = supabase.storage.from('driver-avatars').getPublicUrl(path);
-            await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', uid);
-            loadProfile();
-            showToast("Avatar Updated", "success");
-        } else {
-            showToast("Storage Error", "error");
-        }
-    };
+    btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+    if (!error) { showToast('Profile saved.', 'success'); loadProfile(); }
+    else showToast('Update failed.', 'error');
+  };
 
-    document.getElementById('p-logout').onclick = () => { 
-        if(confirm("Are you sure you want to sign out?")) signOut(); 
-    };
+  // ── 4. Avatar upload ───────────────────────────────────────────────────
+  document.getElementById('p-upload').onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    showToast('Uploading photo...', 'info');
 
-    function showToast(m, t) {
-        const c = document.getElementById('toast-container');
-        const div = document.createElement('div');
-        div.className = `toast ${t}`;
-        div.textContent = m;
-        c.appendChild(div);
-        setTimeout(() => div.remove(), 4000);
+    const ext  = file.name.split('.').pop();
+    const path = `${USER_ID}/${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('driver-avatars').upload(path, file);
+
+    if (!upErr) {
+      const { data: { publicUrl } } = supabase.storage.from('driver-avatars').getPublicUrl(path);
+      await supabase.from('profiles').update({ avatar_url: publicUrl })
+        .eq('id', USER_ID).eq('organization_id', ORG_ID);
+      loadProfile();
+      showToast('Avatar updated.', 'success');
+    } else {
+      showToast('Upload failed.', 'error');
     }
+  };
 
-    loadProfile();
+  document.getElementById('p-logout').onclick = () => {
+    if (confirm('Sign out?')) signOut();
+  };
+
+  function showToast(m, t = 'info') {
+    const c = document.getElementById('toast-container');
+    const d = document.createElement('div');
+    d.className = `toast ${t}`;
+    d.textContent = m;
+    c.appendChild(d);
+    setTimeout(() => d.remove(), 4000);
+  }
 </script>
 </body>
 </html>

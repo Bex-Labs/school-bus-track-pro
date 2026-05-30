@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Resend Communication Gateway | Bex Central Admin</title>
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <style>
+    /* --- ADVANCED RESEND INTERFACE LAYERS --- */
+    .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* --- CLEAN SOLID WHITE METRICS DASHBOARD CARDS GRID --- */
+    .infra-grid-matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; margin: 12px 0 24px 0; }
+    .infra-data-node { background: white !important; border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px 12px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: var(--shadow-sm); min-height: 90px; }
+    .infra-title-text { font-size: 10px !important; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); font-weight: 700; line-height: 1.3; margin-bottom: 6px; }
+    .infra-value-text { font-size: 24px !important; font-weight: 900; color: var(--navy); line-height: 1; margin-top: auto; }
+
+    /* --- ENTERPRISE FILTER DASHBOARD SYSTEM --- */
+    .filter-deck { display: flex; gap: 12px; margin-bottom: 16px; width: 100%; flex-wrap: wrap; }
+    .search-input { flex: 2; min-width: 200px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; color: var(--navy); }
+    .status-select { flex: 1; min-width: 140px; padding: 0 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; color: var(--navy); height: 38px; }
+
+    /* --- DEEP PACKET INSPECTION SLIDING DRAWER --- */
+    .drawer-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.3); z-index: 2500; backdrop-filter: blur(3px); justify-content: flex-end; }
+    .drawer-overlay.active { display: flex; }
+    .drawer-surface { background: white; width: 100%; max-width: 460px; height: 100vh; padding: 32px; border-left: 1px solid var(--border); box-shadow: var(--shadow-xl); display: flex; flex-direction: column; justify-content: space-between; transform: translateX(100%); transition: transform 0.3s ease-in-out; }
+    .drawer-overlay.active .drawer-surface { transform: translateX(0); }
+    
+    .inspect-field { background: var(--bg); border: 1px solid var(--border); padding: 14px; border-radius: 8px; margin-bottom: 14px; }
+    .inspect-label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px; }
+    .inspect-value { font-size: 13px; font-weight: 700; margin-top: 4px; color: var(--navy); line-height: 1.4; word-break: break-word; }
+
+    /* --- PREMIUM MOBILE-FIRST RESPONSIVE BREAKPOINTS --- */
+    @media (max-width: 768px) {
+        .admin-sidebar { display: none !important; }
+        .admin-main { margin-left: 0 !important; padding: 16px 16px 100px 16px !important; overflow-x: hidden !important; }
+        
+        .admin-topbar { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; margin-bottom: 16px !important; height: auto !important; }
+        .topbar-title { font-size: 20px !important; font-weight: 900; line-height: 1.2; }
+        
+        .infra-grid-matrix { grid-template-columns: 1fr !important; gap: 12px !important; margin: 8px 0 20px 0 !important; }
+        .infra-data-node { padding: 14px 16px !important; min-height: auto !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; }
+        .infra-title-text { margin-bottom: 0 !important; text-align: left !important; max-width: 70% !important; }
+        .infra-value-text { font-size: 22px !important; margin-top: 0 !important; }
+
+        .filter-deck { flex-direction: column; gap: 8px; }
+        .status-select, .search-input { width: 100% !important; flex: none !important; }
+        .drawer-surface { max-width: 85% !important; padding: 20px; }
+        
+        .bottom-nav.mobile-only { 
+            height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center; background: var(--navy) !important;
+        }
+        .bottom-nav.mobile-only a { 
+            flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0px !important; padding: 0 !important; margin: 0 !important; color: rgba(255, 255, 255, 0.6) !important;
+        }
+        .bottom-nav.mobile-only a i { font-size: 22px !important; }
+        .bottom-nav.mobile-only a.active { color: var(--yellow) !important; background: rgba(255, 255, 255, 0.04) !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="drawer-overlay" id="inspect-drawer" onclick="if(event.target===this) toggleDrawer(false)">
+  <div class="drawer-surface">
+    <div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <h3 style="font-weight:900; font-size:16px; color:var(--navy);"><i class="bi bi-search text-yellow"></i> Transmission Packet Inspector</h3>
+        <i class="bi bi-x-lg" style="cursor:pointer;" onclick="toggleDrawer(false)"></i>
+      </div>
+      
+      <div class="inspect-field">
+        <div class="inspect-label">Transactional Packet ID</div>
+        <div class="inspect-value" id="ins-id" style="font-family: monospace;">---</div>
+      </div>
+      <div class="inspect-field">
+        <div class="inspect-label">Workspace Tenant Origin</div>
+        <div class="inspect-value" id="ins-tenant">---</div>
+      </div>
+      <div class="inspect-field">
+        <div class="inspect-label">Broadcast Payload Headline</div>
+        <div class="inspect-value" id="ins-title">---</div>
+      </div>
+      <div class="inspect-field">
+        <div class="inspect-label">Raw Core Message Content</div>
+        <div class="inspect-value" id="ins-body" style="font-size: 12px; font-weight: normal; color: var(--text-secondary);">---</div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <button class="btn btn-yellow btn-full" id="btn-drawer-resend" style="font-weight: 800;">
+        <i class="bi bi-arrow-clockwise"></i> Re-dispatch Packet Separately
+      </button>
+      <button class="btn btn-ghost btn-full" onclick="toggleDrawer(false)">Close Inspector</button>
+    </div>
+  </div>
+</div>
+
+<div class="admin-layout">
+  
+  <aside class="admin-sidebar" style="display: flex; flex-direction: column; height: 100vh;">
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png" alt="Logo">
+      <div class="logo-text">Bex Central Hub <small>SaaS Superuser Console</small></div>
+    </div>
+    
+    <nav class="sidebar-nav" style="flex: 1; overflow-y: auto;">
+      <div class="nav-group-label">Enterprise Monitoring</div>
+      <a href="bex-dashboard.html" class="nav-link"><i class="bi bi-radar"></i><span>Global Fleet</span></a>
+      <a href="crisis-center.html" class="nav-link"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis Center</span></a>
+      <a href="schools-management.html" class="nav-link"><i class="bi bi-building"></i><span>Tenant Schools</span></a>
+      
+      <div class="nav-group-label">System Management</div>
+      <a href="users-directory.html" class="nav-link"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
+      <a href="analytics-room.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics Room</span></a>
+      <a href="billing-usage.html" class="nav-link active"><i class="bi bi-envelope-check-fill"></i><span>Resend Gateway</span></a>
+      <a href="audit-logs.html" class="nav-link"><i class="bi bi-journal-text"></i><span>System Audit</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="tel:+2348114875252" class="btn btn-sm btn-yellow btn-full" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; text-decoration: none; font-weight: 800;">
+        <i class="bi bi-telephone-outbound-fill"></i> Directors Hotline
+      </a>
+      <div class="admin-user" style="display: flex; align-items: center; gap: 12px;">
+        <div class="admin-avatar" id="avatar-char" style="width: 36px; height: 36px; background: var(--yellow); color: var(--navy); border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; font-weight: 800;">B</div>
+        <div class="admin-user-info" style="color:white; font-size: 13px;">
+          <div style="font-weight:800;" id="admin-user-name">Bex Administrator</div>
+          <div style="opacity:0.6; font-size:11px;">Global Platform Controller</div>
+        </div>
+      </div>
+      <button id="signout-btn" class="btn btn-red btn-full btn-sm" style="margin-top: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); width: 100%;">
+        <i class="bi bi-power"></i> Log Out
+      </button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1 class="topbar-title">Resend Gateway</h1>
+        <p style="font-size: 13px; color: var(--text-secondary);">Monitor cross-tenant transactional mailing relays, track deliverability, and execute manual re-dispatch dispatches.</p>
+      </div>
+      <button class="btn btn-yellow btn-sm" id="btn-bulk-retry"><i class="bi bi-lightning-charge-fill"></i> Execute Bulk Failures Retry</button>
+    </header>
+
+    <div class="admin-content">
+      
+      <div class="infra-grid-matrix">
+        <div class="infra-data-node">
+          <div class="infra-title-text">Total Relayed Transmissions</div>
+          <div class="infra-value-text" id="metrics-resend-total">0</div>
+        </div>
+        <div class="infra-data-node">
+          <div class="infra-title-text">Successful Delivers</div>
+          <div class="infra-value-text" id="metrics-resend-success" style="color: #22c55e;">0</div>
+        </div>
+        <div class="infra-data-node">
+          <div class="infra-title-text">Failed Dispatch Exceptions</div>
+          <div class="infra-value-text" id="metrics-resend-failed" style="color: #dc2626;">0</div>
+        </div>
+      </div>
+
+      <div class="tile tile-12" style="margin-top: 10px;">
+        
+        <div class="filter-deck">
+          <input type="text" id="search-bar" class="search-input" placeholder="Search logs by headline title or core body parameters...">
+          <select id="tenant-filter" class="status-select"><option value="ALL">All Tenant Schools</option></select>
+          <select id="status-filter" class="status-select">
+            <option value="ALL">All Delivery Statuses</option>
+            <option value="delivered">Successful Handshakes</option>
+            <option value="logged">Logged & Pending</option>
+            <option value="failed">Delivery Rejections</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Broadcast Alert Headline</th>
+                <th>Core Transmission Body Log</th>
+                <th>SaaS Workspace Origin</th>
+                <th>Delivery Tracking Status</th>
+                <th style="text-align:right;">Gateway Directive</th>
+              </tr>
+            </thead>
+            <tbody id="resend-matrix-body">
+              <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">Syncing mail relay clusters pipelines...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav mobile-only">
+    <a href="bex-dashboard.html" title="Global Fleet"><i class="bi bi-radar"></i></a>
+    <a href="crisis-center.html" title="Crisis Center"><i class="bi bi-exclamation-octagon-fill"></i></a>
+    <a href="schools-management.html" title="Tenant Schools"><i class="bi bi-building"></i></a>
+    <a href="users-directory.html" title="User Directory"><i class="bi bi-people-fill"></i></a>
+    <a href="analytics-room.html" title="Analytics Room"><i class="bi bi-graph-up-arrow"></i></a>
+    <a href="billing-usage.html" class="active" title="Resend Gateway"><i class="bi bi-envelope-check-fill"></i></a>
+    <a href="audit-logs.html" title="System Audit"><i class="bi bi-journal-text"></i></a>
+</nav>
+
+<div id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script type="module">
+  import { supabase } from '../js/config.js';
+  import { signOut, requireAuth } from '../js/auth.js';
+
+  let localNotificationsCache = [];
+  let multiTenantMapIndex = {};
+  let currentlyInspectedLogId = null;
+
+  window.toggleDrawer = (show) => {
+    document.getElementById('inspect-drawer').classList.toggle('active', show);
+  };
+
+  async function verifyAdminAuth() {
+    const session = await requireAuth();
+    if (!session) return;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', session.user.id)
+      .single();
+
+    const activeRole = profile?.role || session.user.user_metadata?.role;
+    const nameStr = profile?.full_name || session.user.user_metadata?.full_name || "Bex Operator";
+
+    if (activeRole === 'super_admin' || activeRole === 'admin' || session.user.email?.includes('admin')) {
+        document.getElementById('admin-user-name').textContent = nameStr;
+        document.getElementById('avatar-char').textContent = nameStr.charAt(0).toUpperCase();
+        
+        setTimeout(() => { bootstrapResendGatewayEngine(); }, 50);
+    } else {
+        window.location.href = '../index.html';
+    }
+  }
+
+  async function bootstrapResendGatewayEngine() {
+    await fetchActiveTenantspacesIndex();
+    await pollTransactionalNotifications();
+
+    supabase.channel('resend-gateway-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+          pollTransactionalNotifications();
+      })
+      .subscribe();
+
+    document.getElementById('search-bar').addEventListener('input', runLiveClientFiltering);
+    document.getElementById('tenant-filter').addEventListener('change', runLiveClientFiltering);
+    document.getElementById('status-filter').addEventListener('change', runLiveClientFiltering);
+  }
+
+  async function fetchActiveTenantspacesIndex() {
+    const { data } = await supabase.from('organizations').select('id, name');
+    if (data) {
+      const tenantDropdown = document.getElementById('tenant-filter');
+      tenantDropdown.innerHTML = '<option value="ALL">All Tenant Schools</option>' + 
+        data.map(o => `<option value="${o.id}">${o.name}</option>`).join('');
+
+      data.forEach(org => { multiTenantMapIndex[org.id] = org.name; });
+    }
+  }
+
+  async function pollTransactionalNotifications() {
+    try {
+      const { data: notifications, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('id', { ascending: false });
+
+      if (error) throw error;
+      localNotificationsCache = notifications || [];
+
+      calculateMailingAggregates(localNotificationsCache);
+      renderMailingTableRows(localNotificationsCache);
+
+    } catch (err) { window.showToast(`Mail relay fetch failure: ${err.message}`, 'error'); }
+  }
+
+  function calculateMailingAggregates(notifications) {
+    const totalCount = notifications.length;
+    const successCount = notifications.filter(n => n.status === 'delivered' || n.status === 'logged' || n.status === 'resolved').length;
+    const failedCount = notifications.filter(n => n.status === 'failed').length;
+
+    document.getElementById('metrics-resend-total').textContent = totalCount;
+    document.getElementById('metrics-resend-success').textContent = successCount;
+    document.getElementById('metrics-resend-failed').textContent = failedCount;
+  }
+
+  function runLiveClientFiltering() {
+    const term = document.getElementById('search-bar').value.toLowerCase().trim();
+    const tenantConstraint = document.getElementById('tenant-filter').value;
+    const statusConstraint = document.getElementById('status-filter').value;
+
+    const filtered = localNotificationsCache.filter(n => {
+      const matchesSearch = 
+        (n.title && n.title.toLowerCase().includes(term)) ||
+        (n.message && n.message.toLowerCase().includes(term));
+      
+      const targetOrgId = n.organization_id || n.school_id || '';
+      const matchesTenant = tenantConstraint === 'ALL' || targetOrgId === tenantConstraint;
+
+      let normalizedStatus = n.status || 'logged';
+      if (normalizedStatus === 'resolved') normalizedStatus = 'delivered';
+      const matchesStatus = statusConstraint === 'ALL' || normalizedStatus === statusConstraint;
+
+      return matchesSearch && matchesTenant && matchesStatus;
+    });
+
+    renderMailingTableRows(filtered);
+  }
+
+  function renderMailingTableRows(notifications) {
+    const body = document.getElementById('resend-matrix-body');
+
+    if (notifications.length === 0) {
+      body.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-secondary); padding:24px;">No communication logs matching current filter vectors.</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = notifications.map(log => {
+      const parentSchoolTenantLabel = multiTenantMapIndex[log.organization_id || log.school_id] || "Global Override Node";
+      
+      let deliveryStatusBadgeClass = 'badge-blue';
+      let operationalDisplayLabel = log.status ? log.status.toUpperCase() : 'PENDING';
+
+      if (log.status === 'failed') deliveryStatusBadgeClass = 'badge-red';
+      if (log.status === 'delivered' || log.status === 'resolved' || log.status === 'logged') {
+          deliveryStatusBadgeClass = 'badge-green';
+          operationalDisplayLabel = 'DELIVERED';
+      }
+
+      return `
+        <tr>
+          <td><span style="font-weight:800; color:var(--navy); cursor:pointer;" onclick="window.inspectNotificationPacket(${log.id})">${log.title || 'SYSTEM BROADCAST'}</span></td>
+          <td><div style="max-width:320px; font-size:12px; color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${log.message}">${log.message || '---'}</div></td>
+          <td><span style="color:var(--navy); font-weight:700;">${parentSchoolTenantLabel}</span></td>
+          <td><span class="badge ${deliveryStatusBadgeClass}">${operationalDisplayLabel}</span></td>
+          <td style="text-align:right;">
+            <div style="display:inline-flex; gap:6px;">
+              <button class="btn btn-ghost btn-sm" style="padding:4px; font-size:12px;" title="Inspect Payload" onclick="window.inspectNotificationPacket(${log.id})"><i class="bi bi-search"></i></button>
+              <button class="btn btn-ghost btn-sm" style="font-weight:800; padding:4px 10px;" onclick="window.triggerManualGatewayMailRetry(${log.id})">Resend</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  window.inspectNotificationPacket = function(id) {
+    const log = localNotificationsCache.find(n => n.id === id);
+    if (!log) return;
+
+    currentlyInspectedLogId = id;
+    document.getElementById('ins-id').textContent = `LOG_ID_000${log.id}`;
+    document.getElementById('ins-tenant').textContent = multiTenantMapIndex[log.organization_id || log.school_id] || "Global Base Node";
+    document.getElementById('ins-title').textContent = log.title || "SYSTEM BROADCAST";
+    document.getElementById('ins-body').textContent = log.message || "---";
+
+    toggleDrawer(true);
+  };
+
+  window.triggerManualGatewayMailRetry = async function(id) {
+    const targetId = id || currentlyInspectedLogId;
+    if (!targetId) return;
+
+    window.showToast("Initializing gateway mail re-dispatch pipeline...", "info");
+
+    const { error } = await supabase
+      .from('notifications')
+      .update({ status: 'logged', created_at: new Date().toISOString() })
+      .eq('id', targetId);
+
+    if (!error) {
+      window.showToast(`Notification payload successfully queued for immediate relay.`, "success");
+      toggleDrawer(false);
+      await pollTransactionalNotifications();
+    } else { window.showToast(`Gateway error: ${error.message}`, "error"); }
+  };
+
+  document.getElementById('btn-drawer-resend').onclick = () => window.triggerManualGatewayMailRetry();
+
+  document.getElementById('btn-bulk-retry').onclick = async function() {
+    const failedItemsList = localNotificationsCache.filter(n => n.status === 'failed');
+    if (failedItemsList.length === 0) {
+      window.showToast("All channels healthy. No failed communication contexts require automated remediation.", "success");
+      return;
+    }
+
+    const verification = confirm(`Formally deploy bulk remediation sequence to force retry ${failedItemsList.length} failed delivery traces simultaneously?`);
+    if (!verification) return;
+
+    const bulkBtn = document.getElementById('btn-bulk-retry');
+    bulkBtn.disabled = true;
+    bulkBtn.innerHTML = `<i class="bi bi-arrow-clockwise spin"></i> Clearing ${failedItemsList.length} Failures...`;
+
+    const targetedFailedIds = failedItemsList.map(n => n.id);
+
+    const { error } = await supabase
+      .from('notifications')
+      .update({ status: 'logged', created_at: new Date().toISOString() })
+      .in('id', targetedFailedIds);
+
+    if (!error) {
+      window.showToast(`Batch execution clear. Resent ${failedItemsList.length} communication packets across gateway servers.`, "success");
+      await pollTransactionalNotifications();
+    } else { window.showToast(`Bulk dispatch fault: ${error.message}`, "error"); }
+
+    bulkBtn.disabled = false;
+    bulkBtn.innerHTML = `<i class="bi bi-lightning-charge-fill"></i> Execute Bulk Failures Retry`;
+  };
+
+  window.showToast = (msg, type='info') => {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type} active`;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  };
+
+  document.getElementById('signout-btn').onclick = () => signOut();
+  verifyAdminAuth();
+</script>
+</body>
+</html>
