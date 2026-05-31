@@ -35,20 +35,38 @@ async function resolveActiveTenant() {
   window.activeTenantId = null;
   const host = window.location.hostname;
 
-  // Skip subdomain check on local/dev environments
+  // Skip on local environments
   if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')) {
     console.log('🛠️ Local environment — subdomain tenant resolution bypassed.');
     return;
   }
 
+  // Skip on Vercel preview/production deployments and other known hosting platforms
+  // These are not school subdomains — they are the root app deployment
+  const isHostingPlatform = (
+    host.endsWith('.vercel.app') ||
+    host.endsWith('.netlify.app') ||
+    host.endsWith('.pages.dev') ||
+    host.endsWith('.github.io') ||
+    host.endsWith('.onrender.com') ||
+    host.endsWith('.railway.app') ||
+    host.endsWith('.fly.dev')
+  );
+
+  if (isHostingPlatform) {
+    console.log('🌐 Hosting platform detected — subdomain tenant resolution bypassed.');
+    return;
+  }
+
   const parts = host.split('.');
 
-  // Root domain or known non-tenant subdomains — no tenant context
+  // Root domain (e.g. yourdomain.com) or known non-tenant subdomains
   if (parts.length <= 2 || ['www', 'admin', 'app'].includes(parts[0])) {
     console.log('🌐 Root domain — no tenant context attached.');
     return;
   }
 
+  // Only reach here if URL is a real school subdomain e.g. greenwood.yourdomain.com
   const subToken = parts[0].toLowerCase().trim();
 
   const { data: org, error } = await supabase
@@ -68,6 +86,8 @@ async function resolveActiveTenant() {
 
     console.log(`✅ Tenant locked: ${org.name} [${org.id}]`);
   } else {
+    // Only show error if we genuinely tried a school subdomain and failed
+    console.warn(`⚠️ Subdomain "${subToken}" not found in organizations table.`);
     showToast('Invalid or unrecognised school domain.', 'error');
   }
 }
