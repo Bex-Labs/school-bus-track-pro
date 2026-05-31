@@ -3,96 +3,72 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>System Infrastructure Audit Logs | Bex Central Admin</title>
+  <title>System Audit | Bex Central Admin</title>
   <link rel="icon" type="image/png" href="../assets/images/logo.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="../assets/css/main.css">
   <link rel="stylesheet" href="../assets/css/admin.css">
   <style>
-    /* --- SYSTEM AUDIT OPERATIONAL SURFACES --- */
+    html, body { height: 100%; margin: 0; }
+    .admin-layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+    .admin-main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .admin-content { flex: 1; overflow-y: auto; padding: 24px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+
+    .infra-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+    .infra-node { background: white; border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; text-align: center; min-height: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    .infra-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); font-weight: 700; margin-bottom: 8px; }
+    .infra-val { font-size: 26px; font-weight: 900; color: var(--navy); }
+
+    .filter-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .filter-input { flex: 1; min-width: 180px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; }
+    .filter-select { padding: 0 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; color: var(--navy); height: 42px; }
     .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .hash-code { font-family: monospace; font-size: 10px; color: var(--text-muted); }
 
-    /* --- CLEAN SOLID WHITE METRICS DASHBOARD CARDS --- */
-    .infra-grid-matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; margin: 12px 0 24px 0; }
-    .infra-data-node { background: white !important; border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px 12px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: var(--shadow-sm); min-height: 90px; }
-    .infra-title-text { font-size: 10px !important; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); font-weight: 700; line-height: 1.3; margin-bottom: 6px; }
-    .infra-value-text { font-size: 24px !important; font-weight: 900; color: var(--navy); line-height: 1; margin-top: auto; }
-
-    /* --- ADVANCED TOOLBAR SYSTEM --- */
-    .filter-deck { display: flex; gap: 12px; margin-bottom: 16px; width: 100%; flex-wrap: wrap; }
-    .search-input { flex: 2; min-width: 200px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; color: var(--navy); }
-    .action-select { flex: 1; min-width: 140px; padding: 0 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; color: var(--navy); height: 38px; }
-
-    /* --- MONOSPACED LOG ACCENTS --- */
-    .hash-code { font-family: monospace; font-size: 11px; color: var(--text-muted); cursor: pointer; transition: var(--transition); }
-    .hash-code:hover { color: var(--navy); }
-
-    /* --- PREMIUM MOBILE-FIRST RESPONSIVE BREAKPOINTS --- */
     @media (max-width: 768px) {
-        .admin-sidebar { display: none !important; }
-        .admin-main { margin-left: 0 !important; padding: 16px 16px 100px 16px !important; overflow-x: hidden !important; }
-        
-        /* FIX: Full Header Wrap */
-        .admin-topbar { flex-direction: column !important; align-items: flex-start !important; gap: 14px !important; height: auto !important; margin-bottom: 20px !important; }
-        .topbar-title { font-size: 20px !important; font-weight: 900; line-height: 1.2; }
-        .admin-topbar .btn-sm { width: 100% !important; justify-content: center !important; padding: 12px !important; font-size: 13px !important; }
-
-        .infra-grid-matrix { grid-template-columns: 1fr !important; gap: 12px !important; margin: 8px 0 20px 0 !important; }
-        .infra-data-node { padding: 14px 16px !important; min-height: auto !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; }
-        .infra-title-text { margin-bottom: 0 !important; text-align: left !important; max-width: 70% !important; }
-        .infra-value-text { font-size: 22px !important; margin-top: 0 !important; }
-
-        .filter-deck { flex-direction: column; gap: 8px; }
-        .action-select, .search-input { width: 100% !important; flex: none !important; }
-        
-        .bottom-nav.mobile-only { 
-            height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center; background: var(--navy) !important;
-        }
-        .bottom-nav.mobile-only a { 
-            flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0px !important; padding: 0 !important; margin: 0 !important; color: rgba(255, 255, 255, 0.6) !important;
-        }
-        .bottom-nav.mobile-only a i { font-size: 22px !important; }
-        .bottom-nav.mobile-only a.active { color: var(--yellow) !important; background: rgba(255, 255, 255, 0.04) !important; }
+      html, body { overflow: auto !important; height: auto !important; }
+      .admin-layout { height: auto !important; overflow: visible !important; }
+      .admin-main { height: auto !important; overflow: visible !important; }
+      .admin-content { overflow: visible !important; padding: 16px 16px 100px 16px !important; }
+      .admin-sidebar { display: none !important; }
+      .admin-topbar { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; height: auto !important; padding: 16px !important; }
+      .topbar-title { font-size: 20px !important; line-height: 1.2 !important; }
+      .admin-topbar p { font-size: 11px !important; }
+      .admin-topbar .btn-sm { width: 100% !important; justify-content: center !important; }
+      .infra-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+      .infra-node { flex-direction: row !important; justify-content: space-between !important; align-items: center !important; min-height: auto !important; padding: 12px 16px !important; }
+      .infra-label { margin-bottom: 0 !important; text-align: left !important; }
+      .infra-val { font-size: 22px !important; }
+      .filter-row { flex-direction: column; }
+      .filter-select { width: 100%; }
+      .bottom-nav.mobile-only { height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center !important; background: var(--navy) !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 999 !important; }
+      .bottom-nav.mobile-only a { flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0 !important; color: rgba(255,255,255,0.6) !important; }
+      .bottom-nav.mobile-only a i { font-size: 22px !important; }
+      .bottom-nav.mobile-only a.active { color: var(--yellow) !important; }
     }
   </style>
 </head>
 <body>
-
 <div class="admin-layout">
-  
-  <aside class="admin-sidebar" style="display: flex; flex-direction: column; height: 100vh;">
-    <div class="sidebar-logo">
-      <img src="../assets/images/logo.png" alt="Logo">
-      <div class="logo-text">Bex Central Hub <small>SaaS Superuser Console</small></div>
-    </div>
-    
-    <nav class="sidebar-nav" style="flex: 1; overflow-y: auto;">
+  <aside class="admin-sidebar" style="display:flex;flex-direction:column;height:100vh;">
+    <div class="sidebar-logo"><img src="../assets/images/logo.png" alt="Logo"><div class="logo-text">Bex Central Hub <small>SaaS Superuser Console</small></div></div>
+    <nav class="sidebar-nav" style="flex:1;overflow-y:auto;">
       <div class="nav-group-label">Enterprise Monitoring</div>
       <a href="bex-dashboard.html" class="nav-link"><i class="bi bi-radar"></i><span>Global Fleet</span></a>
       <a href="crisis-center.html" class="nav-link"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis Center</span></a>
       <a href="schools-management.html" class="nav-link"><i class="bi bi-building"></i><span>Tenant Schools</span></a>
-      
       <div class="nav-group-label">System Management</div>
       <a href="users-directory.html" class="nav-link"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
       <a href="analytics-room.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics Room</span></a>
       <a href="billing-usage.html" class="nav-link"><i class="bi bi-envelope-check-fill"></i><span>Resend Gateway</span></a>
       <a href="audit-logs.html" class="nav-link active"><i class="bi bi-journal-text"></i><span>System Audit</span></a>
     </nav>
-
     <div class="sidebar-footer">
-      <a href="tel:+2348114875252" class="btn btn-sm btn-yellow btn-full" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; text-decoration: none; font-weight: 800;">
-        <i class="bi bi-telephone-outbound-fill"></i> Directors Hotline
-      </a>
-      <div class="admin-user" style="display: flex; align-items: center; gap: 12px;">
-        <div class="admin-avatar" id="avatar-char" style="width: 36px; height: 36px; background: var(--yellow); color: var(--navy); border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; font-weight: 800;">B</div>
-        <div class="admin-user-info" style="color:white; font-size: 13px;">
-          <div style="font-weight:800;" id="admin-user-name">Bex Administrator</div>
-          <div style="opacity:0.6; font-size:11px;">Global Platform Controller</div>
-        </div>
+      <div class="admin-user" style="display:flex;align-items:center;gap:12px;">
+        <div class="admin-avatar" id="avatar-char" style="width:36px;height:36px;background:var(--yellow);color:var(--navy);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-weight:800;">B</div>
+        <div class="admin-user-info" style="color:white;font-size:13px;"><div style="font-weight:800;" id="admin-user-name">Bex Administrator</div><div style="opacity:0.6;font-size:11px;">Global Platform Controller</div></div>
       </div>
-      <button id="signout-btn" class="btn btn-red btn-full btn-sm" style="margin-top: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); width: 100%;">
-        <i class="bi bi-power"></i> Log Out
-      </button>
+      <button id="signout-btn" class="btn btn-red btn-full btn-sm" style="margin-top:16px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);width:100%;"><i class="bi bi-power"></i> Log Out</button>
     </div>
   </aside>
 
@@ -100,56 +76,40 @@
     <header class="admin-topbar">
       <div>
         <h1 class="topbar-title">System Audit Ledger</h1>
-        <p style="font-size: 13px; color: var(--text-secondary);">Immutable cross-tenant security log, tracking platform-wide mutations, auth shifts, and data gateway overrides.</p>
+        <p style="font-size:13px;color:var(--text-secondary);">Immutable cross-tenant security log tracking mutations and auth events.</p>
       </div>
-      <button class="btn btn-yellow btn-sm" id="btn-export-audit"><i class="bi bi-download"></i> Export Forensic Ledger</button>
+      <button class="btn btn-yellow btn-sm" id="btn-export"><i class="bi bi-download"></i> Export CSV</button>
     </header>
-
     <div class="admin-content">
-      
-      <div class="infra-grid-matrix">
-        <div class="infra-data-node">
-          <div class="infra-title-text">Ecosystem Mutation Traces</div>
-          <div class="infra-value-text" id="metrics-audit-total">0</div>
-        </div>
-        <div class="infra-data-node">
-          <div class="infra-title-text">Critical & Security Alerts</div>
-          <div class="infra-value-text" id="metrics-audit-security" style="color: #dc2626;">0</div>
-        </div>
-        <div class="infra-data-node">
-          <div class="infra-title-text">General System Operations</div>
-          <div class="infra-value-text" id="metrics-audit-mutations">0</div>
-        </div>
+      <div class="infra-grid">
+        <div class="infra-node"><div class="infra-label">Total Events</div><div class="infra-val" id="v-total">0</div></div>
+        <div class="infra-node"><div class="infra-label">Critical / Security</div><div class="infra-val" id="v-critical" style="color:#dc2626;">0</div></div>
+        <div class="infra-node"><div class="infra-label">Info / Warnings</div><div class="infra-val" id="v-info">0</div></div>
       </div>
-
-      <div class="tile tile-12" style="margin-top: 10px;">
-        
-        <div class="filter-deck">
-          <input type="text" id="search-bar" class="search-input" placeholder="Filter entry context by operator payload content strings or event actions...">
-          <select id="action-filter" class="action-select">
-            <option value="ALL">All Severity Classifications</option>
+      <div class="tile tile-12">
+        <div class="filter-row">
+          <input type="text" id="search-bar" class="filter-input" placeholder="Filter by operator, action or description...">
+          <select id="severity-filter" class="filter-select">
+            <option value="ALL">All Severities</option>
             <option value="CRITICAL">CRITICAL</option>
             <option value="SECURITY">SECURITY</option>
             <option value="WARN">WARN</option>
             <option value="INFO">INFO</option>
           </select>
         </div>
-
         <div class="table-container">
           <table>
             <thead>
               <tr>
-                <th>Event Timestamp</th>
-                <th>Ecosystem Operator</th>
-                <th>Action Signature</th>
+                <th>Timestamp</th>
+                <th>Operator</th>
+                <th>Action</th>
                 <th>Severity</th>
-                <th>Tenant Context</th>
-                <th>Diagnostic Payload / Hash Trace</th>
+                <th>School</th>
+                <th>Description</th>
               </tr>
             </thead>
-            <tbody id="audit-matrix-body">
-              <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:30px;">Structuring chronological trace records...</td></tr>
-            </tbody>
+            <tbody id="audit-body"><tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:30px;">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -158,137 +118,114 @@
 </div>
 
 <nav class="bottom-nav mobile-only">
-    <a href="bex-dashboard.html" title="Global Fleet"><i class="bi bi-radar"></i></a>
-    <a href="crisis-center.html" title="Crisis Center"><i class="bi bi-exclamation-octagon-fill"></i></a>
-    <a href="schools-management.html" title="Tenant Schools"><i class="bi bi-building"></i></a>
-    <a href="users-directory.html" title="User Directory"><i class="bi bi-people-fill"></i></a>
-    <a href="analytics-room.html" title="Analytics Room"><i class="bi bi-graph-up-arrow"></i></a>
-    <a href="billing-usage.html" title="Resend Gateway"><i class="bi bi-envelope-check-fill"></i></a>
-    <a href="audit-logs.html" class="active" title="System Audit"><i class="bi bi-journal-text"></i></a>
+  <a href="bex-dashboard.html"><i class="bi bi-radar"></i></a>
+  <a href="crisis-center.html"><i class="bi bi-exclamation-octagon-fill"></i></a>
+  <a href="schools-management.html"><i class="bi bi-building"></i></a>
+  <a href="users-directory.html"><i class="bi bi-people-fill"></i></a>
+  <a href="analytics-room.html"><i class="bi bi-graph-up-arrow"></i></a>
+  <a href="billing-usage.html"><i class="bi bi-envelope-check-fill"></i></a>
+  <a href="audit-logs.html" class="active"><i class="bi bi-journal-text"></i></a>
 </nav>
 
 <div id="toast-container"></div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
-  import { supabase } from '../js/config.js';
+  import { supabase, getUserProfile } from '../js/config.js';
   import { signOut, requireAuth } from '../js/auth.js';
 
-  let completeAuditCache = [];
-  let multiTenantMapIndex = {};
-
-  async function verifyAdminAuth() {
-    const session = await requireAuth();
-    if (!session) return;
-    const { data: profile } = await supabase.from('profiles').select('role, full_name').eq('id', session.user.id).single();
-    const activeRole = profile?.role || session.user.user_metadata?.role;
-    const nameStr = profile?.full_name || session.user.user_metadata?.full_name || "Bex Operator";
-    if (activeRole === 'super_admin' || activeRole === 'admin' || session.user.email?.includes('admin')) {
-        document.getElementById('admin-user-name').textContent = nameStr;
-        document.getElementById('avatar-char').textContent = nameStr.charAt(0).toUpperCase();
-        setTimeout(bootstrapAuditLedgerEngine, 50);
-    } else { window.location.href = '../index.html'; }
-  }
-
-  async function bootstrapAuditLedgerEngine() {
-    await fetchTenantIndexMappings();
-    await generateChronologicalTraces();
-    document.getElementById('search-bar').addEventListener('input', executeClientSideFiltering);
-    document.getElementById('action-filter').addEventListener('change', executeClientSideFiltering);
-  }
-
-  async function fetchTenantIndexMappings() {
-    const { data } = await supabase.from('organizations').select('id, name');
-    if (data) data.forEach(org => { multiTenantMapIndex[org.id] = org.name; });
-  }
-
-  function generateVerificationSignature(id, action) {
-    let mockInput = `${id}-${action}-bex-salt-2026`;
-    let hash = 0;
-    for (let i = 0; i < mockInput.length; i++) {
-        hash = (hash << 5) - hash + mockInput.charCodeAt(i);
-        hash |= 0;
-    }
-    return '0x' + Math.abs(hash).toString(16).substring(0, 8).toUpperCase();
-  }
-
-  async function generateChronologicalTraces() {
-    try {
-      const [notificationsRes, profilesRes] = await Promise.all([
-        supabase.from('notifications').select('*').order('id', { ascending: false }).limit(75),
-        supabase.from('profiles').select('*').limit(30)
-      ]);
-      const eventsPool = notificationsRes.data || [];
-      const usersPool = profilesRes.data || [];
-      completeAuditCache = eventsPool.map((log, index) => {
-        const correspondingUser = usersPool[index % usersPool.length] || { full_name: 'Bex Cloud Core', email: 'gateway@bexlabs.com' };
-        let severity = 'INFO', signature = 'TENANT_WORKSPACE_FLAG_PATCH', descriptionStr = `System feature flag changed: [${log.title || 'Notification config'}] marked active.`;
-        if (log.type === 'emergency') {
-            if (log.status === 'active') { severity = 'CRITICAL'; signature = 'SOS_TELEMETRY_ALERT_OPENED'; descriptionStr = `Critical vehicular safety exception reported for [${log.title}].`; }
-            else { severity = 'SECURITY'; signature = 'AUTH_CHALLENGE_RESOLVED'; descriptionStr = `Emergency alert trace cleared safely by administrator dashboard.`; }
-        } else if (index % 4 === 0) { severity = 'WARN'; signature = 'CREDENTIAL_RECOVERY_HANDSHAKE'; descriptionStr = `Remote password restoration vector generated.`; }
-        return {
-          timestamp: log.created_at ? new Date(log.created_at).toLocaleString() : new Date().toLocaleString(),
-          operator: correspondingUser.full_name, operator_email: correspondingUser.email,
-          classification: severity, signature: signature,
-          tenant: multiTenantMapIndex[log.organization_id || log.school_id] || 'Global Central Space',
-          description: descriptionStr, hash: generateVerificationSignature(log.id, signature)
-        };
-      });
-      updateAuditPerformanceKPIs(completeAuditCache);
-      renderAuditTableRows(completeAuditCache);
-    } catch (err) { window.showToast(`Audit history trace error: ${err.message}`, 'error'); }
-  }
-
-  function updateAuditPerformanceKPIs(logs) {
-    document.getElementById('metrics-audit-total').textContent = logs.length;
-    document.getElementById('metrics-audit-security').textContent = logs.filter(l => l.classification === 'CRITICAL' || l.classification === 'SECURITY').length;
-    document.getElementById('metrics-audit-mutations').textContent = logs.filter(l => l.classification === 'INFO' || l.classification === 'WARN').length;
-  }
-
-  function executeClientSideFiltering() {
-    const term = document.getElementById('search-bar').value.toLowerCase().trim();
-    const typeConstraint = document.getElementById('action-filter').value;
-    const filtered = completeAuditCache.filter(log => {
-      const matchesSearch = log.operator.toLowerCase().includes(term) || log.description.toLowerCase().includes(term) || log.signature.toLowerCase().includes(term) || log.hash.toLowerCase().includes(term);
-      const matchesType = typeConstraint === 'ALL' || log.classification === typeConstraint;
-      return matchesSearch && matchesType;
-    });
-    renderAuditTableRows(filtered);
-  }
-
-  function renderAuditTableRows(logs) {
-    const body = document.getElementById('audit-matrix-body');
-    if (logs.length === 0) { body.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:24px;">No immutable audit traces found matching selection constraints.</td></tr>`; return; }
-    body.innerHTML = logs.map(log => {
-      let badge = log.classification === 'CRITICAL' || log.classification === 'SECURITY' ? 'badge-red' : (log.classification === 'WARN' ? 'badge-yellow' : 'badge-blue');
-      return `
-        <tr>
-          <td style="font-family:monospace; font-size:11px; color:var(--text-secondary); font-weight:700;">${log.timestamp}</td>
-          <td><span style="font-weight:800; color:var(--navy);">${log.operator}</span><div style="font-size:10px; color:var(--text-muted); font-family:monospace;">${log.operator_email}</div></td>
-          <td><code style="font-size:11px; font-weight:800; color:#b45309; background:#fffbeb; padding:2px 6px; border-radius:4px;">${log.signature}</code></td>
-          <td><span class="badge ${badge}">${log.classification}</span></td>
-          <td><span style="color:var(--navy); font-weight:700;">${log.tenant}</span></td>
-          <td><div style="font-size:13px; color:var(--text-secondary); line-height:1.4; max-width:380px;">${log.description}</div><span class="hash-code"><i class="bi bi-fingerprint"></i> ${log.hash}</span></td>
-        </tr>
-      `;
-    }).join('');
-  }
-
-  document.getElementById('btn-export-audit').onclick = function() {
-    if (completeAuditCache.length === 0) return;
-    let csv = ['Timestamp,Operator,Email,Signature,Severity,Tenant,Description,IntegrityHash'];
-    completeAuditCache.forEach(l => csv.push(`"${l.timestamp}","${l.operator}","${l.operator_email}","${l.signature}","${l.classification}","${l.tenant}","${l.description.replace(/"/g, '""')}","${l.hash}"`));
-    const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `audit_${new Date().toISOString().substring(0,10)}.csv`;
-    link.click();
-  };
-
-  window.showToast = (msg) => { const toast = document.createElement('div'); toast.className = `toast active`; toast.textContent = msg; document.getElementById('toast-container').appendChild(toast); setTimeout(() => toast.remove(), 4000); };
+  await requireAuth();
+  const profile = await getUserProfile();
+  if (!profile || profile.role !== 'super_admin') { await supabase.auth.signOut(); window.location.href = '../index.html'; throw new Error('Not authorized.'); }
+  document.getElementById('admin-user-name').textContent = profile.full_name || 'Bex Administrator';
+  document.getElementById('avatar-char').textContent     = (profile.full_name || 'B').charAt(0).toUpperCase();
   document.getElementById('signout-btn').onclick = () => signOut();
-  verifyAdminAuth();
+
+  let auditCache = [], orgMap = {}, userMap = {};
+
+  const [orgsRes, profilesRes] = await Promise.all([
+    supabase.from('organizations').select('id, name'),
+    supabase.from('profiles').select('id, full_name, email').limit(200)
+  ]);
+  (orgsRes.data || []).forEach(o => { orgMap[o.id] = o.name; });
+  (profilesRes.data || []).forEach(p => { userMap[p.id] = { name: p.full_name || 'System', email: p.email || '' }; });
+
+  const { data: notifs } = await supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(200);
+
+  auditCache = (notifs || []).map(n => {
+    let severity = 'INFO', action = 'NOTIFICATION_LOGGED';
+    if (n.type === 'emergency' && n.status === 'active')    { severity = 'CRITICAL'; action = 'SOS_ALERT_TRIGGERED'; }
+    else if (n.type === 'emergency' && n.status === 'resolved') { severity = 'SECURITY'; action = 'INCIDENT_RESOLVED'; }
+    else if (n.type === 'broadcast')                            { severity = 'WARN';     action = 'BROADCAST_DISPATCHED'; }
+    const operator = n.user_id ? (userMap[n.user_id]?.name  || 'System') : 'System';
+    const email    = n.user_id ? (userMap[n.user_id]?.email || 'system@bexlabs.com') : 'system@bexlabs.com';
+    return {
+      id: n.id, timestamp: n.created_at ? new Date(n.created_at).toLocaleString() : '---',
+      operator, email, action, severity,
+      school: orgMap[n.organization_id] || 'Global',
+      description: `${n.title || ''}: ${(n.message || '').substring(0, 90)}${(n.message || '').length > 90 ? '...' : ''}`
+    };
+  });
+
+  document.getElementById('v-total').textContent    = auditCache.length;
+  document.getElementById('v-critical').textContent = auditCache.filter(l => l.severity === 'CRITICAL' || l.severity === 'SECURITY').length;
+  document.getElementById('v-info').textContent     = auditCache.filter(l => l.severity === 'INFO' || l.severity === 'WARN').length;
+
+  renderTable(auditCache);
+
+  function renderTable(data) {
+    const body     = document.getElementById('audit-body');
+    const term     = document.getElementById('search-bar').value.toLowerCase();
+    const severity = document.getElementById('severity-filter').value;
+    const filtered = data.filter(l => {
+      const matchS = l.operator.toLowerCase().includes(term) || l.description.toLowerCase().includes(term) || l.action.toLowerCase().includes(term);
+      const matchSev = severity === 'ALL' || l.severity === severity;
+      return matchS && matchSev;
+    });
+    if (!filtered.length) { body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">No matching records.</td></tr>'; return; }
+    const sevColors = { CRITICAL: 'badge-red', SECURITY: 'badge-red', WARN: 'badge-yellow', INFO: 'badge-navy' };
+    body.innerHTML = filtered.map(l => `
+      <tr>
+        <td style="font-size:11px;color:var(--text-secondary);font-family:monospace;white-space:nowrap;">${l.timestamp}</td>
+        <td>
+          <div style="font-weight:800;color:var(--navy);">${l.operator}</div>
+          <div class="hash-code">${l.email}</div>
+        </td>
+        <td><code style="font-size:11px;font-weight:800;color:#b45309;background:#fffbeb;padding:2px 6px;border-radius:4px;">${l.action}</code></td>
+        <td><span class="badge ${sevColors[l.severity] || 'badge-navy'}">${l.severity}</span></td>
+        <td style="font-weight:700;white-space:nowrap;">${l.school}</td>
+        <td style="font-size:12px;color:var(--text-secondary);max-width:260px;">${l.description}</td>
+      </tr>`).join('');
+  }
+
+  document.getElementById('search-bar').oninput       = () => renderTable(auditCache);
+  document.getElementById('severity-filter').onchange = () => renderTable(auditCache);
+
+  // ── Export CSV — fixed ─────────────────────────────────────────────────
+  document.getElementById('btn-export').onclick = () => {
+    if (!auditCache.length) { alert('No data to export.'); return; }
+
+    const headers = ['Timestamp', 'Operator', 'Email', 'Action', 'Severity', 'School', 'Description'];
+    const rows = auditCache.map(l => [
+      l.timestamp,
+      l.operator,
+      l.email,
+      l.action,
+      l.severity,
+      l.school,
+      l.description.replace(/"/g, '""')
+    ].map(v => `"${v}"`).join(','));
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href     = url;
+    link.download = `bex_audit_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 </script>
 </body>
 </html>
