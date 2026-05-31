@@ -1,12 +1,13 @@
 // supabase/functions/send-invite/index.ts
-// Sends a branded invite email with school code and signup link
+// Sends a branded invite email with school code and signup link via Brevo
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
+const BREVO_API_KEY  = Deno.env.get('BREVO_API_KEY')!
 const FROM_EMAIL     = 'iamtissvn@gmail.com'
+const FROM_NAME      = 'School Bus Track Pro'
 const APP_NAME       = 'School Bus Track Pro'
-const APP_URL        = Deno.env.get('APP_URL') || 'https://schoolbustrackpro.com'
+const APP_URL        = Deno.env.get('APP_URL') || 'https://bustrack-alpha.vercel.app'
 
 const cors = {
   'Access-Control-Allow-Origin':  '*',
@@ -25,9 +26,13 @@ serve(async (req) => {
       })
     }
 
-    const roleLabel = { school_manager: 'School Manager', driver: 'Driver', parent: 'Parent', super_admin: 'Platform Administrator' }[role] || role
+    const roleLabel = {
+      school_manager: 'School Manager',
+      driver: 'Driver',
+      parent: 'Parent',
+      super_admin: 'Platform Administrator'
+    }[role] || role
 
-    // Build signup URL with school code pre-filled
     const signupUrl = school_code
       ? `${APP_URL}/index.html?code=${school_code}&role=${role}`
       : `${APP_URL}/index.html?role=${role}`
@@ -39,7 +44,7 @@ serve(async (req) => {
         <p style="margin:8px 0 0 0;font-size:12px;color:#94a3b8;">Enter this code when creating your account to join ${school_name || 'your school'}.</p>
       </div>` : ''
 
-    const greeting = full_name ? `Hi ${full_name.split(' ')[0]},` : 'Hi there,'
+    const greeting    = full_name ? `Hi ${full_name.split(' ')[0]},` : 'Hi there,'
     const inviterLine = invited_by ? `<strong>${invited_by}</strong> has invited you` : `You have been invited`
 
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
@@ -77,20 +82,24 @@ serve(async (req) => {
       </div>
     </body></html>`
 
-    const resendRes = await fetch('https://api.resend.com/emails', {
+    const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      headers: {
+        'api-key': BREVO_API_KEY,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
-        from: FROM_EMAIL, to: email,
+        sender: { name: FROM_NAME, email: FROM_EMAIL },
+        to: [{ email }],
         subject: `You're invited to join ${school_name || APP_NAME}`,
-        html
+        htmlContent: html
       })
     })
 
-    const resendData = await resendRes.json()
+    const brevoData = await brevoRes.json()
 
-    if (!resendRes.ok) {
-      return new Response(JSON.stringify({ error: 'Email delivery failed', detail: resendData }), {
+    if (!brevoRes.ok) {
+      return new Response(JSON.stringify({ error: 'Email delivery failed', detail: brevoData }), {
         status: 500, headers: { ...cors, 'Content-Type': 'application/json' }
       })
     }
