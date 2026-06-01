@@ -26,6 +26,8 @@
     .infra-value-text { font-size: 24px; font-weight: 900; color: var(--navy); line-height: 1; }
     .tab-btn { padding: 8px 16px; border-radius: var(--r-md); border: 1.5px solid var(--border); font-size: 12px; font-weight: 700; cursor: pointer; background: white; color: var(--text-secondary); transition: 0.2s; }
     .tab-btn.active { background: var(--navy); border-color: var(--navy); color: white; }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
     @media (max-width: 768px) {
       html, body { overflow: auto !important; height: auto !important; }
@@ -186,7 +188,7 @@
   async function loadSchools() {
     const { data: schools } = await supabase.from('organizations').select('*').order('created_at', { ascending: false });
     const list = schools || [];
-    document.getElementById('metrics-active').textContent    = list.filter(s => s.account_status !== 'suspended').length;
+    document.getElementById('metrics-active').textContent    = list.filter(s => !s.account_status || s.account_status === 'active').length;
     document.getElementById('metrics-premium').textContent   = list.filter(s => (s.subscription_tier || 'Premium') === 'Premium').length;
     document.getElementById('metrics-suspended').textContent = list.filter(s => s.account_status === 'suspended').length;
     const body = document.getElementById('schools-body');

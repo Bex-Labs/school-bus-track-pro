@@ -22,6 +22,14 @@
     #emergency-overlay { display: none; position: fixed; inset: 0; background: rgba(220,38,38,0.9); z-index: 10000; align-items: center; justify-content: center; text-align: center; color: white; backdrop-filter: blur(8px); }
     #emergency-overlay.active { display: flex; animation: pulseRed 2s infinite; }
     @keyframes pulseRed { 0% { background: rgba(185,28,28,0.9); } 50% { background: rgba(239,68,68,0.95); } 100% { background: rgba(185,28,28,0.9); } }
+    #broadcast-modal { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.75); z-index:9000; align-items:center; justify-content:center; backdrop-filter:blur(6px); }
+    #broadcast-modal.active { display:flex; }
+    .broadcast-modal-card { background:var(--navy); color:white; border-radius:20px; padding:36px; max-width:480px; width:90%; text-align:center; border:2px solid var(--yellow); box-shadow:0 25px 50px rgba(0,0,0,0.5); animation:popIn 0.3s ease; }
+    @keyframes popIn { from { transform:scale(0.85); opacity:0; } to { transform:scale(1); opacity:1; } }
+    .broadcast-timer-bar { height:4px; background:rgba(255,255,255,0.2); border-radius:2px; margin:16px 0; overflow:hidden; }
+    .broadcast-timer-fill { height:100%; background:var(--yellow); border-radius:2px; transition:width 1s linear; }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     @media (max-width: 768px) {
       .admin-sidebar { display: none; }
@@ -32,6 +40,18 @@
   </style>
 </head>
 <body>
+
+<!-- Broadcast Modal -->
+<div id="broadcast-modal">
+  <div class="broadcast-modal-card">
+    <i class="bi bi-megaphone-fill" style="font-size:48px;color:var(--yellow);display:block;margin-bottom:16px;"></i>
+    <div id="broadcast-modal-source" style="font-size:11px;font-weight:800;color:var(--yellow);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Platform Broadcast</div>
+    <p id="broadcast-modal-msg" style="font-size:18px;font-weight:700;line-height:1.5;margin:0 0 16px 0;">...</p>
+    <div class="broadcast-timer-bar"><div class="broadcast-timer-fill" id="broadcast-timer-fill" style="width:100%;"></div></div>
+    <p style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:20px;">Auto-dismisses in <span id="broadcast-countdown">15</span>s</p>
+    <button class="btn btn-yellow" onclick="dismissBroadcastModal()" style="font-weight:800;padding:12px 32px;">Acknowledged</button>
+  </div>
+</div>
 
 <div id="emergency-overlay">
   <div style="max-width:500px;padding:40px;">
@@ -113,6 +133,12 @@
             <button class="btn btn-yellow btn-full btn-sm" id="btn-send-broadcast">
               <i class="bi bi-send-fill"></i> Dispatch Message
             </button>
+            <div style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;">
+              <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Recent Broadcasts</div>
+              <div id="broadcast-history" style="max-height:140px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;">
+                <div style="font-size:11px;color:rgba(255,255,255,0.4);text-align:center;padding:10px 0;">No broadcasts yet.</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -186,7 +212,18 @@
   emergencyAlarm.loop = true;
 
   const broadcastChannel = supabase.channel('global-fleet-broadcast');
-  broadcastChannel.subscribe();
+  broadcastChannel
+    .on('broadcast', { event: 'urgent-alert' }, ({ payload }) => {
+      // Global platform override from super admin
+      showBroadcastModal(payload.message, '🚨 Platform Override from Bex Admin');
+    })
+    .on('broadcast', { event: 'fleet-directive' }, ({ payload }) => {
+      // Only show if scoped to this org (or no org — global)
+      if (!payload.org_id || payload.org_id === ORG_ID) {
+        showBroadcastModal(payload.message, '📢 Fleet Directive');
+      }
+    })
+    .subscribe();
 
   // ── 3. Data — all queries scoped to ORG_ID ────────────────────────────
   async function fetchData() {
@@ -308,24 +345,74 @@
     showToast('Emergency Acknowledged.', 'success');
   };
 
-  // ── 5. Broadcast ───────────────────────────────────────────────────────
+  // ── Broadcast modal ────────────────────────────────────────────────────
+  let broadcastTimerInterval = null;
+
+  function showBroadcastModal(msg, source = 'Platform Broadcast') {
+    document.getElementById('broadcast-modal-msg').textContent = msg;
+    document.getElementById('broadcast-modal-source').textContent = source;
+    document.getElementById('broadcast-modal').classList.add('active');
+    document.getElementById('broadcast-timer-fill').style.width = '100%';
+    document.getElementById('broadcast-countdown').textContent = '15';
+    let seconds = 15;
+    clearInterval(broadcastTimerInterval);
+    broadcastTimerInterval = setInterval(() => {
+      seconds--;
+      document.getElementById('broadcast-countdown').textContent = seconds;
+      document.getElementById('broadcast-timer-fill').style.width = `${(seconds / 15) * 100}%`;
+      if (seconds <= 0) dismissBroadcastModal();
+    }, 1000);
+    // Synthesised notification chime
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const playBeep = (freq, start, dur) => {
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = freq; o.type = 'sine';
+        g.gain.setValueAtTime(0.3, ctx.currentTime + start);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+        o.start(ctx.currentTime + start); o.stop(ctx.currentTime + start + dur + 0.1);
+      };
+      for (let i = 0; i < 3; i++) { playBeep(880, i * 0.4, 0.2); playBeep(1100, i * 0.4 + 0.25, 0.15); }
+    } catch(e) {}
+  }
+
+  window.dismissBroadcastModal = () => {
+    document.getElementById('broadcast-modal').classList.remove('active');
+    clearInterval(broadcastTimerInterval);
+  };
+
+  async function loadBroadcastHistory() {
+    const { data } = await supabase.from('notifications').select('message, created_at, title').eq('type', 'broadcast').eq('organization_id', ORG_ID).order('created_at', { ascending: false }).limit(5);
+    const container = document.getElementById('broadcast-history');
+    if (!data || !data.length) return;
+    container.innerHTML = data.map(b => `
+      <div style="background:rgba(255,255,255,0.08);border-radius:8px;padding:8px 10px;">
+        <div style="font-size:12px;font-weight:700;color:white;line-height:1.4;">${b.message}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px;">${new Date(b.created_at).toLocaleString()}</div>
+      </div>`).join('');
+  }
+
+  await loadBroadcastHistory();
+
+  // ── 5. Broadcast send ──────────────────────────────────────────────────
   document.getElementById('btn-send-broadcast').onclick = async () => {
     const input = document.getElementById('broadcast-input');
     const msg   = input.value.trim();
     if (!msg) return;
-
     const btn = document.getElementById('btn-send-broadcast');
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Dispatching...';
-
-    broadcastChannel.send({ type: 'broadcast', event: 'urgent-alert', payload: { title: '🚨 SYSTEM DIRECTIVE', message: msg, timestamp: new Date().toISOString() } });
-
+    // Send via realtime to drivers
+    broadcastChannel.send({ type: 'broadcast', event: 'fleet-directive', payload: { title: '📢 MANAGER DIRECTIVE', message: msg, org_id: ORG_ID, timestamp: new Date().toISOString() } });
+    // Save to DB scoped to this org
     await supabase.from('notifications').insert([{
-      title: 'ADMIN BROADCAST', message: msg,
+      title: 'MANAGER BROADCAST', message: msg,
       type: 'broadcast', status: 'logged',
-      organization_id: ORG_ID               // ← scoped to tenant
+      organization_id: ORG_ID
     }]);
-
+    showBroadcastModal(msg, '✅ Broadcast Sent');
+    loadBroadcastHistory();
     showToast('Broadcast transmitted across fleet.', 'success');
     input.value = '';
     btn.disabled = false;

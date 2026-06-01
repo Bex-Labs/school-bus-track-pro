@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="assets/css/main.css">
   <link rel="stylesheet" href="assets/css/auth.css">
   <style>
-    /* ── ROLE SELECTOR ── */
     .role-selector {
       display: flex !important;
       flex-direction: row !important;
@@ -33,7 +32,6 @@
       gap: 4px !important;
     }
     .role-pill i { font-size: 16px !important; }
-
     @media (max-width: 768px) {
       .auth-form-panel  { padding: 20px !important; }
       .auth-card        { width: 100% !important; max-width: 100% !important; }
@@ -48,7 +46,7 @@
 <body>
   <div class="auth-page">
 
-    <!-- ── Visual Panel ── -->
+    <!-- Visual Panel -->
     <div class="auth-visual-panel">
       <div class="auth-bg-shapes">
         <div class="shape shape-1"></div>
@@ -64,7 +62,7 @@
       </div>
     </div>
 
-    <!-- ── Form Panel ── -->
+    <!-- Form Panel -->
     <div class="auth-form-panel">
       <div class="auth-card">
 
@@ -109,7 +107,7 @@
 
         <div class="divider" id="divider-text">or sign in with email</div>
 
-        <!-- ── LOGIN FORM ── -->
+        <!-- LOGIN FORM -->
         <form id="login-form">
           <div class="form-group">
             <label class="form-label">Email Address</label>
@@ -119,7 +117,6 @@
                      placeholder="name@school.edu" required autocomplete="email">
             </div>
           </div>
-
           <div class="form-group">
             <label class="form-label">Password</label>
             <div class="input-wrap">
@@ -130,7 +127,6 @@
                  onclick="togglePassword('password','eye-toggle')"></i>
             </div>
           </div>
-
           <div class="auth-links">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-secondary)">
               <input type="checkbox" id="remember" style="accent-color:var(--yellow);width:16px;height:16px;">
@@ -138,16 +134,15 @@
             </label>
             <a href="forgot-password.html">Forgot password?</a>
           </div>
-
           <button type="submit" class="btn btn-yellow btn-full btn-lg" id="login-btn">
             Login <i class="bi bi-arrow-right-short" style="font-size:22px;"></i>
           </button>
         </form>
 
-        <!-- ── SIGN UP FORM ── -->
+        <!-- SIGN UP FORM -->
         <form id="signup-form" style="display:none;">
 
-          <!-- School Name — shown for school_manager only -->
+          <!-- School Name — school_manager only -->
           <div class="form-group" id="school-name-group" style="display:none;">
             <label class="form-label">School Name</label>
             <div class="input-wrap">
@@ -160,7 +155,7 @@
             </small>
           </div>
 
-          <!-- School Code — shown for driver/parent only -->
+          <!-- School Code — driver/parent only -->
           <div class="form-group" id="tenant-code-group" style="display:none;">
             <label class="form-label">School ID / Code</label>
             <div class="input-wrap">
@@ -226,33 +221,24 @@
     window.selectedRole = 'parent';
     window.authMode     = 'login';
 
-    // ── Update signup form fields based on selected role ──────────────────
     function updateSignupFields() {
-      const role             = window.selectedRole;
-      const schoolNameGroup  = document.getElementById('school-name-group');
-      const tenantCodeGroup  = document.getElementById('tenant-code-group');
-
+      const role            = window.selectedRole;
+      const schoolNameGroup = document.getElementById('school-name-group');
+      const tenantCodeGroup = document.getElementById('tenant-code-group');
       if (!schoolNameGroup || !tenantCodeGroup) return;
-
       if (window.authMode !== 'signup') {
         schoolNameGroup.style.display = 'none';
         tenantCodeGroup.style.display = 'none';
         return;
       }
-
       if (role === 'super_admin') {
-        // BEX Admin: no school affiliation needed
         schoolNameGroup.style.display = 'none';
         tenantCodeGroup.style.display = 'none';
-
       } else if (role === 'school_manager') {
-        // Manager: creates a new school
         schoolNameGroup.style.display = 'block';
         tenantCodeGroup.style.display = 'none';
-
       } else {
-        // Driver / Parent: join an existing school
-        // If tenant is already resolved from subdomain, no code needed
+        // driver / parent
         if (window.activeTenantId) {
           schoolNameGroup.style.display = 'none';
           tenantCodeGroup.style.display = 'none';
@@ -273,14 +259,13 @@
 
     function toggleAuthMode(mode) {
       window.authMode = mode;
-      const lForm  = document.getElementById('login-form');
-      const sForm  = document.getElementById('signup-form');
-      const title  = document.getElementById('auth-title');
-      const sub    = document.getElementById('auth-subtext');
-      const tText  = document.getElementById('toggle-text');
-      const gText  = document.getElementById('google-text');
+      const lForm   = document.getElementById('login-form');
+      const sForm   = document.getElementById('signup-form');
+      const title   = document.getElementById('auth-title');
+      const sub     = document.getElementById('auth-subtext');
+      const tText   = document.getElementById('toggle-text');
+      const gText   = document.getElementById('google-text');
       const divider = document.getElementById('divider-text');
-
       if (mode === 'signup') {
         lForm.style.display  = 'none';
         sForm.style.display  = 'block';
@@ -312,6 +297,54 @@
         icon.className = 'bi bi-eye eye-toggle';
       }
     }
+
+    // ── URL PARAM HANDLER ─────────────────────────────────────────────────
+    // Reads ?mode, ?role, ?code, ?email from URL and pre-fills the form
+    (function handleURLParams() {
+      const params = new URLSearchParams(window.location.search);
+      const mode   = params.get('mode');   // 'signup' or 'login'
+      const role   = params.get('role');   // 'driver', 'parent', 'school_manager'
+      const code   = params.get('code');   // school code / subdomain
+      const email  = params.get('email');  // pre-fill email
+
+      // 1. Select role pill first (before switching mode so fields render correctly)
+      if (role) selectRole(role);
+
+      // 2. Switch to signup or login mode
+      if (mode === 'signup' || code) {
+        toggleAuthMode('signup');
+      } else if (mode === 'login') {
+        toggleAuthMode('login');
+      }
+
+      // 3. Pre-fill school code in signup form
+      if (code) {
+        const codeInput = document.getElementById('signup-tenant-code');
+        if (codeInput) {
+          codeInput.value    = code;
+          codeInput.readOnly = true; // lock it — came from invite
+          codeInput.style.background    = '#f8fafc';
+          codeInput.style.fontWeight    = '800';
+          codeInput.style.color         = 'var(--navy)';
+          codeInput.style.letterSpacing = '1px';
+        }
+        // Make sure the field is visible even if tenant resolution hides it
+        const tenantGroup = document.getElementById('tenant-code-group');
+        if (tenantGroup) tenantGroup.style.display = 'block';
+      }
+
+      // 4. Pre-fill email in login form (from create-user welcome email)
+      if (email && mode !== 'signup') {
+        const emailInput = document.getElementById('email');
+        if (emailInput) emailInput.value = decodeURIComponent(email);
+      }
+
+      // 5. Pre-fill email in signup form too if present
+      if (email && (mode === 'signup' || code)) {
+        const signupEmail = document.getElementById('signup-email');
+        if (signupEmail) signupEmail.value = decodeURIComponent(email);
+      }
+    })();
   </script>
 
   <script src="js/config.js" type="module"></script>

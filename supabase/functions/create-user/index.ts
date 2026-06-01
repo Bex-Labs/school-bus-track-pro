@@ -74,7 +74,7 @@ serve(async (req) => {
       super_admin: 'Platform Administrator'
     }[role] || role
 
-    const loginUrl = `${APP_URL}/index.html`
+    const loginUrl = `${APP_URL}/index.html?mode=login&role=${role}&email=${encodeURIComponent(email)}`
 
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
     <body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">

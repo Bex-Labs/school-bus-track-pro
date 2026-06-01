@@ -34,8 +34,8 @@ serve(async (req) => {
     }[role] || role
 
     const signupUrl = school_code
-      ? `${APP_URL}/index.html?code=${school_code}&role=${role}`
-      : `${APP_URL}/index.html?role=${role}`
+      ? `${APP_URL}/index.html?mode=signup&code=${school_code}&role=${role}`
+      : `${APP_URL}/index.html?mode=signup&role=${role}`
 
     const schoolSection = school_code ? `
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin:20px 0;">
