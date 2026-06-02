@@ -34,7 +34,6 @@
   </style>
 </head>
 <body>
-
 <div class="admin-layout">
   <aside class="admin-sidebar">
     <div class="sidebar-logo">
@@ -47,6 +46,7 @@
       <a href="crisis-center.html" class="nav-link"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis Center</span></a>
       <div class="nav-group-label">System Management</div>
       <a href="users.html" class="nav-link"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
+      <a href="buses.html" class="nav-link"><i class="bi bi-bus-front-fill"></i><span>Bus Fleet</span></a>
       <a href="routes.html" class="nav-link active"><i class="bi bi-map-fill"></i><span>Route Control</span></a>
       <a href="analytics.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics</span></a>
     </nav>
@@ -91,7 +91,6 @@
             </div>
             <div class="route-scroll-area" id="route-list"></div>
           </div>
-
           <div class="tile" style="padding:20px;">
             <div style="font-family:var(--font-display);font-size:14px;font-weight:800;margin-bottom:16px;color:var(--navy);display:flex;align-items:center;gap:8px;">
               <i class="bi bi-pin-map-fill text-yellow"></i> Stop Configurator
@@ -127,7 +126,6 @@
             </div>
             <div id="route-map" style="height:400px;width:100%;"></div>
           </div>
-
           <div class="tile">
             <div class="table-header" style="background:#FAFBFD;border-bottom:1px solid var(--border);padding:12px 20px;">
               <div>
@@ -161,65 +159,41 @@
   </main>
 
   <nav class="bottom-nav mobile-only">
-    <a href="fleet.html"><i class="bi bi-radar"></i>Drive</a>
-    <a href="crisis-center.html"><i class="bi bi-exclamation-octagon-fill"></i>Crisis</a>
-    <a href="users.html"><i class="bi bi-people-fill"></i>Users</a>
-    <a href="routes.html" class="active"><i class="bi bi-map-fill"></i>Routes</a>
-    <a href="analytics.html"><i class="bi bi-graph-up-arrow"></i>Data</a>
+    <a href="fleet.html"><i class="bi bi-radar"></i></a>
+    <a href="crisis-center.html"><i class="bi bi-exclamation-octagon-fill"></i></a>
+    <a href="users.html"><i class="bi bi-people-fill"></i></a>
+    <a href="buses.html"><i class="bi bi-bus-front-fill"></i></a>
+    <a href="routes.html" class="active"><i class="bi bi-map-fill"></i></a>
+    <a href="analytics.html"><i class="bi bi-graph-up-arrow"></i></a>
   </nav>
 </div>
 
 <div id="toast-container"></div>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script type="module">
   import { supabase, getUserProfile } from '../js/config.js';
   import { signOut, requireAuth } from '../js/auth.js';
-
-  // ── 0. Auth gate + resolve tenant ─────────────────────────────────────
   await requireAuth();
   const profile = await getUserProfile();
-
-  if (!profile || !profile.organization_id) {
-    setTimeout(() => signOut(), 2000);
-    throw new Error('No organization_id on profile.');
-  }
-
+  if (!profile || !profile.organization_id) { setTimeout(() => signOut(), 2000); throw new Error('No organization_id on profile.'); }
   const ORG_ID = profile.organization_id;
-
-  // ── 1. Sidebar ─────────────────────────────────────────────────────────
   const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
-  if (org) {
-    const el = document.getElementById('sidebar-school-name');
-    if (el) el.innerHTML = `${org.name} <small>Manager Console</small>`;
-  }
+  if (org) { const el = document.getElementById('sidebar-school-name'); if (el) el.innerHTML = `${org.name} <small>Manager Console</small>`; }
   if (profile.full_name) {
-    const n = document.getElementById('sidebar-manager-name');
-    const a = document.getElementById('sidebar-avatar');
-    if (n) n.textContent = profile.full_name;
-    if (a) a.textContent = profile.full_name.charAt(0).toUpperCase();
+    const n = document.getElementById('sidebar-manager-name'); const a = document.getElementById('sidebar-avatar');
+    if (n) n.textContent = profile.full_name; if (a) a.textContent = profile.full_name.charAt(0).toUpperCase();
   }
   document.getElementById('signout-btn-sidebar').onclick = () => signOut();
-
-  // ── 2. Create route — scoped to this org ──────────────────────────────
   window.createNewRoutePrompt = async () => {
     const routeName = prompt('Enter the name for the new route:');
     if (!routeName) return;
-
-    const { error } = await supabase.from('routes').insert([{
-      name: routeName,
-      organization_id: ORG_ID               // ← scoped to tenant
-    }]);
-
+    const { error } = await supabase.from('routes').insert([{ name: routeName, organization_id: ORG_ID }]);
     if (error) alert('Creation failed: ' + error.message);
     else location.reload();
   };
 </script>
-
-<!-- routes.js handles map + stop logic; it must also be updated to scope by ORG_ID -->
 <script type="module" src="../js/routes.js"></script>
 </body>
 </html>

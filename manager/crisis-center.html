@@ -14,42 +14,33 @@
     .admin-layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
     .admin-main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--bg); }
     .admin-content { flex: 1; overflow-y: auto; padding: 24px; scrollbar-width: thin; }
-
     .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
     .kpi-card { padding: 12px; min-height: 90px; display: flex; flex-direction: column; justify-content: center; border-radius: 16px; }
     .kpi-value { font-size: 24px; font-weight: 800; }
     .kpi-label { font-size: 11px; margin-bottom: 4px; }
-
     .chip { padding: 6px 14px; border-radius: var(--r-full); border: 1.5px solid var(--border); font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s; color: var(--text-secondary); background: var(--white); text-transform: uppercase; }
     .chip.active { background: var(--navy); border-color: var(--navy); color: var(--white); }
-
     .incident-card { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 12px 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 15px; transition: all 0.2s ease; border-left: 5px solid var(--border); box-shadow: var(--shadow-sm); }
     .incident-card.type-emergency { border-left-color: var(--red); background: #fffcfc; }
     .incident-card.type-info { border-left-color: var(--navy); }
     .incident-card.resolved { border-left-color: var(--green); opacity: 0.8; background: #f0fdf4; }
-
     .stream-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
     .stream-details h4 { font-size: 13px; font-weight: 800; color: var(--navy); margin-bottom: 2px; }
     .stream-details p { font-size: 11px; color: var(--text-muted); line-height: 1.4; margin: 0; }
     .alert-scroll-area { height: 550px; overflow-y: auto; padding: 4px; scrollbar-width: thin; }
-
     .emergency-pulse { animation: alertPulse 3s infinite; }
     @keyframes alertPulse { 0% { box-shadow: 0 0 0 0px rgba(239,68,68,0.2); } 50% { box-shadow: 0 0 0 10px rgba(239,68,68,0); } 100% { box-shadow: 0 0 0 0px rgba(239,68,68,0); } }
-
     .broadcast-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
     .broadcast-overlay.active { display: flex; }
     .broadcast-card { background: white; width: 90%; max-width: 450px; padding: 30px; border-radius: 20px; box-shadow: var(--shadow-xl); }
-
     @media (max-width: 1024px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 768px) {
       .admin-sidebar { display: none; }
-      .admin-main { padding-bottom: 100px; height: auto; overflow: visible; }
-      .admin-content { overflow: visible; padding: 12px; }
+      .admin-main { height: auto; overflow: visible; }
+      .admin-content { overflow: visible; padding: 12px; padding-bottom: 100px; }
       .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-      .kpi-card:last-child { grid-column: span 2; min-height: 60px; flex-direction: row; justify-content: space-between; align-items: center; padding: 0 20px; }
       .tile-8, .tile-4 { grid-column: span 12 !important; }
       #crisis-map { height: 250px !important; border-radius: 16px; margin-bottom: 10px; }
-      .incident-card { padding: 10px 12px; gap: 12px; border-radius: 10px; }
       .alert-scroll-area { height: auto; max-height: 500px; }
     }
   </style>
@@ -80,6 +71,7 @@
       <a href="crisis-center.html" class="nav-link active"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis Center</span></a>
       <div class="nav-group-label">System Management</div>
       <a href="users.html" class="nav-link"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
+      <a href="buses.html" class="nav-link"><i class="bi bi-bus-front-fill"></i><span>Bus Fleet</span></a>
       <a href="routes.html" class="nav-link"><i class="bi bi-map-fill"></i><span>Route Control</span></a>
       <a href="analytics.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics</span></a>
     </nav>
@@ -157,235 +149,112 @@
   </main>
 
   <nav class="bottom-nav mobile-only">
-    <a href="fleet.html"><i class="bi bi-radar"></i><span>Fleet</span></a>
-    <a href="crisis-center.html" class="active"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis</span></a>
-    <a href="users.html"><i class="bi bi-people-fill"></i><span>Users</span></a>
-    <a href="analytics.html"><i class="bi bi-graph-up-arrow"></i><span>Analytics</span></a>
+    <a href="fleet.html"><i class="bi bi-radar"></i></a>
+    <a href="crisis-center.html" class="active"><i class="bi bi-exclamation-octagon-fill"></i></a>
+    <a href="users.html"><i class="bi bi-people-fill"></i></a>
+    <a href="buses.html"><i class="bi bi-bus-front-fill"></i></a>
+    <a href="routes.html"><i class="bi bi-map-fill"></i></a>
+    <a href="analytics.html"><i class="bi bi-graph-up-arrow"></i></a>
   </nav>
 </div>
 
 <div id="toast-container"></div>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script type="module">
   import { supabase, getUserProfile } from '../js/config.js';
   import { signOut, requireAuth } from '../js/auth.js';
-
-  // ── 0. Auth gate + resolve tenant ─────────────────────────────────────
   await requireAuth();
   const profile = await getUserProfile();
-
-  if (!profile || !profile.organization_id) {
-    showToast('Tenant context missing. Please log in again.', 'error');
-    setTimeout(() => signOut(), 2000);
-    throw new Error('No organization_id on profile.');
-  }
-
+  if (!profile || !profile.organization_id) { showToast('Tenant context missing.', 'error'); setTimeout(() => signOut(), 2000); throw new Error('No organization_id on profile.'); }
   const ORG_ID = profile.organization_id;
-
-  // ── 1. Populate sidebar ────────────────────────────────────────────────
   const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
-  if (org) {
-    const el = document.getElementById('sidebar-school-name');
-    if (el) el.innerHTML = `${org.name} <small>Manager Console</small>`;
-  }
+  if (org) { const el = document.getElementById('sidebar-school-name'); if (el) el.innerHTML = `${org.name} <small>Manager Console</small>`; }
   if (profile.full_name) {
-    const n = document.getElementById('sidebar-manager-name');
-    const a = document.getElementById('sidebar-avatar');
-    if (n) n.textContent = profile.full_name;
-    if (a) a.textContent = profile.full_name.charAt(0).toUpperCase();
+    const n = document.getElementById('sidebar-manager-name'); const a = document.getElementById('sidebar-avatar');
+    if (n) n.textContent = profile.full_name; if (a) a.textContent = profile.full_name.charAt(0).toUpperCase();
   }
   document.getElementById('signout-btn').onclick = () => signOut();
-
-  // ── 2. Map ─────────────────────────────────────────────────────────────
   const cmap = L.map('crisis-map', { zoomControl: false, attributionControl: false }).setView([6.5244, 3.3792], 12);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(cmap);
-
-  let mapMarkers = [];
-  let currentFilter = 'all';
-  let cachedNotifications = [];
-  let cachedReports = [];
-
-  // ── 3. Data fetch — all queries scoped to ORG_ID ──────────────────────
+  let mapMarkers = []; let currentFilter = 'all'; let cachedNotifications = []; let cachedReports = [];
   async function refreshFeed() {
-    const { data: notifications } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('type', 'emergency')
-      .eq('organization_id', ORG_ID)
-      .order('created_at', { ascending: false });
-
-    const { data: incidentReports } = await supabase
-      .from('incident_reports')
-      .select('*')
-      .eq('organization_id', ORG_ID)
-      .order('submitted_at', { ascending: false });
-
-    cachedNotifications = notifications || [];
-    cachedReports       = incidentReports || [];
-
-    const activeSOS       = cachedNotifications.filter(n => !n.resolved_at);
-    const resolvedSOS     = cachedNotifications.filter(n => !!n.resolved_at);
-    const openReports     = cachedReports.filter(r => r.status === 'open');
+    const { data: notifications } = await supabase.from('notifications').select('*').eq('type', 'emergency').eq('organization_id', ORG_ID).order('created_at', { ascending: false });
+    const { data: incidentReports } = await supabase.from('incident_reports').select('*').eq('organization_id', ORG_ID).order('submitted_at', { ascending: false });
+    cachedNotifications = notifications || []; cachedReports = incidentReports || [];
+    const activeSOS = cachedNotifications.filter(n => !n.resolved_at);
+    const resolvedSOS = cachedNotifications.filter(n => !!n.resolved_at);
+    const openReports = cachedReports.filter(r => r.status === 'open');
     const resolvedReports = cachedReports.filter(r => r.status === 'resolved');
-
     updateKPIs(activeSOS, resolvedSOS, openReports, resolvedReports);
-    buildCombinedStream();
-    updateMapMarkers(activeSOS);
+    buildCombinedStream(); updateMapMarkers(activeSOS);
   }
-
   function updateKPIs(activeSOS, resolvedSOS, openReports, resolvedReports) {
-    document.getElementById('kpi-sos').textContent           = activeSOS.length;
-    document.getElementById('kpi-resolved-sos').textContent  = resolvedSOS.length;
-    document.getElementById('kpi-reports').textContent       = openReports.length;
+    document.getElementById('kpi-sos').textContent = activeSOS.length;
+    document.getElementById('kpi-resolved-sos').textContent = resolvedSOS.length;
+    document.getElementById('kpi-reports').textContent = openReports.length;
     document.getElementById('kpi-resolved-reports').textContent = resolvedReports.length;
-
     if (resolvedSOS.length > 0) {
       let totalMs = 0;
       resolvedSOS.forEach(r => { totalMs += new Date(r.resolved_at) - new Date(r.created_at); });
       const avgMin = Math.floor((totalMs / resolvedSOS.length) / 60000);
       document.getElementById('kpi-response').textContent = avgMin > 60 ? `${(avgMin/60).toFixed(1)}h` : `${avgMin}m`;
-    } else {
-      document.getElementById('kpi-response').textContent = '--';
-    }
-
+    } else { document.getElementById('kpi-response').textContent = '--'; }
     const pill = document.getElementById('active-alert-pill');
     pill.style.display = activeSOS.length > 0 ? 'flex' : 'none';
     document.getElementById('active-count-text').textContent = activeSOS.length;
   }
-
   function buildCombinedStream() {
     const feed = document.getElementById('alert-feed');
-
-    const formattedSOS = cachedNotifications.map(n => ({
-      id: n.id, title: '🚨 EMERGENCY SOS SIGNAL', message: n.message,
-      type: 'emergency', timestamp: new Date(n.created_at),
-      isResolved: !!n.resolved_at, refCode: n.id.split('-')[0].toUpperCase()
-    }));
-
-    const formattedReports = cachedReports.map(r => ({
-      id: r.id, title: `Incident: ${r.report_type}`, message: r.details,
-      type: 'report', timestamp: new Date(r.submitted_at),
-      isResolved: r.status === 'resolved', refCode: r.reference || r.id.split('-')[0].toUpperCase()
-    }));
-
+    const formattedSOS = cachedNotifications.map(n => ({ id: n.id, title: '🚨 EMERGENCY SOS SIGNAL', message: n.message, type: 'emergency', timestamp: new Date(n.created_at), isResolved: !!n.resolved_at, refCode: n.id.split('-')[0].toUpperCase() }));
+    const formattedReports = cachedReports.map(r => ({ id: r.id, title: `Incident: ${r.report_type}`, message: r.details, type: 'report', timestamp: new Date(r.submitted_at), isResolved: r.status === 'resolved', refCode: r.reference || r.id.split('-')[0].toUpperCase() }));
     let combined = [...formattedSOS, ...formattedReports].sort((a, b) => b.timestamp - a.timestamp);
     if (currentFilter !== 'all') combined = combined.filter(i => i.type === currentFilter);
-
-    if (combined.length === 0) {
-      feed.innerHTML = '<div style="text-align:center;padding:100px;color:var(--text-muted);"><i class="bi bi-shield-check" style="font-size:3rem;display:block;margin-bottom:10px;"></i>No active incidents.</div>';
-      return;
-    }
-
+    if (combined.length === 0) { feed.innerHTML = '<div style="text-align:center;padding:100px;color:var(--text-muted);"><i class="bi bi-shield-check" style="font-size:3rem;display:block;margin-bottom:10px;"></i>No active incidents.</div>'; return; }
     feed.innerHTML = combined.map(item => {
-      const isSOS   = item.type === 'emergency';
+      const isSOS = item.type === 'emergency';
       const timeStr = item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      return `
-      <div class="incident-card type-${isSOS ? 'emergency' : 'info'} ${item.isResolved ? 'resolved' : ''} ${isSOS && !item.isResolved ? 'emergency-pulse' : ''}">
-        <div class="stream-icon" style="background:${isSOS ? 'var(--red-light)' : 'var(--bg)'};color:${isSOS ? 'var(--red)' : 'var(--navy)'}">
-          <i class="bi ${isSOS ? 'bi-broadcast-pin' : 'bi-person-exclamation'}"></i>
-        </div>
-        <div class="stream-details" style="flex:1">
-          <h4 style="display:flex;justify-content:space-between;">
-            <span>${item.title}</span>
-            <span style="font-size:9px;opacity:0.4;font-family:monospace;">REF: ${item.refCode}</span>
-          </h4>
-          <p><strong>Status:</strong> ${item.isResolved ? 'RESOLVED' : 'ACTIVE'} · <strong>Received:</strong> ${timeStr}</p>
-          <p style="margin-top:6px;opacity:0.9;font-size:12px;line-height:1.5;">${item.message}</p>
-        </div>
-        <div style="display:flex;gap:8px;">
-          ${!item.isResolved
-            ? `<button class="btn btn-navy btn-sm" style="padding:6px 14px;font-size:11px;" onclick="resolveItem('${item.id}','${item.type}')">Resolve</button>`
-            : `<i class="bi bi-check-all text-green" style="font-size:24px;"></i>`}
-          <button class="btn btn-ghost btn-sm" style="padding:6px 14px;font-size:11px;" onclick="window.locateIncident('${item.message}')">Locate</button>
-        </div>
-      </div>`;
+      return `<div class="incident-card type-${isSOS ? 'emergency' : 'info'} ${item.isResolved ? 'resolved' : ''} ${isSOS && !item.isResolved ? 'emergency-pulse' : ''}">
+        <div class="stream-icon" style="background:${isSOS ? 'var(--red-light)' : 'var(--bg)'};color:${isSOS ? 'var(--red)' : 'var(--navy)'}"><i class="bi ${isSOS ? 'bi-broadcast-pin' : 'bi-person-exclamation'}"></i></div>
+        <div class="stream-details" style="flex:1"><h4 style="display:flex;justify-content:space-between;"><span>${item.title}</span><span style="font-size:9px;opacity:0.4;font-family:monospace;">REF: ${item.refCode}</span></h4>
+        <p><strong>Status:</strong> ${item.isResolved ? 'RESOLVED' : 'ACTIVE'} · <strong>Received:</strong> ${timeStr}</p>
+        <p style="margin-top:6px;opacity:0.9;font-size:12px;line-height:1.5;">${item.message}</p></div>
+        <div style="display:flex;gap:8px;">${!item.isResolved ? `<button class="btn btn-navy btn-sm" style="padding:6px 14px;font-size:11px;" onclick="resolveItem('${item.id}','${item.type}')">Resolve</button>` : `<i class="bi bi-check-all text-green" style="font-size:24px;"></i>`}
+        <button class="btn btn-ghost btn-sm" style="padding:6px 14px;font-size:11px;" onclick="window.locateIncident('${item.message}')">Locate</button></div></div>`;
     }).join('');
   }
-
   function updateMapMarkers(alerts) {
-    mapMarkers.forEach(m => cmap.removeLayer(m));
-    mapMarkers = [];
+    mapMarkers.forEach(m => cmap.removeLayer(m)); mapMarkers = [];
     alerts.forEach(a => {
       const m = a.message.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
-      if (m) {
-        const marker = L.marker([parseFloat(m[1]), parseFloat(m[2])], {
-          icon: L.divIcon({ html: `<div style="background:var(--red);width:32px;height:32px;border-radius:50%;border:2px solid white;color:white;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-lg);"><i class="bi bi-broadcast"></i></div>`, className: '' })
-        }).addTo(cmap);
-        mapMarkers.push(marker);
-      }
+      if (m) { const marker = L.marker([parseFloat(m[1]), parseFloat(m[2])], { icon: L.divIcon({ html: `<div style="background:var(--red);width:32px;height:32px;border-radius:50%;border:2px solid white;color:white;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-lg);"><i class="bi bi-broadcast"></i></div>`, className: '' }) }).addTo(cmap); mapMarkers.push(marker); }
     });
   }
-
-  // ── 4. Event listeners ─────────────────────────────────────────────────
   document.querySelectorAll('#filter-container .chip').forEach(chip => {
-    chip.onclick = () => {
-      document.querySelectorAll('#filter-container .chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      currentFilter = chip.dataset.filter;
-      buildCombinedStream();
-    };
+    chip.onclick = () => { document.querySelectorAll('#filter-container .chip').forEach(c => c.classList.remove('active')); chip.classList.add('active'); currentFilter = chip.dataset.filter; buildCombinedStream(); };
   });
-
-  document.getElementById('broadcast-trigger-btn').onclick = () => {
-    document.getElementById('broadcast-modal').classList.add('active');
-  };
-
+  document.getElementById('broadcast-trigger-btn').onclick = () => { document.getElementById('broadcast-modal').classList.add('active'); };
   document.getElementById('confirm-broadcast').onclick = async () => {
-    const input = document.getElementById('broadcast-msg-input');
-    const msg   = input.value.trim();
-    if (!msg) return;
-
+    const input = document.getElementById('broadcast-msg-input'); const msg = input.value.trim(); if (!msg) return;
     const broadcastChannel = supabase.channel('global-fleet-broadcast');
-    broadcastChannel.send({ type: 'broadcast', event: 'urgent-alert', payload: { title: '🚨 SYSTEM DIRECTIVE', message: msg, timestamp: new Date().toISOString() } });
-
-    await supabase.from('notifications').insert([{
-      title: '🚨 ADMIN BROADCAST', message: msg,
-      type: 'broadcast', status: 'logged',
-      organization_id: ORG_ID                   // ← scoped to tenant
-    }]);
-
-    input.value = '';
-    document.getElementById('broadcast-modal').classList.remove('active');
-    showToast('Broadcast dispatched to your fleet.', 'success');
-    refreshFeed();
+    broadcastChannel.send({ type: 'broadcast', event: 'fleet-directive', payload: { title: '📢 MANAGER DIRECTIVE', message: msg, org_id: ORG_ID, timestamp: new Date().toISOString() } });
+    await supabase.from('notifications').insert([{ title: '📢 MANAGER BROADCAST', message: msg, type: 'broadcast', status: 'logged', organization_id: ORG_ID }]);
+    input.value = ''; document.getElementById('broadcast-modal').classList.remove('active');
+    showToast('Broadcast dispatched to your fleet.', 'success'); refreshFeed();
   };
-
-  window.locateIncident = (msg) => {
-    const m = msg.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
-    if (m) cmap.flyTo([parseFloat(m[1]), parseFloat(m[2])], 17);
-    else showToast('GPS coordinates not found in message.', 'warning');
-  };
-
+  window.locateIncident = (msg) => { const m = msg.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/); if (m) cmap.flyTo([parseFloat(m[1]), parseFloat(m[2])], 17); else showToast('GPS coordinates not found in message.', 'warning'); };
   window.resolveItem = async (id, type) => {
     if (!confirm('Mark this incident as resolved?')) return;
-    if (type === 'emergency') {
-      await supabase.from('notifications').update({ resolved_at: new Date().toISOString() }).eq('id', id).eq('organization_id', ORG_ID);
-    } else {
-      await supabase.from('incident_reports').update({ status: 'resolved' }).eq('id', id).eq('organization_id', ORG_ID);
-    }
+    if (type === 'emergency') { await supabase.from('notifications').update({ resolved_at: new Date().toISOString() }).eq('id', id).eq('organization_id', ORG_ID); }
+    else { await supabase.from('incident_reports').update({ status: 'resolved' }).eq('id', id).eq('organization_id', ORG_ID); }
     refreshFeed();
   };
-
-  // ── 5. Realtime subscription scoped by org ─────────────────────────────
   supabase.channel(`crisis-${ORG_ID}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications',     filter: `organization_id=eq.${ORG_ID}` }, () => refreshFeed())
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'incident_reports',  filter: `organization_id=eq.${ORG_ID}` }, () => refreshFeed())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `organization_id=eq.${ORG_ID}` }, () => refreshFeed())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'incident_reports', filter: `organization_id=eq.${ORG_ID}` }, () => refreshFeed())
     .subscribe();
-
   refreshFeed();
-
-  function showToast(msg, type = 'info') {
-    let c = document.getElementById('toast-container');
-    if (!c) { c = document.createElement('div'); c.id = 'toast-container'; document.body.appendChild(c); }
-    const t = document.createElement('div');
-    t.className = `toast ${type}`;
-    t.textContent = msg;
-    c.appendChild(t);
-    setTimeout(() => t.remove(), 4000);
-  }
+  function showToast(msg, type = 'info') { let c = document.getElementById('toast-container'); const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg; c.appendChild(t); setTimeout(() => t.remove(), 4000); }
 </script>
 </body>
 </html>

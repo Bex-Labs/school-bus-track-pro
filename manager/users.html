@@ -62,8 +62,6 @@
       <button class="tab-btn active" id="tab-create" onclick="switchTab('create')"><i class="bi bi-person-plus-fill"></i> Create Account</button>
       <button class="tab-btn" id="tab-invite" onclick="switchTab('invite')"><i class="bi bi-envelope-fill"></i> Send Invite</button>
     </div>
-
-    <!-- Create Account Panel -->
     <div id="panel-create">
       <label class="form-label">Full Name</label>
       <input type="text" id="new-full-name" class="form-input" placeholder="John Doe">
@@ -78,8 +76,6 @@
         <i class="bi bi-person-check-fill"></i> Create & Send Credentials
       </button>
     </div>
-
-    <!-- Send Invite Panel -->
     <div id="panel-invite" style="display:none;">
       <label class="form-label">Recipient Name (Optional)</label>
       <input type="text" id="invite-name" class="form-input" placeholder="Jane Smith">
@@ -105,15 +101,19 @@
       <i class="bi bi-x-lg" style="cursor:pointer;" onclick="closeModal('edit-modal')"></i>
     </div>
     <input type="hidden" id="edit-profile-id">
+    <input type="hidden" id="edit-profile-role">
     <label class="form-label">Full Name</label>
     <input type="text" id="edit-full-name" class="form-input">
-    <label class="form-label">Role</label>
-    <select id="edit-role" class="form-input" style="height:40px;">
-      <option value="driver">Driver</option>
-      <option value="parent">Parent</option>
-    </select>
-    <label class="form-label">Bus ID</label>
-    <input type="text" id="edit-bus-id" class="form-input" placeholder="e.g. BUS-01">
+    <label class="form-label">Phone (Optional)</label>
+    <input type="text" id="edit-phone" class="form-input" placeholder="+234...">
+    <!-- Bus assignment — drivers only -->
+    <div id="edit-bus-wrap">
+      <label class="form-label">Assign Bus</label>
+      <select id="edit-bus-id" class="form-input" style="height:40px;">
+        <option value="">No bus assigned</option>
+      </select>
+      <small style="font-size:11px;color:var(--text-secondary);display:block;margin-top:-10px;margin-bottom:14px;">Only buses in your school are shown.</small>
+    </div>
     <div style="display:flex;gap:12px;margin-top:10px;">
       <button class="btn btn-yellow btn-full" style="font-weight:800;" onclick="saveEdit()">Save Changes</button>
       <button class="btn btn-ghost" onclick="closeModal('edit-modal')">Cancel</button>
@@ -133,6 +133,7 @@
       <a href="crisis-center.html" class="nav-link"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis Center</span></a>
       <div class="nav-group-label">System Management</div>
       <a href="users.html" class="nav-link active"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
+      <a href="buses.html" class="nav-link"><i class="bi bi-bus-front-fill"></i><span>Bus Fleet</span></a>
       <a href="routes.html" class="nav-link"><i class="bi bi-map-fill"></i><span>Route Control</span></a>
       <a href="analytics.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics</span></a>
     </nav>
@@ -155,8 +156,8 @@
     </header>
     <div class="admin-content">
       <div class="kpi-grid">
+        <div class="kpi-node"><div class="kpi-label">Total Users</div><div class="kpi-value" id="count-total">0</div></div>
         <div class="kpi-node"><div class="kpi-label">Drivers</div><div class="kpi-value" id="count-drivers">0</div></div>
-        <div class="kpi-node"><div class="kpi-label">Parents</div><div class="kpi-value" style="color:var(--yellow);" id="count-parents">0</div></div>
         <div class="kpi-node"><div class="kpi-label">Pending</div><div class="kpi-value" style="color:#f59e0b;" id="count-pending">0</div></div>
       </div>
       <div class="tile tile-12">
@@ -164,6 +165,7 @@
           <input type="text" id="search-bar" class="search-input" placeholder="Search name or email...">
           <select id="role-filter" class="role-select">
             <option value="ALL">All Roles</option>
+            <option value="school_manager">Managers</option>
             <option value="driver">Drivers</option>
             <option value="parent">Parents</option>
           </select>
@@ -192,6 +194,7 @@
   <a href="fleet.html"><i class="bi bi-radar"></i></a>
   <a href="crisis-center.html"><i class="bi bi-exclamation-octagon-fill"></i></a>
   <a href="users.html" class="active"><i class="bi bi-people-fill"></i></a>
+  <a href="buses.html"><i class="bi bi-bus-front-fill"></i></a>
   <a href="routes.html"><i class="bi bi-map-fill"></i></a>
   <a href="analytics.html"><i class="bi bi-graph-up-arrow"></i></a>
 </nav>
@@ -220,20 +223,32 @@
   document.getElementById('signout-btn').onclick = () => signOut();
 
   let allUsers = [];
+  let allBuses = [];
+
+  // Load buses for this org
+  async function loadBuses() {
+    const { data } = await supabase.from('buses').select('id').eq('organization_id', ORG_ID).order('id');
+    allBuses = data || [];
+    // Populate bus dropdown in edit modal
+    const sel = document.getElementById('edit-bus-id');
+    sel.innerHTML = '<option value="">No bus assigned</option>' +
+      allBuses.map(b => `<option value="${b.id}">${b.id}</option>`).join('');
+  }
 
   async function loadUsers() {
-    const { data } = await supabase.from('profiles').select('*')
+    const { data, error } = await supabase.from('profiles').select('*')
       .eq('organization_id', ORG_ID)
-      .in('role', ['driver', 'parent'])
+      .in('role', ['school_manager', 'driver', 'parent'])
       .order('full_name');
+    if (error) { showToast('Failed to load users: ' + error.message, 'error'); return; }
     allUsers = data || [];
     updateKPIs(allUsers);
     renderTable(allUsers);
   }
 
   function updateKPIs(users) {
+    document.getElementById('count-total').textContent   = users.length;
     document.getElementById('count-drivers').textContent = users.filter(u => u.role === 'driver').length;
-    document.getElementById('count-parents').textContent = users.filter(u => u.role === 'parent').length;
     document.getElementById('count-pending').textContent = users.filter(u => !u.is_verified && u.account_status !== 'deactivated').length;
   }
 
@@ -244,18 +259,21 @@
   }
 
   function renderTable(users) {
-    const body   = document.getElementById('users-body');
-    const term   = document.getElementById('search-bar').value.toLowerCase();
-    const role   = document.getElementById('role-filter').value;
+    const body     = document.getElementById('users-body');
+    const term     = document.getElementById('search-bar').value.toLowerCase();
+    const roleF    = document.getElementById('role-filter').value;
     const filtered = users.filter(u => {
       const matchSearch = u.full_name?.toLowerCase().includes(term) || u.email?.toLowerCase().includes(term);
-      const matchRole   = role === 'ALL' || u.role === role;
+      const matchRole   = roleF === 'ALL' || u.role === roleF;
       return matchSearch && matchRole;
     });
 
-    if (!filtered.length) { body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">No records found.</td></tr>'; return; }
+    if (!filtered.length) {
+      body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">No records found.</td></tr>';
+      return;
+    }
 
-    const roleColors = { driver: 'badge-green', parent: 'badge-navy' };
+    const roleColors = { school_manager: 'badge-yellow', driver: 'badge-green', parent: 'badge-navy' };
 
     body.innerHTML = filtered.map(u => {
       const status = getStatus(u);
@@ -264,12 +282,17 @@
       else if (status === 'verified') pill = `<button class="status-pill status-verified" onclick="cycleStatus('${u.id}','${u.account_status}',${!!u.is_verified})">VERIFIED</button>`;
       else pill = `<button class="status-pill status-pending" onclick="cycleStatus('${u.id}','${u.account_status}',${!!u.is_verified})">PENDING</button>`;
 
+      // Bus column — drivers only
+      const busCell = u.role === 'driver'
+        ? `<code style="font-weight:700;color:var(--navy);">${u.bus_id || '---'}</code>`
+        : `<span style="color:var(--text-muted);font-size:12px;">N/A</span>`;
+
       return `<tr>
         <td><strong>${u.full_name || 'Anonymous'}</strong></td>
         <td style="font-size:12px;">${u.email || '---'}</td>
-        <td><span class="badge ${roleColors[u.role] || 'badge-navy'}">${(u.role || '').toUpperCase()}</span></td>
+        <td><span class="badge ${roleColors[u.role] || 'badge-navy'}">${(u.role || '').replace('_', ' ').toUpperCase()}</span></td>
         <td>${pill}</td>
-        <td><code style="font-weight:700;color:var(--navy);">${u.bus_id || '---'}</code></td>
+        <td>${busCell}</td>
         <td style="text-align:right;">
           <div style="display:inline-flex;gap:6px;">
             <button class="btn btn-ghost btn-sm" onclick="openEditModal('${u.id}')" title="Edit"><i class="bi bi-pencil"></i></button>
@@ -281,47 +304,76 @@
     }).join('');
   }
 
+  // Cycle status — only scoped by user id, no org filter on update
   window.cycleStatus = async (id, currentAccountStatus, currentIsVerified) => {
     let update = {};
-    if (currentAccountStatus === 'deactivated') update = { account_status: 'active', is_verified: true };
-    else if (currentIsVerified) { if (!confirm('Suspend this account?')) return; update = { account_status: 'deactivated' }; }
-    else update = { is_verified: true, account_status: 'active' };
-    await supabase.from('profiles').update(update).eq('id', id);
-    loadUsers(); showToast('Status updated.', 'success');
+    if (currentAccountStatus === 'deactivated') {
+      update = { account_status: 'active', is_verified: true };
+    } else if (currentIsVerified) {
+      if (!confirm('Suspend this account?')) return;
+      update = { account_status: 'deactivated' };
+    } else {
+      update = { is_verified: true, account_status: 'active' };
+    }
+    const { error } = await supabase.from('profiles').update(update).eq('id', id);
+    if (error) { showToast('Update failed: ' + error.message, 'error'); return; }
+    loadUsers();
+    showToast('Status updated.', 'success');
   };
 
   window.openEditModal = (id) => {
     const u = allUsers.find(p => p.id === id); if (!u) return;
-    document.getElementById('edit-profile-id').value = u.id;
-    document.getElementById('edit-full-name').value  = u.full_name || '';
-    document.getElementById('edit-role').value       = u.role || 'driver';
-    document.getElementById('edit-bus-id').value     = u.bus_id || '';
+    document.getElementById('edit-profile-id').value   = u.id;
+    document.getElementById('edit-profile-role').value = u.role;
+    document.getElementById('edit-full-name').value    = u.full_name || '';
+    document.getElementById('edit-phone').value        = u.phone || '';
+    // Show bus dropdown only for drivers
+    const busWrap = document.getElementById('edit-bus-wrap');
+    if (u.role === 'driver') {
+      busWrap.style.display = 'block';
+      document.getElementById('edit-bus-id').value = u.bus_id || '';
+    } else {
+      busWrap.style.display = 'none';
+    }
     openModal('edit-modal');
   };
 
   window.saveEdit = async () => {
-    const id = document.getElementById('edit-profile-id').value;
-    await supabase.from('profiles').update({
+    const id   = document.getElementById('edit-profile-id').value;
+    const role = document.getElementById('edit-profile-role').value;
+    const updateData = {
       full_name: document.getElementById('edit-full-name').value.trim(),
-      role:      document.getElementById('edit-role').value,
-      bus_id:    document.getElementById('edit-bus-id').value.trim() || null,
-    }).eq('id', id).eq('organization_id', ORG_ID);
-    closeModal('edit-modal'); loadUsers(); showToast('User updated.', 'success');
+      phone:     document.getElementById('edit-phone').value.trim() || null,
+    };
+    // Only save bus_id for drivers
+    if (role === 'driver') {
+      updateData.bus_id = document.getElementById('edit-bus-id').value || null;
+    }
+    const { error } = await supabase.from('profiles').update(updateData).eq('id', id);
+    if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
+    closeModal('edit-modal');
+    loadUsers();
+    showToast('User updated.', 'success');
   };
 
   window.sendReset = async (email) => {
     if (!email) return;
-    await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password.html' });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password.html'
+    });
+    if (error) { showToast('Reset failed: ' + error.message, 'error'); return; }
     showToast('Password reset email sent.', 'success');
   };
 
   window.deleteUser = async (id) => {
     if (!confirm('Permanently delete this user?')) return;
-    await supabase.from('profiles').delete().eq('id', id).eq('organization_id', ORG_ID);
-    loadUsers(); showToast('User removed.', 'success');
+    const { error } = await supabase.from('profiles').delete().eq('id', id);
+    if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
+    loadUsers();
+    showToast('User removed.', 'success');
   };
 
-  // ── Create account ─────────────────────────────────────────────────────
+  // Create account
   window.createAccount = async () => {
     const btn       = document.getElementById('btn-create-account');
     const email     = document.getElementById('new-email').value.trim();
@@ -341,7 +393,7 @@
     else showToast(result.error || 'Failed.', 'error');
   };
 
-  // ── Send invite ────────────────────────────────────────────────────────
+  // Send invite
   window.sendInvite = async () => {
     const btn       = document.getElementById('btn-send-invite');
     const email     = document.getElementById('invite-email').value.trim();
@@ -374,7 +426,9 @@
   document.getElementById('search-bar').oninput   = () => renderTable(allUsers);
   document.getElementById('role-filter').onchange = () => renderTable(allUsers);
 
-  supabase.channel('users-manager').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, loadUsers).subscribe();
+  supabase.channel('users-manager')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, loadUsers)
+    .subscribe();
 
   function showToast(m, t = 'info') {
     const c = document.getElementById('toast-container');
@@ -382,6 +436,7 @@
     setTimeout(() => d.remove(), 4000);
   }
 
+  await loadBuses();
   loadUsers();
 </script>
 </body>

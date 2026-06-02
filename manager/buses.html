@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Bus Fleet | School Bus Track Pro</title>
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <style>
+    html, body { height: 100%; margin: 0; }
+    .admin-layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+    .admin-main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--bg); }
+    .admin-content { flex: 1; overflow-y: auto; padding: 24px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+
+    /* Modals */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 2000; backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+    .modal-overlay.active { display: flex; }
+    .modal-card { background: white; width: 95%; max-width: 480px; padding: 28px; border-radius: var(--r-xl); border: 1px solid var(--border); box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto; }
+    .form-input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--r-md); margin-top: 4px; margin-bottom: 14px; outline: none; font-size: 13px; color: var(--navy); background: var(--bg); box-sizing: border-box; transition: border-color 0.2s; }
+    .form-input:focus { border-color: var(--navy); }
+
+    /* KPIs */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .kpi-node { background: white; border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; text-align: center; }
+    .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; }
+    .kpi-value { font-size: 28px; font-weight: 900; color: var(--navy); line-height: 1; }
+
+    /* Bus cards grid */
+    .buses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .bus-card-item { background: white; border: 1px solid var(--border); border-radius: var(--r-xl); padding: 20px; transition: 0.2s; position: relative; overflow: hidden; }
+    .bus-card-item:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--navy); }
+    .bus-card-item.active-bus { border-left: 4px solid var(--green); }
+    .bus-card-item.offline-bus { border-left: 4px solid #e2e8f0; }
+    .bus-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .bus-status-dot.online { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,0.6); }
+    .bus-status-dot.offline { background: #cbd5e1; }
+    .bus-id-badge { font-size: 22px; font-weight: 900; color: var(--navy); font-family: monospace; letter-spacing: 1px; }
+    .bus-meta { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+    .bus-driver-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-full); padding: 4px 10px; font-size: 11px; font-weight: 700; color: var(--navy); margin-top: 10px; }
+    .bus-actions { display: flex; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+    .empty-state i { font-size: 48px; display: block; margin-bottom: 16px; opacity: 0.4; }
+
+    /* Filter bar */
+    .filter-deck { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .search-input { flex: 1; min-width: 180px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; }
+    .status-select { padding: 0 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; color: var(--navy); height: 40px; }
+
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+      html, body { overflow: auto !important; height: auto !important; }
+      .admin-layout { height: auto !important; overflow: visible !important; }
+      .admin-main { height: auto !important; overflow: visible !important; }
+      .admin-content { overflow: visible !important; padding: 16px 16px 100px 16px !important; }
+      .admin-sidebar { display: none !important; }
+      .admin-topbar { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; height: auto !important; padding: 16px !important; }
+      .topbar-title { font-size: 20px !important; }
+      .kpi-grid { grid-template-columns: 1fr 1fr !important; }
+      .buses-grid { grid-template-columns: 1fr !important; }
+      .bottom-nav.mobile-only { height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center !important; background: var(--navy) !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 999 !important; }
+      .bottom-nav.mobile-only a { flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0 !important; color: rgba(255,255,255,0.6) !important; }
+      .bottom-nav.mobile-only a i { font-size: 22px !important; }
+      .bottom-nav.mobile-only a.active { color: var(--yellow) !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Add / Edit Bus Modal -->
+<div class="modal-overlay" id="bus-modal">
+  <div class="modal-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="font-weight:900;font-size:16px;color:var(--navy);" id="bus-modal-title">Add Bus</h3>
+      <i class="bi bi-x-lg" style="cursor:pointer;" onclick="closeModal('bus-modal')"></i>
+    </div>
+    <input type="hidden" id="bus-edit-id">
+
+    <label class="form-label">Bus ID <span style="color:var(--red);">*</span></label>
+    <input type="text" id="bus-id-input" class="form-input" placeholder="e.g. BUS-001" required>
+    <small style="font-size:11px;color:var(--text-secondary);display:block;margin-top:-10px;margin-bottom:14px;">Unique identifier for this bus. Cannot be changed after creation.</small>
+
+    <label class="form-label">Plate Number <span style="color:var(--red);">*</span></label>
+    <input type="text" id="bus-plate" class="form-input" placeholder="e.g. LND-234-XY" required>
+
+    <label class="form-label">Capacity (seats)</label>
+    <input type="number" id="bus-capacity" class="form-input" placeholder="e.g. 40" min="1" max="100">
+
+    <label class="form-label">Model / Description (Optional)</label>
+    <input type="text" id="bus-model" class="form-input" placeholder="e.g. Toyota Coaster 2022">
+
+    <label class="form-label">Assign Driver (Optional)</label>
+    <select id="bus-driver" class="form-input" style="height:40px;">
+      <option value="">No driver assigned</option>
+    </select>
+
+    <div style="display:flex;gap:12px;margin-top:8px;">
+      <button class="btn btn-yellow btn-full" style="font-weight:800;" id="btn-save-bus" onclick="saveBus()">
+        <i class="bi bi-bus-front-fill"></i> Save Bus
+      </button>
+      <button class="btn btn-ghost" onclick="closeModal('bus-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal-card" style="max-width:380px;text-align:center;">
+    <i class="bi bi-exclamation-triangle-fill" style="font-size:40px;color:#ef4444;display:block;margin-bottom:16px;"></i>
+    <h3 style="font-weight:900;font-size:16px;color:var(--navy);margin-bottom:8px;">Delete Bus?</h3>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;" id="delete-confirm-msg">This action cannot be undone.</p>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button class="btn btn-red" style="font-weight:800;" id="btn-confirm-delete" onclick="confirmDelete()">Delete</button>
+      <button class="btn btn-ghost" onclick="closeModal('delete-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar" style="display:flex;flex-direction:column;height:100vh;">
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png" alt="Logo">
+      <div class="logo-text" id="sidebar-school-name">School Bus Track Pro <small>Manager Console</small></div>
+    </div>
+    <nav class="sidebar-nav" style="flex:1;overflow-y:auto;">
+      <div class="nav-group-label">Fleet Operations</div>
+      <a href="fleet.html" class="nav-link"><i class="bi bi-radar"></i><span>Live Fleet</span></a>
+      <a href="crisis-center.html" class="nav-link"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis Center</span></a>
+      <div class="nav-group-label">System Management</div>
+      <a href="users.html" class="nav-link"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
+      <a href="buses.html" class="nav-link active"><i class="bi bi-bus-front-fill"></i><span>Bus Fleet</span></a>
+      <a href="routes.html" class="nav-link"><i class="bi bi-map-fill"></i><span>Route Control</span></a>
+      <a href="analytics.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-user" style="display:flex;align-items:center;gap:12px;">
+        <div class="admin-avatar" id="sidebar-avatar" style="width:36px;height:36px;background:var(--yellow);color:var(--navy);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-weight:800;">M</div>
+        <div style="color:white;font-size:13px;">
+          <div style="font-weight:800;" id="sidebar-manager-name">Manager</div>
+          <div style="opacity:0.6;font-size:11px;">School Manager</div>
+        </div>
+      </div>
+      <button id="signout-btn" class="btn btn-red btn-full btn-sm" style="margin-top:16px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);width:100%;">
+        <i class="bi bi-power"></i> Log Out
+      </button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1 class="topbar-title">Bus Fleet</h1>
+        <p style="font-size:13px;color:var(--text-secondary);">Manage your school's buses and driver assignments.</p>
+      </div>
+      <button class="btn btn-yellow btn-sm" onclick="openAddBus()">
+        <i class="bi bi-plus-circle-fill"></i> Add Bus
+      </button>
+    </header>
+
+    <div class="admin-content">
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-node"><div class="kpi-label">Total Buses</div><div class="kpi-value" id="kpi-total">0</div></div>
+        <div class="kpi-node"><div class="kpi-label">Active</div><div class="kpi-value" style="color:var(--green);" id="kpi-active">0</div></div>
+        <div class="kpi-node"><div class="kpi-label">Offline</div><div class="kpi-value" style="color:var(--text-muted);" id="kpi-offline">0</div></div>
+        <div class="kpi-node"><div class="kpi-label">Unassigned</div><div class="kpi-value" style="color:#f59e0b;" id="kpi-unassigned">0</div></div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-deck">
+        <input type="text" id="search-bar" class="search-input" placeholder="Search bus ID or plate...">
+        <select id="status-filter" class="status-select">
+          <option value="ALL">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="offline">Offline</option>
+        </select>
+      </div>
+
+      <!-- Bus Cards -->
+      <div class="buses-grid" id="buses-grid">
+        <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-muted);">
+          <i class="bi bi-arrow-clockwise spin" style="font-size:28px;display:block;margin-bottom:12px;"></i>
+          Loading fleet...
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav mobile-only">
+  <a href="fleet.html"><i class="bi bi-radar"></i></a>
+  <a href="crisis-center.html"><i class="bi bi-exclamation-octagon-fill"></i></a>
+  <a href="users.html"><i class="bi bi-people-fill"></i></a>
+  <a href="buses.html" class="active"><i class="bi bi-bus-front-fill"></i></a>
+  <a href="routes.html"><i class="bi bi-map-fill"></i></a>
+  <a href="analytics.html"><i class="bi bi-graph-up-arrow"></i></a>
+</nav>
+
+<div id="toast-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+  import { supabase, getUserProfile } from '../js/config.js';
+  import { signOut, requireAuth } from '../js/auth.js';
+
+  await requireAuth();
+  const profile = await getUserProfile();
+  if (!profile || profile.role !== 'school_manager' || !profile.organization_id) {
+    await supabase.auth.signOut(); window.location.href = '../index.html'; throw new Error('Not authorized.');
+  }
+
+  const ORG_ID = profile.organization_id;
+
+  // Sidebar
+  const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
+  document.getElementById('sidebar-school-name').innerHTML = `${org?.name || 'Your School'} <small>Manager Console</small>`;
+  document.getElementById('sidebar-manager-name').textContent = profile.full_name || 'Manager';
+  document.getElementById('sidebar-avatar').textContent = (profile.full_name || 'M').charAt(0).toUpperCase();
+  document.getElementById('signout-btn').onclick = () => signOut();
+
+  let allBuses   = [];
+  let allDrivers = [];
+  let pendingDeleteId = null;
+
+  // ── Load drivers for assignment dropdown ─────────────────────────────
+  async function loadDrivers() {
+    const { data } = await supabase.from('profiles').select('id, full_name, bus_id')
+      .eq('organization_id', ORG_ID).eq('role', 'driver').order('full_name');
+    allDrivers = data || [];
+    refreshDriverDropdown();
+  }
+
+  function refreshDriverDropdown(selectedDriverId = '') {
+    const sel = document.getElementById('bus-driver');
+    sel.innerHTML = '<option value="">No driver assigned</option>' +
+      allDrivers.map(d => {
+        const assigned = d.bus_id && d.bus_id !== (document.getElementById('bus-edit-id').value || '__new__')
+          ? ` (assigned: ${d.bus_id})` : '';
+        return `<option value="${d.id}" ${d.id === selectedDriverId ? 'selected' : ''}>${d.full_name}${assigned}</option>`;
+      }).join('');
+  }
+
+  // ── Load buses ────────────────────────────────────────────────────────
+  async function loadBuses() {
+    const { data, error } = await supabase.from('buses').select('*')
+      .eq('organization_id', ORG_ID).order('id');
+    if (error) { showToast('Failed to load buses: ' + error.message, 'error'); return; }
+    allBuses = data || [];
+    updateKPIs(allBuses);
+    renderGrid(allBuses);
+  }
+
+  function updateKPIs(buses) {
+    document.getElementById('kpi-total').textContent     = buses.length;
+    document.getElementById('kpi-active').textContent    = buses.filter(b => b.status === 'active').length;
+    document.getElementById('kpi-offline').textContent   = buses.filter(b => b.status !== 'active').length;
+    document.getElementById('kpi-unassigned').textContent = buses.filter(b => !b.driver_id).length;
+  }
+
+  function renderGrid(buses) {
+    const grid   = document.getElementById('buses-grid');
+    const term   = document.getElementById('search-bar').value.toLowerCase();
+    const statusF = document.getElementById('status-filter').value;
+
+    const filtered = buses.filter(b => {
+      const matchSearch = b.id?.toLowerCase().includes(term) || b.plate_number?.toLowerCase().includes(term);
+      const matchStatus = statusF === 'ALL' || b.status === statusF || (statusF === 'offline' && b.status !== 'active');
+      return matchSearch && matchStatus;
+    });
+
+    if (!filtered.length) {
+      grid.innerHTML = `<div style="grid-column:1/-1;" class="empty-state">
+        <i class="bi bi-bus-front"></i>
+        <p style="font-weight:700;font-size:15px;color:var(--navy);">No buses found</p>
+        <p style="font-size:13px;">Add your first bus to get started.</p>
+        <button class="btn btn-yellow btn-sm" style="margin-top:16px;" onclick="openAddBus()"><i class="bi bi-plus-circle-fill"></i> Add Bus</button>
+      </div>`;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(b => {
+      const isActive = b.status === 'active';
+      const driver   = allDrivers.find(d => d.id === b.driver_id);
+      const driverChip = driver
+        ? `<div class="bus-driver-chip"><i class="bi bi-person-fill" style="color:var(--green);"></i>${driver.full_name}</div>`
+        : `<div class="bus-driver-chip" style="color:var(--text-muted);border-style:dashed;"><i class="bi bi-person-dash"></i> No driver assigned</div>`;
+
+      return `<div class="bus-card-item ${isActive ? 'active-bus' : 'offline-bus'}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div class="bus-id-badge">${b.id}</div>
+            <div class="bus-meta">
+              <span class="bus-status-dot ${isActive ? 'online' : 'offline'}"></span>
+              ${isActive ? 'Active' : 'Offline'}
+              ${b.plate_number ? ` · ${b.plate_number}` : ''}
+            </div>
+          </div>
+          <span class="badge ${isActive ? 'badge-green' : 'badge-red'}" style="font-size:10px;">${(b.status || 'offline').toUpperCase()}</span>
+        </div>
+        ${b.model ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;"><i class="bi bi-truck-front"></i> ${b.model}</div>` : ''}
+        ${b.capacity ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;"><i class="bi bi-people-fill"></i> ${b.capacity} seats</div>` : ''}
+        <div style="margin-top:8px;">${driverChip}</div>
+        <div class="bus-actions">
+          <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openEditBus('${b.id}')">
+            <i class="bi bi-pencil"></i> Edit
+          </button>
+          <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openDeleteBus('${b.id}')">
+            <i class="bi bi-trash text-red"></i> Delete
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Open Add modal ────────────────────────────────────────────────────
+  window.openAddBus = () => {
+    document.getElementById('bus-modal-title').textContent = 'Add Bus';
+    document.getElementById('bus-edit-id').value   = '';
+    document.getElementById('bus-id-input').value  = '';
+    document.getElementById('bus-id-input').readOnly = false;
+    document.getElementById('bus-id-input').style.background = '';
+    document.getElementById('bus-plate').value     = '';
+    document.getElementById('bus-capacity').value  = '';
+    document.getElementById('bus-model').value     = '';
+    refreshDriverDropdown();
+    openModal('bus-modal');
+  };
+
+  // ── Open Edit modal ───────────────────────────────────────────────────
+  window.openEditBus = (id) => {
+    const b = allBuses.find(x => x.id === id); if (!b) return;
+    document.getElementById('bus-modal-title').textContent = 'Edit Bus';
+    document.getElementById('bus-edit-id').value   = b.id;
+    document.getElementById('bus-id-input').value  = b.id;
+    document.getElementById('bus-id-input').readOnly = true; // ID locked on edit
+    document.getElementById('bus-id-input').style.background = '#f8fafc';
+    document.getElementById('bus-plate').value     = b.plate_number || '';
+    document.getElementById('bus-capacity').value  = b.capacity || '';
+    document.getElementById('bus-model').value     = b.model || '';
+    refreshDriverDropdown(b.driver_id || '');
+    openModal('bus-modal');
+  };
+
+  // ── Save bus (add or edit) ────────────────────────────────────────────
+  window.saveBus = async () => {
+    const btn        = document.getElementById('btn-save-bus');
+    const editId     = document.getElementById('bus-edit-id').value;
+    const busId      = document.getElementById('bus-id-input').value.trim().toUpperCase();
+    const plate      = document.getElementById('bus-plate').value.trim().toUpperCase();
+    const capacity   = parseInt(document.getElementById('bus-capacity').value) || null;
+    const model      = document.getElementById('bus-model').value.trim() || null;
+    const driverId   = document.getElementById('bus-driver').value || null;
+
+    if (!busId) { showToast('Bus ID is required.', 'error'); return; }
+    if (!plate) { showToast('Plate number is required.', 'error'); return; }
+
+    btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Saving...';
+
+    const busData = {
+      plate_number:    plate,
+      capacity,
+      model,
+      driver_id:       driverId,
+      organization_id: ORG_ID,
+      status:          'offline'
+    };
+
+    let error;
+
+    if (editId) {
+      // Update existing
+      ({ error } = await supabase.from('buses').update(busData).eq('id', editId).eq('organization_id', ORG_ID));
+
+      // Update old driver — unassign if different
+      const oldBus = allBuses.find(b => b.id === editId);
+      if (oldBus?.driver_id && oldBus.driver_id !== driverId) {
+        await supabase.from('profiles').update({ bus_id: null }).eq('id', oldBus.driver_id);
+      }
+    } else {
+      // Insert new — check for duplicate ID
+      const { data: existing } = await supabase.from('buses').select('id').eq('id', busId).single();
+      if (existing) {
+        showToast(`Bus ID "${busId}" already exists.`, 'error');
+        btn.disabled = false; btn.innerHTML = '<i class="bi bi-bus-front-fill"></i> Save Bus';
+        return;
+      }
+      ({ error } = await supabase.from('buses').insert([{ id: busId, ...busData }]));
+    }
+
+    if (error) {
+      showToast('Save failed: ' + error.message, 'error');
+      btn.disabled = false; btn.innerHTML = '<i class="bi bi-bus-front-fill"></i> Save Bus';
+      return;
+    }
+
+    // Assign driver — update profiles.bus_id
+    if (driverId) {
+      await supabase.from('profiles').update({ bus_id: editId || busId }).eq('id', driverId);
+    }
+
+    btn.disabled = false; btn.innerHTML = '<i class="bi bi-bus-front-fill"></i> Save Bus';
+    closeModal('bus-modal');
+    showToast(editId ? 'Bus updated.' : 'Bus added.', 'success');
+    await loadDrivers();
+    await loadBuses();
+  };
+
+  // ── Delete bus ────────────────────────────────────────────────────────
+  window.openDeleteBus = (id) => {
+    pendingDeleteId = id;
+    document.getElementById('delete-confirm-msg').textContent = `Delete bus "${id}"? This cannot be undone. The assigned driver will be unassigned.`;
+    openModal('delete-modal');
+  };
+
+  window.confirmDelete = async () => {
+    if (!pendingDeleteId) return;
+    const btn = document.getElementById('btn-confirm-delete');
+    btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
+
+    // Unassign driver first
+    const bus = allBuses.find(b => b.id === pendingDeleteId);
+    if (bus?.driver_id) {
+      await supabase.from('profiles').update({ bus_id: null }).eq('id', bus.driver_id);
+    }
+
+    const { error } = await supabase.from('buses').delete().eq('id', pendingDeleteId).eq('organization_id', ORG_ID);
+    btn.disabled = false; btn.innerHTML = 'Delete';
+
+    if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
+    closeModal('delete-modal');
+    pendingDeleteId = null;
+    showToast('Bus removed.', 'success');
+    await loadDrivers();
+    await loadBuses();
+  };
+
+  // ── Filters ───────────────────────────────────────────────────────────
+  document.getElementById('search-bar').oninput    = () => renderGrid(allBuses);
+  document.getElementById('status-filter').onchange = () => renderGrid(allBuses);
+
+  // ── Realtime ──────────────────────────────────────────────────────────
+  supabase.channel(`buses-${ORG_ID}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'buses', filter: `organization_id=eq.${ORG_ID}` }, async () => {
+      await loadDrivers(); await loadBuses();
+    })
+    .subscribe();
+
+  window.openModal  = (id) => document.getElementById(id).classList.add('active');
+  window.closeModal = (id) => document.getElementById(id).classList.remove('active');
+
+  function showToast(m, t = 'info') {
+    const c = document.getElementById('toast-container');
+    const d = document.createElement('div'); d.className = `toast ${t} active`; d.textContent = m; c.appendChild(d);
+    setTimeout(() => d.remove(), 4000);
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────
+  await loadDrivers();
+  await loadBuses();
+</script>
+</body>
+</html>

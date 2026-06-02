@@ -14,23 +14,18 @@
     .admin-layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
     .admin-main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--bg); }
     .admin-content { flex: 1; overflow-y: auto; padding: 24px; scrollbar-width: thin; }
-
     .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
     .kpi-card { padding: 12px; min-height: 90px; border-radius: 16px; background: white; border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; }
     .kpi-value { font-size: 22px; font-weight: 800; color: var(--navy); }
     .kpi-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
-
     .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 24px; }
     .chart-container { background: white; padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
     .chart-title { font-weight: 800; font-size: 13px; color: var(--navy); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
-
-    .inspector-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    .inspector-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
     .inspector-overlay.active { display: flex; }
     .inspector-card { background: white; width: 92%; max-width: 500px; padding: 28px; border-radius: 20px; box-shadow: var(--shadow-xl); border: 1px solid var(--border); }
     .profile-meta-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed var(--border); font-size: 13px; }
-
     .mobile-performance-card { display: none; background: white; border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
-
     @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 768px) {
       .admin-sidebar { display: none; }
@@ -39,7 +34,6 @@
       .admin-topbar { height: auto !important; padding: 15px !important; flex-direction: column !important; align-items: flex-start !important; gap: 10px; }
       .topbar-actions { width: 100%; display: flex; gap: 8px; }
       .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-      .kpi-card:last-child { grid-column: span 2; min-height: 60px; flex-direction: row; justify-content: space-between; align-items: center; padding: 0 15px; }
       .chart-grid { grid-template-columns: 1fr; }
       .data-table-wrap table { display: none; }
       .mobile-performance-card { display: block; }
@@ -80,6 +74,7 @@
       <a href="crisis-center.html" class="nav-link"><i class="bi bi-exclamation-octagon-fill"></i><span>Crisis Center</span></a>
       <div class="nav-group-label">System Management</div>
       <a href="users.html" class="nav-link"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
+      <a href="buses.html" class="nav-link"><i class="bi bi-bus-front-fill"></i><span>Bus Fleet</span></a>
       <a href="routes.html" class="nav-link"><i class="bi bi-map-fill"></i><span>Route Control</span></a>
       <a href="analytics.html" class="nav-link active"><i class="bi bi-graph-up-arrow"></i><span>Analytics</span></a>
     </nav>
@@ -120,23 +115,15 @@
         <div class="kpi-card"><div class="kpi-label">Safety Score</div><div class="kpi-value" id="safety-kpi">100%</div></div>
         <div class="kpi-card"><div class="kpi-label">Emergency SOS</div><div class="kpi-value text-red" id="incident-kpi">0</div></div>
       </div>
-
       <div class="chart-grid">
         <div class="chart-container"><div class="chart-title">Verified Daily Trips</div><div style="height:200px;"><canvas id="ontime-chart"></canvas></div></div>
         <div class="chart-container"><div class="chart-title">Fuel Consumption Proxy (L)</div><div style="height:200px;"><canvas id="fuel-trend-chart"></canvas></div></div>
         <div class="chart-container"><div class="chart-title">Critical Incident Volume</div><div style="height:200px;"><canvas id="trips-chart"></canvas></div></div>
       </div>
-
       <div class="data-table-wrap">
         <div class="table-header"><div class="table-title">Driver Performance Ranking</div></div>
         <table>
-          <thead>
-            <tr>
-              <th>Rank</th><th>Personnel</th><th>Fleet ID</th>
-              <th>Safety Score</th><th>Trend</th><th>Incidents</th>
-              <th style="text-align:right;">Profile</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Rank</th><th>Personnel</th><th>Fleet ID</th><th>Safety Score</th><th>Trend</th><th>Incidents</th><th style="text-align:right;">Profile</th></tr></thead>
           <tbody id="leaderboard-body"></tbody>
         </table>
         <div id="leaderboard-body-mobile"></div>
@@ -145,112 +132,53 @@
   </main>
 
   <nav class="bottom-nav mobile-only">
-    <a href="fleet.html"><i class="bi bi-radar"></i>Command</a>
-    <a href="crisis-center.html"><i class="bi bi-exclamation-octagon-fill"></i>Crisis</a>
-    <a href="users.html"><i class="bi bi-people-fill"></i>Users</a>
-    <a href="analytics.html" class="active"><i class="bi bi-graph-up-arrow"></i>Stats</a>
+    <a href="fleet.html"><i class="bi bi-radar"></i></a>
+    <a href="crisis-center.html"><i class="bi bi-exclamation-octagon-fill"></i></a>
+    <a href="users.html"><i class="bi bi-people-fill"></i></a>
+    <a href="buses.html"><i class="bi bi-bus-front-fill"></i></a>
+    <a href="routes.html"><i class="bi bi-map-fill"></i></a>
+    <a href="analytics.html" class="active"><i class="bi bi-graph-up-arrow"></i></a>
   </nav>
 </div>
 
 <div id="toast-container"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script type="module">
   import { supabase, getUserProfile } from '../js/config.js';
   import { signOut, requireAuth } from '../js/auth.js';
-
-  // ── 0. Auth gate + resolve current tenant ─────────────────────────────
   const session = await requireAuth();
   const profile = await getUserProfile();
-
-  if (!profile || !profile.organization_id) {
-    showToast('Tenant context missing. Please log in again.', 'error');
-    setTimeout(() => signOut(), 2000);
-    throw new Error('No organization_id on profile.');
-  }
-
+  if (!profile || !profile.organization_id) { showToast('Tenant context missing.', 'error'); setTimeout(() => signOut(), 2000); throw new Error('No organization_id on profile.'); }
   const ORG_ID = profile.organization_id;
-
-  // ── 1. Populate sidebar with real manager info ─────────────────────────
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('name')
-    .eq('id', ORG_ID)
-    .single();
-
-  if (org) {
-    const nameEl = document.getElementById('sidebar-school-name');
-    if (nameEl) nameEl.innerHTML = `${org.name} <small>Manager Console</small>`;
-  }
-
-  const managerNameEl = document.getElementById('sidebar-manager-name');
-  const avatarEl      = document.getElementById('sidebar-avatar');
-  if (managerNameEl && profile.full_name) {
-    managerNameEl.textContent = profile.full_name;
-    if (avatarEl) avatarEl.textContent = profile.full_name.charAt(0).toUpperCase();
-  }
-
+  const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
+  if (org) { const nameEl = document.getElementById('sidebar-school-name'); if (nameEl) nameEl.innerHTML = `${org.name} <small>Manager Console</small>`; }
+  const managerNameEl = document.getElementById('sidebar-manager-name'); const avatarEl = document.getElementById('sidebar-avatar');
+  if (managerNameEl && profile.full_name) { managerNameEl.textContent = profile.full_name; if (avatarEl) avatarEl.textContent = profile.full_name.charAt(0).toUpperCase(); }
   document.getElementById('signout-btn').onclick = () => signOut();
-
-  // ── 2. Driver inspector (scoped to this org) ───────────────────────────
   window.viewDriverDetails = async function(userId) {
-    const modal = document.getElementById('driver-inspector-modal');
-    modal.classList.add('active');
-
+    const modal = document.getElementById('driver-inspector-modal'); modal.classList.add('active');
     document.getElementById('inspector-name').textContent = 'Syncing...';
-    document.getElementById('inspector-bus').textContent = '---';
-    document.getElementById('inspector-status').textContent = '---';
-    document.getElementById('inspector-safety').textContent = '---';
-    document.getElementById('inspector-incidents').textContent = '---';
     document.getElementById('inspector-uuid').textContent = userId.substring(0,8).toUpperCase();
-
     try {
-      // Only fetch driver if they belong to this org
-      const { data: p, error } = await supabase
-        .from('profiles')
-        .select('full_name, bus_id, role')
-        .eq('id', userId)
-        .eq('organization_id', ORG_ID)
-        .single();
-
+      const { data: p, error } = await supabase.from('profiles').select('full_name, bus_id, role').eq('id', userId).eq('organization_id', ORG_ID).single();
       if (error || !p) throw new Error('Driver not found in your organization.');
-
       document.getElementById('inspector-name').textContent = p.full_name;
       document.getElementById('inspector-bus').textContent = p.bus_id || 'Unassigned';
       document.getElementById('inspector-badge').textContent = p.full_name.charAt(0).toUpperCase();
-
       if (p.bus_id) {
-        const { data: bus } = await supabase
-          .from('buses')
-          .select('status')
-          .eq('id', p.bus_id)
-          .eq('organization_id', ORG_ID)
-          .single();
+        const { data: bus } = await supabase.from('buses').select('status').eq('id', p.bus_id).eq('organization_id', ORG_ID).single();
         document.getElementById('inspector-status').textContent = bus ? bus.status.toUpperCase() : 'INACTIVE';
-      } else {
-        document.getElementById('inspector-status').textContent = 'INACTIVE';
-      }
-
-      const { count: alerts } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('type', 'emergency')
-        .eq('organization_id', ORG_ID);
-
+      } else { document.getElementById('inspector-status').textContent = 'INACTIVE'; }
+      const { count: alerts } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('type', 'emergency').eq('organization_id', ORG_ID);
       document.getElementById('inspector-incidents').textContent = alerts || 0;
-
       const safety = Math.max(0, 100 - ((alerts || 0) * 9));
       const safetyEl = document.getElementById('inspector-safety');
       safetyEl.textContent = `${safety}%`;
       safetyEl.style.color = safety > 75 ? 'var(--green)' : safety > 40 ? 'var(--yellow-dark)' : 'var(--red)';
-
-    } catch (err) {
-      document.getElementById('inspector-name').textContent = err.message;
-    }
+    } catch (err) { document.getElementById('inspector-name').textContent = err.message; }
   };
+  function showToast(msg, type = 'info') { let c = document.getElementById('toast-container'); const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg; c.appendChild(t); setTimeout(() => t.remove(), 4000); }
 </script>
-
 <script type="module" src="../js/analytics.js"></script>
 </body>
 </html>
