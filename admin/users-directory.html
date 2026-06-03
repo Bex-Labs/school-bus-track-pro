@@ -158,8 +158,10 @@
       <div class="nav-group-label">System Management</div>
       <a href="users-directory.html" class="nav-link active"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
       <a href="analytics-room.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics Room</span></a>
-      <a href="billing-usage.html" class="nav-link"><i class="bi bi-envelope-check-fill"></i><span>Resend Gateway</span></a>
+      <a href="notification-gateway.html" class="nav-link"><i class="bi bi-envelope-check-fill"></i><span>Notification Gateway</span></a>
       <a href="audit-logs.html" class="nav-link"><i class="bi bi-journal-text"></i><span>System Audit</span></a>
+      <div class="nav-group-label">Account</div>
+      <a href="profile.html" class="nav-link"><i class="bi bi-person-gear"></i><span>My Profile</span></a>
     </nav>
     <div class="sidebar-footer">
       <div class="admin-user" style="display:flex;align-items:center;gap:12px;">
@@ -177,6 +179,10 @@
         <p style="font-size:13px;color:var(--text-secondary);">Manage cross-tenant profiles, roles, and access.</p>
       </div>
       <button class="btn btn-yellow btn-sm" onclick="openModal('create-modal')"><i class="bi bi-person-plus-fill"></i> Create / Invite</button>
+      <button class="btn btn-ghost btn-sm" id="btn-bulk-verify" onclick="bulkVerifyAll()" style="border-color:var(--green);color:var(--green);font-weight:800;">
+        <i class="bi bi-check-all"></i> Verify All Pending
+      </button>
+      <button class="btn btn-ghost btn-sm" id="btn-bulk-verify" onclick="bulkVerifyAll()" style="border:1.5px solid var(--green);color:#166534;"><i class="bi bi-patch-check-fill"></i> Verify All Pending</button>
     </header>
     <div class="admin-content">
       <div class="infra-grid-matrix">
@@ -227,8 +233,9 @@
   <a href="schools-management.html"><i class="bi bi-building"></i></a>
   <a href="users-directory.html" class="active"><i class="bi bi-people-fill"></i></a>
   <a href="analytics-room.html"><i class="bi bi-graph-up-arrow"></i></a>
-  <a href="billing-usage.html"><i class="bi bi-envelope-check-fill"></i></a>
+  <a href="notification-gateway.html"><i class="bi bi-envelope-check-fill"></i></a>
   <a href="audit-logs.html"><i class="bi bi-journal-text"></i></a>
+  <a href="profile.html"><i class="bi bi-person-gear"></i></a>
 </nav>
 
 <div id="toast-container"></div>
@@ -324,8 +331,12 @@
         <td style="font-weight:700;">${orgMap[u.organization_id] || 'Global'}</td>
         <td style="text-align:right;">
           <div style="display:inline-flex;gap:6px;">
+            ${!isSuperAdmin && status !== 'verified' ? `<button class="btn btn-ghost btn-sm" style="color:#166534;border-color:#22c55e;" onclick="verifyUser('${u.id}')" title="Verify"><i class="bi bi-patch-check-fill"></i></button>` : ''}
+            ${!isSuperAdmin && status === 'verified' ? `<button class="btn btn-ghost btn-sm text-red" onclick="suspendUser('${u.id}')" title="Suspend"><i class="bi bi-slash-circle-fill"></i></button>` : ''}
+            ${!isSuperAdmin && status === 'suspended' ? `<button class="btn btn-ghost btn-sm" style="color:var(--green);" onclick="verifyUser('${u.id}')" title="Restore"><i class="bi bi-arrow-counterclockwise"></i></button>` : ''}
             <button class="btn btn-ghost btn-sm" onclick="openEditModal('${u.id}')" title="Edit"><i class="bi bi-pencil"></i></button>
-            <button class="btn btn-ghost btn-sm text-yellow" onclick="sendReset('${u.email}')" title="Send password reset"><i class="bi bi-shield-lock"></i></button>
+            <button class="btn btn-ghost btn-sm text-yellow" onclick="sendReset('${u.email}')" title="Password reset"><i class="bi bi-shield-lock"></i></button>
+            ${!isSuperAdmin ? `<button class="btn btn-ghost btn-sm text-red" onclick="deleteUser('${u.id}')" title="Delete"><i class="bi bi-trash"></i></button>` : ''}
           </div>
         </td>
       </tr>`;
@@ -386,6 +397,44 @@
     if (!email) return;
     await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password.html' });
     showToast('Password reset email sent.', 'success');
+  };
+
+  // ── Per-user quick actions ────────────────────────────────────────────
+  window.verifyUser = async (id) => {
+    const { error } = await supabase.from('profiles').update({ is_verified: true, account_status: 'active' }).eq('id', id);
+    if (!error) { loadUsers(); showToast('User verified.', 'success'); }
+    else showToast('Failed: ' + error.message, 'error');
+  };
+
+  window.suspendUser = async (id) => {
+    if (!confirm('Suspend this account?')) return;
+    const { error } = await supabase.from('profiles').update({ account_status: 'deactivated' }).eq('id', id);
+    if (!error) { loadUsers(); showToast('User suspended.', 'success'); }
+    else showToast('Failed: ' + error.message, 'error');
+  };
+
+  window.deleteUser = async (id) => {
+    if (!confirm('Permanently delete this user? This cannot be undone.')) return;
+    const { error } = await supabase.from('profiles').delete().eq('id', id);
+    if (!error) { loadUsers(); showToast('User deleted.', 'success'); }
+    else showToast('Failed: ' + error.message, 'error');
+  };
+
+  // ── Bulk verify all pending ───────────────────────────────────────────
+  window.bulkVerifyAll = async () => {
+    const pending = allUsers.filter(u => u.role !== 'super_admin' && (!u.is_verified || u.account_status === 'pending') && u.account_status !== 'deactivated');
+    if (!pending.length) { showToast('No pending users to verify.', 'success'); return; }
+    if (!confirm(`Verify all ${pending.length} pending account(s)?`)) return;
+    const btn = document.getElementById('btn-bulk-verify');
+    btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Verifying...';
+    const { error } = await supabase.from('profiles')
+      .update({ is_verified: true, account_status: 'active' })
+      .eq('is_verified', false)
+      .neq('role', 'super_admin')
+      .neq('account_status', 'deactivated');
+    btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-all"></i> Verify All Pending';
+    if (!error) { loadUsers(); showToast(`${pending.length} users verified.`, 'success'); }
+    else showToast('Bulk verify failed: ' + error.message, 'error');
   };
 
   // ── Filters ───────────────────────────────────────────────────────────
@@ -455,6 +504,46 @@
     const d = document.createElement('div'); d.className = `toast ${t} active`; d.textContent = m; c.appendChild(d);
     setTimeout(() => d.remove(), 4000);
   }
+
+  // ── Quick per-row actions ──────────────────────────────────────────────
+  window.quickVerify = async (id) => {
+    const u = allUsers.find(p => p.id === id);
+    if (!u || u.role === 'super_admin') return;
+    await supabase.from('profiles').update({ is_verified: true, account_status: 'active' }).eq('id', id);
+    loadUsers(); showToast('User verified.', 'success');
+  };
+
+  window.quickSuspend = async (id) => {
+    const u = allUsers.find(p => p.id === id);
+    if (!u || u.role === 'super_admin') return;
+    if (!confirm(`Suspend ${u.full_name || 'this user'}?`)) return;
+    await supabase.from('profiles').update({ account_status: 'deactivated' }).eq('id', id);
+    loadUsers(); showToast('User suspended.', 'success');
+  };
+
+  window.deleteUser = async (id) => {
+    const u = allUsers.find(p => p.id === id);
+    if (!u || u.role === 'super_admin') return;
+    if (!confirm(`Permanently delete ${u.full_name || 'this user'}? Cannot be undone.`)) return;
+    await supabase.from('profiles').delete().eq('id', id);
+    loadUsers(); showToast('User deleted.', 'success');
+  };
+
+  window.bulkVerifyAll = async () => {
+    const pending = allUsers.filter(u => u.role !== 'super_admin' && (!u.is_verified || u.account_status === 'deactivated'));
+    if (!pending.length) { showToast('No pending users to verify.', 'info'); return; }
+    if (!confirm(`Verify all ${pending.length} pending users?`)) return;
+    const btn = document.getElementById('btn-bulk-verify');
+    btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Verifying...';
+    const ids = pending.map(u => u.id);
+    for (let i = 0; i < ids.length; i += 10) {
+      const chunk = ids.slice(i, i + 10);
+      await supabase.from('profiles').update({ is_verified: true, account_status: 'active' }).in('id', chunk);
+    }
+    btn.disabled = false; btn.innerHTML = '<i class="bi bi-patch-check-fill"></i> Verify All Pending';
+    loadUsers(); showToast(`${pending.length} users verified.`, 'success');
+  };
+
 </script>
 </body>
 </html>

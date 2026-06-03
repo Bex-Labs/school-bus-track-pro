@@ -20,13 +20,27 @@
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .form-group { margin-bottom: 16px; text-align: left; }
     .form-label { display: block; font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
-    .form-input { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: var(--r-md); font-size: 14px; }
+    .form-input { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: var(--r-md); font-size: 14px; box-sizing: border-box; }
     .full-width { grid-column: span 2; }
     .settings-row { cursor: pointer; transition: background 0.2s; display: flex; align-items: center; padding: 14px 16px; border-radius: var(--r-md); }
     .settings-row:hover { background: var(--bg); }
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    @media (max-width: 1024px) { .tile-7, .tile-5 { grid-column: span 12; } .form-grid { grid-template-columns: 1fr; } .full-width { grid-column: span 1; } .admin-content { padding-bottom: 100px; } }
+
+    /* Avatar */
+    .avatar-wrap { position: relative; width: 100px; margin: 0 auto 16px; }
+    .avatar-circle { width: 100px; height: 100px; border-radius: 50%; background: var(--yellow); display: flex; align-items: center; justify-content: center; font-size: 42px; font-weight: 800; color: var(--navy); background-size: cover; background-position: center; overflow: hidden; border: 4px solid rgba(255,255,255,0.2); }
+    .avatar-upload-btn { position: absolute; bottom: 2px; right: 2px; background: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--navy); border: 2px solid var(--navy); cursor: pointer; font-size: 13px; transition: 0.2s; }
+    .avatar-upload-btn:hover { background: var(--yellow); }
+    .upload-progress { display: none; position: absolute; inset: 0; border-radius: 50%; background: rgba(15,23,42,0.65); align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 800; }
+    .upload-progress.active { display: flex; }
+
+    @media (max-width: 1024px) {
+      .tile-7, .tile-5 { grid-column: span 12; }
+      .form-grid { grid-template-columns: 1fr; }
+      .full-width { grid-column: span 1; }
+      .admin-content { padding-bottom: 100px; }
+    }
   </style>
 </head>
 <body>
@@ -66,13 +80,22 @@
     <div class="admin-content">
       <div class="bento-grid">
 
+        <!-- Hero / Avatar -->
         <div class="tile tile-12" style="background:var(--navy);color:white;text-align:center;padding:40px 24px;border-radius:var(--r-xl);">
-          <div id="avatar-circle" style="width:100px;height:100px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:800;color:var(--navy);margin:0 auto 16px;">?</div>
+          <div class="avatar-wrap">
+            <div id="avatar-circle" class="avatar-circle">?</div>
+            <div class="upload-progress" id="upload-progress"><i class="bi bi-arrow-clockwise spin"></i></div>
+            <label for="avatar-upload" class="avatar-upload-btn" title="Change photo">
+              <i class="bi bi-camera-fill"></i>
+            </label>
+            <input type="file" id="avatar-upload" style="display:none;" accept="image/*">
+          </div>
           <h2 id="display-name" style="font-weight:800;">Loading...</h2>
-          <p id="display-email" style="opacity:0.6;"></p>
+          <p id="display-email" style="opacity:0.6;font-size:14px;margin-top:4px;"></p>
           <p id="display-school" style="opacity:0.5;font-size:12px;margin-top:4px;"></p>
         </div>
 
+        <!-- Children -->
         <div class="tile tile-7">
           <div class="table-header">
             <div class="table-title">Linked Students</div>
@@ -81,6 +104,7 @@
           <div id="children-list" style="padding:24px;"></div>
         </div>
 
+        <!-- Settings -->
         <div class="tile tile-5">
           <div class="table-header"><div class="table-title">System & Safety</div></div>
           <div style="padding:12px 24px;">
@@ -174,60 +198,101 @@
   </div>
 </div>
 
+<div id="toast-container"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
   import { supabase, getUserProfile } from '../js/config.js';
   import { requireAuth, signOut } from '../js/auth.js';
 
-  // ── 0. Auth gate ───────────────────────────────────────────────────────
   await requireAuth();
   const profile = await getUserProfile();
+  if (!profile) { setTimeout(() => signOut(), 2000); throw new Error('No profile.'); }
 
-  if (!profile || !profile.organization_id) {
-    setTimeout(() => signOut(), 2000);
-    throw new Error('No organization_id on profile.');
-  }
-
-  const ORG_ID  = profile.organization_id;
   const USER_ID = profile.id;
+  const ORG_ID  = profile.organization_id;
 
   window.openModal  = (id) => document.getElementById(id).classList.add('active');
   window.closeModal = (id) => document.getElementById(id).classList.remove('active');
 
-  // ── 1. Sidebar + hero ──────────────────────────────────────────────────
-  const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
-  if (org) {
-    const el = document.getElementById('sidebar-school-name');
-    if (el) el.innerHTML = `${org.name} <small>Parent Portal</small>`;
-    document.getElementById('display-school').textContent = org.name;
+  // Sidebar + org
+  if (ORG_ID) {
+    const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
+    if (org) {
+      const el = document.getElementById('sidebar-school-name');
+      if (el) el.innerHTML = `${org.name} <small>Parent Portal</small>`;
+      document.getElementById('display-school').textContent = org.name;
+    }
   }
 
-  // ── 2. Full profile ────────────────────────────────────────────────────
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: fullProfile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', USER_ID)
-    .single();
 
-  if (fullProfile) {
-    const name = fullProfile.full_name || 'Guardian';
-    document.getElementById('display-name').textContent      = name;
-    document.getElementById('display-email').textContent     = user?.email || '';
-    document.getElementById('sidebar-parent-name').textContent = name;
+  async function loadProfile() {
+    const { data: p } = await supabase.from('profiles').select('*').eq('id', USER_ID).single();
+    if (!p) return;
+
+    const name = p.full_name || 'Guardian';
+    document.getElementById('display-name').textContent         = name;
+    document.getElementById('display-email').textContent        = user?.email || p.email || '';
+    document.getElementById('sidebar-parent-name').textContent  = name;
     document.getElementById('sidebar-initial-icon').textContent = name.charAt(0);
-    document.getElementById('avatar-circle').textContent     = name.charAt(0);
-    document.getElementById('parent-name').value             = name;
-    document.getElementById('parent-phone').value            = fullProfile.phone || '';
-    document.getElementById('parent-address').value          = fullProfile.address || '';
-    document.getElementById('parent-alt-phone').value        = fullProfile.alt_phone || '';
+    document.getElementById('parent-name').value                = name;
+    document.getElementById('parent-phone').value               = p.phone || '';
+    document.getElementById('parent-address').value             = p.address || '';
+    document.getElementById('parent-alt-phone').value           = p.alt_phone || '';
+
+    // Avatar
+    const av = document.getElementById('avatar-circle');
+    if (p.avatar_url) {
+      av.style.backgroundImage    = `url(${p.avatar_url})`;
+      av.style.backgroundSize     = 'cover';
+      av.style.backgroundPosition = 'center';
+      av.textContent = '';
+    } else {
+      av.style.backgroundImage = 'none';
+      av.textContent = name.charAt(0);
+    }
   }
 
-  // ── 3. Children — scoped to this org ──────────────────────────────────
+  await loadProfile();
+
+  // Avatar upload
+  document.getElementById('avatar-upload').onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { showToast('Image must be under 2MB.', 'error'); return; }
+
+    const progress = document.getElementById('upload-progress');
+    progress.classList.add('active');
+
+    const ext  = file.name.split('.').pop().toLowerCase();
+    const path = `${USER_ID}/avatar.${ext}`;
+
+    const { error: upErr } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (upErr) {
+      progress.classList.remove('active');
+      showToast('Upload failed: ' + upErr.message, 'error');
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+    const urlWithCache = `${publicUrl}?t=${Date.now()}`;
+
+    const { error: dbErr } = await supabase.from('profiles')
+      .update({ avatar_url: urlWithCache })
+      .eq('id', USER_ID);
+
+    progress.classList.remove('active');
+    if (!dbErr) { showToast('Profile photo updated.', 'success'); loadProfile(); }
+    else showToast('Photo saved but DB update failed.', 'error');
+  };
+
+  // Children
   async function loadChildren() {
     const { data: children } = await supabase
-      .from('students')
-      .select('*')
+      .from('students').select('*')
       .eq('parent_id', USER_ID)
       .eq('organization_id', ORG_ID);
 
@@ -248,35 +313,27 @@
 
   loadChildren();
 
-  // ── 4. Add child — scoped to this org ─────────────────────────────────
   window.submitAddChild = async () => {
-    const name   = document.getElementById('child-name').value.trim();
-    const regId  = document.getElementById('child-reg-id').value.trim();
-
-    if (!name || !regId) { alert('Please fill name and registration ID.'); return; }
-
+    const name  = document.getElementById('child-name').value.trim();
+    const regId = document.getElementById('child-reg-id').value.trim();
+    if (!name || !regId) { showToast('Name and registration ID required.', 'error'); return; }
     const { error } = await supabase.from('students').insert([{
-      parent_id:       USER_ID,
-      full_name:       name,
-      age:             parseInt(document.getElementById('child-age').value) || null,
-      gender:          document.getElementById('child-gender').value,
-      student_reg_id:  regId,
-      medical_info:    document.getElementById('child-medical').value.trim(),
-      organization_id: ORG_ID                    // ← scoped to tenant
+      parent_id: USER_ID, full_name: name,
+      age: parseInt(document.getElementById('child-age').value) || null,
+      gender: document.getElementById('child-gender').value,
+      student_reg_id: regId,
+      medical_info: document.getElementById('child-medical').value.trim(),
+      organization_id: ORG_ID
     }]);
-
-    if (!error) { alert('Child registered successfully.'); closeModal('addChildModal'); loadChildren(); }
-    else alert('Registration failed: ' + error.message);
+    if (!error) { showToast('Child registered.', 'success'); closeModal('addChildModal'); loadChildren(); }
+    else showToast('Registration failed: ' + error.message, 'error');
   };
 
-  // ── 5. Update profile + geocode address ───────────────────────────────
   window.submitUpdateProfile = async () => {
     const btn     = document.getElementById('update-profile-btn');
     const address = document.getElementById('parent-address').value.trim();
-    if (!address) { alert('Please enter a home address.'); return; }
-
-    btn.disabled  = true;
-    btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Geocoding...';
+    if (!address) { showToast('Please enter a home address.', 'error'); return; }
+    btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Saving...';
 
     let lat = null, lng = null;
     try {
@@ -294,28 +351,32 @@
         home_lng:  lng,
       }).eq('id', USER_ID);
 
-      if (!error) { alert('Profile updated successfully.'); closeModal('editDetailsModal'); }
+      if (!error) { showToast('Profile updated.', 'success'); closeModal('editDetailsModal'); loadProfile(); }
       else throw error;
     } catch (err) {
-      alert('Update failed: ' + err.message);
+      showToast('Update failed: ' + err.message, 'error');
     } finally {
-      btn.disabled  = false;
-      btn.innerHTML = 'Update Details';
+      btn.disabled = false; btn.innerHTML = 'Update Details';
     }
   };
 
-  // ── 6. Security reset ──────────────────────────────────────────────────
   window.handleSecurityReset = async () => {
     const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
       redirectTo: window.location.origin + '/reset-password.html'
     });
-    if (!error) alert('Password reset email sent to: ' + user.email);
-    else alert('Failed: ' + error.message);
+    if (!error) showToast('Password reset email sent to ' + user.email, 'success');
+    else showToast('Failed: ' + error.message, 'error');
   };
 
   document.getElementById('signout-btn').onclick = async () => {
     if (confirm('Sign out?')) await signOut();
   };
+
+  function showToast(m, t = 'info') {
+    const c = document.getElementById('toast-container');
+    const d = document.createElement('div'); d.className = `toast ${t} active`; d.textContent = m; c.appendChild(d);
+    setTimeout(() => d.remove(), 4000);
+  }
 </script>
 </body>
 </html>

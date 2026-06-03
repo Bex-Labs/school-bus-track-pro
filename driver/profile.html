@@ -20,6 +20,12 @@
     .save-floating-btn:hover { transform: scale(1.1); }
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .avatar-wrap { position: relative; width: 120px; margin-bottom: 20px; }
+    .avatar-circle { width: 120px; height: 120px; border-radius: 50%; background: var(--yellow); display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 800; color: var(--navy); border: 5px solid rgba(255,255,255,0.2); background-size: cover; background-position: center; overflow: hidden; }
+    .avatar-upload-btn { position: absolute; bottom: 5px; right: 5px; background: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--navy); border: 2px solid var(--navy); cursor: pointer; transition: 0.2s; }
+    .avatar-upload-btn:hover { background: var(--yellow); }
+    .upload-progress { display: none; position: absolute; inset: 0; border-radius: 50%; background: rgba(15,23,42,0.6); align-items: center; justify-content: center; color: white; font-size: 13px; font-weight: 800; }
+    .upload-progress.active { display: flex; }
   </style>
 </head>
 <body>
@@ -61,9 +67,12 @@
       <div class="bento-grid">
 
         <div class="tile tile-12 profile-hero-tile">
-          <div style="position:relative;width:120px;margin-bottom:20px;">
-            <div id="p-avatar" style="width:120px;height:120px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:800;color:var(--navy);border:5px solid rgba(255,255,255,0.2);background-size:cover;background-position:center;">?</div>
-            <label for="p-upload" style="position:absolute;bottom:5px;right:5px;background:white;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--navy);border:2px solid var(--navy);cursor:pointer;"><i class="bi bi-camera-fill"></i></label>
+          <div class="avatar-wrap">
+            <div id="p-avatar" class="avatar-circle">?</div>
+            <div class="upload-progress" id="upload-progress"><i class="bi bi-arrow-clockwise spin"></i></div>
+            <label for="p-upload" class="avatar-upload-btn" title="Change photo">
+              <i class="bi bi-camera-fill"></i>
+            </label>
             <input type="file" id="p-upload" style="display:none;" accept="image/*">
           </div>
           <h2 id="p-name-head" style="font-size:28px;font-weight:800;margin-bottom:5px;">---</h2>
@@ -90,7 +99,7 @@
         </div>
 
         <div class="tile tile-4">
-          <div class="table-header"><div class="table-title">System Actions</div></div>
+          <div class="table-header"><div class="table-title">System Info</div></div>
           <div style="padding:24px;">
             <div class="input-group">
               <i class="bi bi-hash"></i><label>Assigned Unit</label>
@@ -129,106 +138,116 @@
   import { supabase, getUserProfile } from '../js/config.js';
   import { requireAuth, signOut } from '../js/auth.js';
 
-  // ── 0. Auth gate ───────────────────────────────────────────────────────
   await requireAuth();
   const profile = await getUserProfile();
 
-  if (!profile || !profile.organization_id) {
-    setTimeout(() => signOut(), 2000);
-    throw new Error('No organization_id on profile.');
-  }
+  if (!profile) { setTimeout(() => signOut(), 2000); throw new Error('No profile.'); }
 
-  const ORG_ID  = profile.organization_id;
   const USER_ID = profile.id;
+  const ORG_ID  = profile.organization_id;
 
-  // ── 1. Sidebar + org name ──────────────────────────────────────────────
-  const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
-  if (org) {
-    const el = document.getElementById('sidebar-school-name');
-    if (el) el.innerHTML = `${org.name} <small>Driver Hub</small>`;
-    document.getElementById('p-school-head').textContent = org.name;
+  // Sidebar + org
+  if (ORG_ID) {
+    const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
+    if (org) {
+      document.getElementById('sidebar-school-name').innerHTML = `${org.name} <small>Driver Hub</small>`;
+      document.getElementById('p-school-head').textContent = org.name;
+    }
   }
 
-  // ── 2. Load profile ────────────────────────────────────────────────────
   const { data: { user } } = await supabase.auth.getUser();
 
   async function loadProfile() {
-    const { data: p } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', USER_ID)
-      .eq('organization_id', ORG_ID)
-      .single();
+    const { data: p } = await supabase.from('profiles').select('*').eq('id', USER_ID).single();
+    if (!p) return;
 
-    if (p) {
-      const name = p.full_name || 'Driver';
-      document.getElementById('sidebar-name').textContent   = name;
-      document.getElementById('sidebar-initial').textContent = name.charAt(0);
-      document.getElementById('sidebar-bus').textContent    = p.bus_id ? `BUS ${p.bus_id} · ONLINE` : 'No bus assigned';
-      document.getElementById('p-name-head').textContent    = name;
-      document.getElementById('p-bus-head').textContent     = p.bus_id ? `Active Unit: ${p.bus_id}` : 'Unit Assignment Pending';
-      document.getElementById('p-name').value               = name;
-      document.getElementById('p-email').value              = user?.email || '';
-      document.getElementById('p-phone').value              = p.phone || '';
-      document.getElementById('p-address').value            = p.address || '';
-      document.getElementById('p-bus').value                = p.bus_id || 'Unassigned';
+    const name = p.full_name || 'Driver';
+    document.getElementById('sidebar-name').textContent    = name;
+    document.getElementById('sidebar-initial').textContent = name.charAt(0);
+    document.getElementById('sidebar-bus').textContent     = p.bus_id ? `BUS ${p.bus_id} · ONLINE` : 'No bus assigned';
+    document.getElementById('p-name-head').textContent     = name;
+    document.getElementById('p-bus-head').textContent      = p.bus_id ? `Active Unit: ${p.bus_id}` : 'Unit Assignment Pending';
+    document.getElementById('p-name').value                = name;
+    document.getElementById('p-email').value               = user?.email || p.email || '';
+    document.getElementById('p-phone').value               = p.phone || '';
+    document.getElementById('p-address').value             = p.address || '';
+    document.getElementById('p-bus').value                 = p.bus_id || 'Unassigned';
 
-      const av = document.getElementById('p-avatar');
-      if (p.avatar_url) { av.style.backgroundImage = `url(${p.avatar_url})`; av.textContent = ''; }
-      else { av.style.backgroundImage = 'none'; av.textContent = name.charAt(0); }
+    // Avatar
+    const av = document.getElementById('p-avatar');
+    if (p.avatar_url) {
+      av.style.backgroundImage = `url(${p.avatar_url})`;
+      av.style.backgroundSize  = 'cover';
+      av.style.backgroundPosition = 'center';
+      av.textContent = '';
+    } else {
+      av.style.backgroundImage = 'none';
+      av.textContent = name.charAt(0);
     }
   }
 
-  loadProfile();
+  await loadProfile();
 
-  // ── 3. Save profile ────────────────────────────────────────────────────
+  // Save profile
   document.getElementById('p-save').onclick = async () => {
     const btn = document.getElementById('p-save');
     btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
-
     const { error } = await supabase.from('profiles').update({
-      full_name:   document.getElementById('p-name').value,
-      phone:       document.getElementById('p-phone').value,
-      address:     document.getElementById('p-address').value,
-      updated_at:  new Date().toISOString()
-    }).eq('id', USER_ID).eq('organization_id', ORG_ID);
-
+      full_name:  document.getElementById('p-name').value.trim(),
+      phone:      document.getElementById('p-phone').value.trim(),
+      address:    document.getElementById('p-address').value.trim(),
+      updated_at: new Date().toISOString()
+    }).eq('id', USER_ID);
     btn.innerHTML = '<i class="bi bi-check-lg"></i>';
     if (!error) { showToast('Profile saved.', 'success'); loadProfile(); }
-    else showToast('Update failed.', 'error');
+    else showToast('Update failed: ' + error.message, 'error');
   };
 
-  // ── 4. Avatar upload ───────────────────────────────────────────────────
+  // Avatar upload — uses 'avatars' bucket
   document.getElementById('p-upload').onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    showToast('Uploading photo...', 'info');
 
-    const ext  = file.name.split('.').pop();
-    const path = `${USER_ID}/${Date.now()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from('driver-avatars').upload(path, file);
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) { showToast('Image must be under 2MB.', 'error'); return; }
 
-    if (!upErr) {
-      const { data: { publicUrl } } = supabase.storage.from('driver-avatars').getPublicUrl(path);
-      await supabase.from('profiles').update({ avatar_url: publicUrl })
-        .eq('id', USER_ID).eq('organization_id', ORG_ID);
-      loadProfile();
-      showToast('Avatar updated.', 'success');
-    } else {
-      showToast('Upload failed.', 'error');
+    const progress = document.getElementById('upload-progress');
+    progress.classList.add('active');
+
+    const ext  = file.name.split('.').pop().toLowerCase();
+    const path = `${USER_ID}/avatar.${ext}`;
+
+    // Upsert — replace existing avatar
+    const { error: upErr } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (upErr) {
+      progress.classList.remove('active');
+      showToast('Upload failed: ' + upErr.message, 'error');
+      return;
     }
+
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+
+    // Add cache buster so browser loads fresh image
+    const urlWithCache = `${publicUrl}?t=${Date.now()}`;
+
+    const { error: dbErr } = await supabase.from('profiles')
+      .update({ avatar_url: urlWithCache })
+      .eq('id', USER_ID);
+
+    progress.classList.remove('active');
+
+    if (!dbErr) { showToast('Profile photo updated.', 'success'); loadProfile(); }
+    else showToast('Photo saved but DB update failed.', 'error');
   };
 
-  document.getElementById('p-logout').onclick = () => {
-    if (confirm('Sign out?')) signOut();
-  };
+  document.getElementById('p-logout').onclick = () => { if (confirm('Sign out?')) signOut(); };
 
   function showToast(m, t = 'info') {
     const c = document.getElementById('toast-container');
-    const d = document.createElement('div');
-    d.className = `toast ${t}`;
-    d.textContent = m;
-    c.appendChild(d);
+    const d = document.createElement('div'); d.className = `toast ${t} active`; d.textContent = m; c.appendChild(d);
     setTimeout(() => d.remove(), 4000);
   }
 </script>
