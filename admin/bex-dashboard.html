@@ -66,7 +66,7 @@
       <div class="nav-group-label">System Management</div>
       <a href="users-directory.html" class="nav-link"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
       <a href="analytics-room.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics Room</span></a>
-      <a href="notification-gateway.html" class="nav-link"><i class="bi bi-envelope-check-fill"></i><span>Notification Gateway</span></a>
+      <a href="billing-usage.html" class="nav-link"><i class="bi bi-envelope-check-fill"></i><span>Notification Gateway</span></a>
       <a href="audit-logs.html" class="nav-link"><i class="bi bi-journal-text"></i><span>System Audit</span></a>
       <div class="nav-group-label">Account</div>
       <a href="profile.html" class="nav-link"><i class="bi bi-person-gear"></i><span>My Profile</span></a>
@@ -176,7 +176,7 @@
   <a href="schools-management.html"><i class="bi bi-building"></i></a>
   <a href="users-directory.html"><i class="bi bi-people-fill"></i></a>
   <a href="analytics-room.html"><i class="bi bi-graph-up-arrow"></i></a>
-  <a href="notification-gateway.html"><i class="bi bi-envelope-check-fill"></i></a>
+  <a href="billing-usage.html"><i class="bi bi-envelope-check-fill"></i></a>
   <a href="audit-logs.html"><i class="bi bi-journal-text"></i></a>
   <a href="profile.html"><i class="bi bi-person-gear"></i></a>
 </nav>
@@ -202,7 +202,14 @@
   document.getElementById('avatar-char').textContent     = (profile.full_name || 'B').charAt(0).toUpperCase();
   document.getElementById('signout-btn').onclick = () => signOut();
 
-  const map = L.map('admin-fleet-map', { zoomControl: true, attributionControl: false }).setView([6.5244, 3.3792], 12);
+  const map = L.map("admin-fleet-map", { zoomControl: true, attributionControl: false }).setView([6.5244, 3.3792], 12);
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => map.setView([pos.coords.latitude, pos.coords.longitude], 12),
+      () => {},
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
   let busMarkers    = {};
@@ -271,6 +278,11 @@
     document.getElementById('kpi-metering').textContent = buses.length;
     renderDirectory(buses); renderTable(buses);
     buses.forEach(syncMarker);
+    const realBuses = buses.filter(b => b.current_lat && b.current_lng && !(b.current_lat === 6.5244 && b.current_lng === 3.3792));
+    if (realBuses.length > 0) {
+      const bounds = L.latLngBounds(realBuses.map(b => [b.current_lat, b.current_lng]));
+      map.fitBounds(bounds.pad(0.3));
+    }
   }
 
   function syncMarker(bus) {

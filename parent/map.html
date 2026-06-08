@@ -154,43 +154,51 @@
   import { supabase, getUserProfile } from '../js/config.js';
   import { requireAuth, signOut } from '../js/auth.js';
 
-  // ── 0. Auth gate ───────────────────────────────────────────────────────
   await requireAuth();
   const profile = await getUserProfile();
-
-  if (!profile || !profile.organization_id) {
-    setTimeout(() => signOut(), 2000);
-    throw new Error('No organization_id on profile.');
-  }
+  if (!profile || !profile.organization_id) { setTimeout(() => signOut(), 2000); throw new Error('No org.'); }
 
   const ORG_ID  = profile.organization_id;
   const USER_ID = profile.id;
 
-  // ── 1. Sidebar ─────────────────────────────────────────────────────────
+  // Sidebar
   const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
-  if (org) {
-    const el = document.getElementById('sidebar-school-name');
-    if (el) el.innerHTML = `${org.name} <small>Parent Portal</small>`;
-  }
+  if (org) document.getElementById('sidebar-school-name').innerHTML = `${org.name} <small>Parent Portal</small>`;
   document.getElementById('sidebar-parent-name').textContent = profile.full_name || 'Guardian';
   document.getElementById('sidebar-initial').textContent     = (profile.full_name || 'G').charAt(0);
-  document.getElementById('sidebar-logout').onclick = () => {
-    if (confirm('Sign out?')) signOut();
-  };
+  document.getElementById('sidebar-logout').onclick = () => { if (confirm('Sign out?')) signOut(); };
 
-  // ── 2. Map ─────────────────────────────────────────────────────────────
-  // Use parent's stored home coords if available
-  const { data: parentFull } = await supabase
-    .from('profiles')
-    .select('home_lat, home_lng')
-    .eq('id', USER_ID)
-    .single();
+  // ── Map — try device location first, fall back to stored home, then Lagos
+  const DEFAULT   = [6.5244, 3.3792];
+  let homeCoords  = DEFAULT;
 
-  const homeCoords = [
-    parentFull?.home_lat || 6.5290,
-    parentFull?.home_lng || 3.3850
-  ];
+  // 1. Try stored home coords from profile
+  const { data: parentFull } = await supabase.from('profiles').select('home_lat, home_lng').eq('id', USER_ID).single();
+  if (parentFull?.home_lat && parentFull?.home_lng) {
+    homeCoords = [parentFull.home_lat, parentFull.home_lng];
+  }
 
+  // 2. Try to get real device location and save as home coords
+  function getDeviceLocation() {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) { resolve(null); return; }
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude, longitude } = pos.coords;
+          // Save to profile so future loads use this
+          await supabase.from('profiles').update({ home_lat: latitude, home_lng: longitude }).eq('id', USER_ID);
+          resolve([latitude, longitude]);
+        },
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    });
+  }
+
+  const deviceLocation = await getDeviceLocation();
+  if (deviceLocation) homeCoords = deviceLocation;
+
+  // Init map centred on real location
   const map = L.map('parent-live-map', { zoomControl: true, attributionControl: false }).setView(homeCoords, 14);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
   window.addEventListener('load', () => setTimeout(() => map.invalidateSize(), 500));
@@ -203,11 +211,29 @@
     html: '<div style="background:var(--navy);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:3px solid white;color:white;"><i class="bi bi-house-door-fill"></i></div>',
     iconSize: [36, 36], iconAnchor: [18, 18], className: ''
   });
-  L.marker(homeCoords, { icon: homeIcon }).addTo(map);
+
+  // Place home marker at real location
+  let homeMarker = L.marker(homeCoords, { icon: homeIcon }).addTo(map).bindPopup('Your Location');
+
+  // Watch for location changes — update home marker if parent moves
+  if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const newCoords = [latitude, longitude];
+        homeCoords = newCoords;
+        homeMarker.setLatLng(newCoords);
+        // Update stored coords
+        await supabase.from('profiles').update({ home_lat: latitude, home_lng: longitude }).eq('id', USER_ID);
+      },
+      null,
+      { enableHighAccuracy: true, maximumAge: 30000 }
+    );
+  }
 
   let busMarker = null;
 
-  // ── 3. Load student + bus — bus must belong to this org ────────────────
+  // Load student + bus
   const { data: student } = await supabase
     .from('students')
     .select('*, bus_id(id, current_lat, current_lng, speed, organization_id, driver_id(full_name, phone))')
@@ -217,10 +243,8 @@
 
   if (student && student.bus_id) {
     const busData = student.bus_id;
-
-    // Safety check: bus must belong to the same org
     if (busData.organization_id !== ORG_ID) {
-      console.warn('Bus org mismatch — refusing to display.');
+      console.warn('Bus org mismatch.');
     } else {
       const busId = busData.id;
       document.getElementById('bus-id-display').textContent   = busId;
@@ -232,78 +256,72 @@
         document.getElementById('driver-name-display').textContent = driver.full_name;
         document.getElementById('driver-initial').textContent       = driver.full_name.charAt(0);
         if (driver.phone) {
-          const phone = driver.phone.trim().replace(/^0/, '+234');
-          document.getElementById('driver-phone-link').href = `tel:${phone}`;
+          document.getElementById('driver-phone-link').href = `tel:${driver.phone.trim().replace(/^0/, '+234')}`;
         }
       }
 
       updateMap(busData);
 
-      // Load route stops scoped to this org
-      const { data: routes } = await supabase
-        .from('routes')
-        .select('id')
-        .eq('bus_id', busId)
-        .eq('organization_id', ORG_ID)
-        .limit(1);
-
-      if (routes && routes.length > 0) {
-        const { data: stops } = await supabase
-          .from('stops')
-          .select('*')
-          .eq('route_id', routes[0].id)
-          .eq('organization_id', ORG_ID)
-          .order('order_index', { ascending: true });
-
-        if (stops && stops.length > 0) {
-          const container = document.getElementById('stops-container');
-          container.innerHTML = stops.map((s, i) => `
+      // Route stops
+      const { data: routes } = await supabase.from('routes').select('id').eq('bus_id', busId).eq('organization_id', ORG_ID).limit(1);
+      if (routes?.length > 0) {
+        const { data: stops } = await supabase.from('stops').select('*').eq('route_id', routes[0].id).eq('organization_id', ORG_ID).order('order_index', { ascending: true });
+        if (stops?.length > 0) {
+          document.getElementById('stops-container').innerHTML = stops.map((s, i) => `
             <div style="padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:12px;">
-              <div style="font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Stop ${i + 1}</div>
+              <div style="font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Stop ${i+1}</div>
               <div style="font-weight:700;color:var(--navy);font-size:14px;">${s.name}</div>
               <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;"><i class="bi bi-clock"></i> ${s.arrival_time || '--:--'} · ${s.students || 0} students</div>
             </div>`).join('');
         }
       }
 
-      // Realtime bus updates — bus belongs to this org so filter is safe
+      // Realtime bus position updates
       supabase.channel(`bus-parent-${busId}`)
-        .on('postgres_changes', {
-          event: 'UPDATE', schema: 'public', table: 'buses',
-          filter: `id=eq.${busId}`
-        }, payload => updateMap(payload.new))
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'buses', filter: `id=eq.${busId}` }, payload => updateMap(payload.new))
         .subscribe();
     }
   } else {
     document.getElementById('child-status-top').textContent = 'No bus assigned';
     document.getElementById('boarding-status').textContent  = 'UNASSIGNED';
+    // No bus — just show parent's current location
+    map.setView(homeCoords, 14);
   }
 
   function updateMap(data) {
     const lat   = data.current_lat;
     const lng   = data.current_lng;
     const speed = data.speed || 0;
-
     if (!lat || !lng) return;
 
     if (busMarker) busMarker.setLatLng([lat, lng]);
-    else busMarker = L.marker([lat, lng], { icon: busIcon }).addTo(map);
+    else busMarker = L.marker([lat, lng], { icon: busIcon }).addTo(map).bindPopup('Bus Location');
 
-    map.flyTo([lat, lng], 15);
+    // Fit both bus and home in view
+    const group = L.featureGroup([busMarker, homeMarker]);
+    map.fitBounds(group.getBounds().pad(0.2));
+
     document.getElementById('speed-val').innerHTML = `${Math.round(speed)} <small style="font-size:14px">km/h</small>`;
 
-    // Simple ETA calc
+    // ETA calc
     const R    = 6371;
     const dLat = (homeCoords[0] - lat) * Math.PI / 180;
     const dLng = (homeCoords[1] - lng) * Math.PI / 180;
-    const a    = Math.sin(dLat/2)**2 + Math.cos(lat * Math.PI/180) * Math.cos(homeCoords[0] * Math.PI/180) * Math.sin(dLng/2)**2;
+    const a    = Math.sin(dLat/2)**2 + Math.cos(lat*Math.PI/180) * Math.cos(homeCoords[0]*Math.PI/180) * Math.sin(dLng/2)**2;
     const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     const mins = Math.round((dist / (speed > 5 ? speed : 30)) * 60);
     const eta  = new Date(Date.now() + mins * 60000);
     document.getElementById('eta-display').textContent = eta.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // Proximity alert — 1km
+    if (dist <= 1 && document.getElementById('geofence-toggle').checked) {
+      if (Notification.permission === 'granted') {
+        new Notification('🚌 Bus is Almost Here!', { body: `The school bus is ${(dist * 1000).toFixed(0)}m away. Get ready!`, icon: '../assets/images/logo.png' });
+      }
+    }
   }
 
-  // ── 4. Broadcast listener ──────────────────────────────────────────────
+  // Broadcast listener
   supabase.channel('global-fleet-broadcast')
     .on('broadcast', { event: 'urgent-alert' }, payload => {
       const toast = document.getElementById('parent-broadcast-toast');
@@ -313,10 +331,13 @@
       setTimeout(() => toast.classList.remove('active'), 7500);
     })
     .subscribe(status => {
-      if (status === 'SUBSCRIBED') {
-        document.getElementById('connection-status').textContent = 'LIVE DATA';
-      }
+      if (status === 'SUBSCRIBED') document.getElementById('connection-status').textContent = 'LIVE DATA';
     });
+
+  // Request notification permission for proximity alerts
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
 </script>
 </body>
 </html>

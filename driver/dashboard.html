@@ -27,6 +27,9 @@
     @keyframes popIn { from { transform:scale(0.85); opacity:0; } to { transform:scale(1); opacity:1; } }
     .broadcast-timer-bar { height:4px; background:rgba(255,255,255,0.2); border-radius:2px; margin:16px 0; overflow:hidden; }
     .broadcast-timer-fill { height:100%; background:var(--yellow); border-radius:2px; transition:width 1s linear; }
+    /* GPS permission banner */
+    #gps-banner { display:none; background:#fffbeb; border:1px solid #fbbf24; border-radius:var(--r-lg); padding:12px 16px; margin-bottom:16px; font-size:13px; font-weight:700; color:#92400e; align-items:center; gap:10px; }
+    #gps-banner.show { display:flex; }
   </style>
 </head>
 <body>
@@ -91,6 +94,12 @@
     </header>
 
     <div class="admin-content">
+      <!-- GPS permission banner -->
+      <div id="gps-banner">
+        <i class="bi bi-geo-alt-fill" style="font-size:18px;color:#f59e0b;"></i>
+        <span>Location access is blocked. Please allow location in your browser settings for live tracking to work.</span>
+      </div>
+
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-label">Velocity</div><div class="kpi-value" id="speed-val">0 <small style="font-size:14px">km/h</small></div></div>
         <div class="kpi-card"><div class="kpi-label">Time Active</div><div class="kpi-value" id="time-val">00:00</div></div>
@@ -168,31 +177,18 @@
   import { supabase, getUserProfile } from '../js/config.js';
   import { signOut, requireAuth } from '../js/auth.js';
 
-  // ── 0. Auth gate ───────────────────────────────────────────────────────
   await requireAuth();
   const profile = await getUserProfile();
-
-  if (!profile || !profile.organization_id) {
-    setTimeout(() => signOut(), 2000);
-    throw new Error('No organization_id on profile.');
-  }
+  if (!profile || !profile.organization_id) { setTimeout(() => signOut(), 2000); throw new Error('No org.'); }
 
   const ORG_ID  = profile.organization_id;
   const USER_ID = profile.id;
 
-  // ── 1. Sidebar ─────────────────────────────────────────────────────────
+  // Sidebar
   const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
-  if (org) {
-    const el = document.getElementById('sidebar-school-name');
-    if (el) el.innerHTML = `${org.name} <small>Driver Hub</small>`;
-  }
+  if (org) document.getElementById('sidebar-school-name').innerHTML = `${org.name} <small>Driver Hub</small>`;
 
-  const { data: fullProfile } = await supabase
-    .from('profiles')
-    .select('full_name, bus_id')
-    .eq('id', USER_ID)
-    .single();
-
+  const { data: fullProfile } = await supabase.from('profiles').select('full_name, bus_id').eq('id', USER_ID).single();
   const driverName = fullProfile?.full_name || 'Driver';
   const busId      = fullProfile?.bus_id || null;
 
@@ -201,8 +197,9 @@
   document.getElementById('sidebar-bus').textContent            = busId ? `BUS ${busId} · ACTIVE` : 'No bus assigned';
   document.getElementById('logout-btn').onclick = () => signOut();
 
-  // ── 2. Map ─────────────────────────────────────────────────────────────
-  const map = L.map('driver-map', { zoomControl: true, attributionControl: false }).setView([6.5244, 3.3792], 15);
+  // ── Map — centre on device location first, fallback to Lagos ──────────
+  const DEFAULT_COORDS = [6.5244, 3.3792];
+  const map = L.map('driver-map', { zoomControl: true, attributionControl: false }).setView(DEFAULT_COORDS, 15);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
   const busIcon = L.divIcon({
@@ -210,32 +207,47 @@
     iconSize: [32, 32], iconAnchor: [16, 16], className: ''
   });
 
-  let busMarker  = null;
-  let tripActive = false;
+  let busMarker   = null;
+  let tripActive  = false;
   let tripSeconds = 0;
-  let tripTimer  = null;
-  let watchId    = null;
+  let tripTimer   = null;
+  let watchId     = null;
 
-  // ── 3. Checklist gate ──────────────────────────────────────────────────
+  // ── Get device location on page load to centre the map ────────────────
+  function centerMapOnDevice() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        map.setView([latitude, longitude], 15);
+        document.getElementById('gps-status').textContent = 'READY';
+        document.getElementById('gps-status').style.color = 'var(--green)';
+      },
+      (err) => {
+        // Denied or unavailable — show banner
+        if (err.code === err.PERMISSION_DENIED) {
+          document.getElementById('gps-banner').classList.add('show');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+  centerMapOnDevice();
+
+  // Checklist gate
   const today = new Date().toDateString();
   if (localStorage.getItem('checklist_completed_today') === today && busId) {
     document.getElementById('start-trip-btn').disabled = false;
   }
 
-  // ── 4. Load broadcast history — scoped to org ─────────────────────────
-  const { data: pastBroadcasts } = await supabase
-    .from('notifications')
-    .select('*')
-    .eq('type', 'broadcast')
-    .eq('organization_id', ORG_ID)
-    .order('created_at', { ascending: false })
-    .limit(5);
+  // Broadcast history
+  const { data: pastBroadcasts } = await supabase.from('notifications').select('*')
+    .eq('type', 'broadcast').eq('organization_id', ORG_ID)
+    .order('created_at', { ascending: false }).limit(5);
 
-  if (pastBroadcasts && pastBroadcasts.length > 0) {
-    const feed    = document.getElementById('broadcast-history-feed');
-    const emptyEl = document.getElementById('empty-broadcast-msg');
-    if (emptyEl) emptyEl.remove();
-
+  if (pastBroadcasts?.length > 0) {
+    const feed = document.getElementById('broadcast-history-feed');
+    document.getElementById('empty-broadcast-msg')?.remove();
     pastBroadcasts.forEach(n => {
       const time = new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const card = document.createElement('div');
@@ -251,15 +263,14 @@
     });
   }
 
-  // ── 5. Broadcast modal ─────────────────────────────────────────────────
+  // Broadcast modal
   let broadcastTimerInterval = null;
-
   function showBroadcastModal(msg, source = 'System Directive') {
-    document.getElementById('broadcast-modal-msg').textContent = msg;
+    document.getElementById('broadcast-modal-msg').textContent    = msg;
     document.getElementById('broadcast-modal-source').textContent = source;
     document.getElementById('broadcast-modal').classList.add('active');
-    document.getElementById('broadcast-timer-fill').style.width = '100%';
-    document.getElementById('broadcast-countdown').textContent = '15';
+    document.getElementById('broadcast-timer-fill').style.width   = '100%';
+    document.getElementById('broadcast-countdown').textContent    = '15';
     let seconds = 15;
     clearInterval(broadcastTimerInterval);
     broadcastTimerInterval = setInterval(() => {
@@ -268,110 +279,46 @@
       document.getElementById('broadcast-timer-fill').style.width = `${(seconds / 15) * 100}%`;
       if (seconds <= 0) dismissBroadcastModal();
     }, 1000);
-    // Web Audio chime — no file needed
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const playBeep = (freq, start, dur) => {
-        const o = ctx.createOscillator(); const g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        o.frequency.value = freq; o.type = 'sine';
-        g.gain.setValueAtTime(0.3, ctx.currentTime + start);
-        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-        o.start(ctx.currentTime + start); o.stop(ctx.currentTime + start + dur + 0.1);
-      };
-      for (let i = 0; i < 3; i++) { playBeep(880, i * 0.4, 0.2); playBeep(1100, i * 0.4 + 0.25, 0.15); }
+      const beep = (f, s, d) => { const o = ctx.createOscillator(); const g = ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value = f; o.type = 'sine'; g.gain.setValueAtTime(0.3, ctx.currentTime + s); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + s + d); o.start(ctx.currentTime + s); o.stop(ctx.currentTime + s + d + 0.1); };
+      for (let i = 0; i < 3; i++) { beep(880, i*0.4, 0.2); beep(1100, i*0.4+0.25, 0.15); }
     } catch(e) {}
   }
 
-  window.dismissBroadcastModal = () => {
-    document.getElementById('broadcast-modal').classList.remove('active');
-    clearInterval(broadcastTimerInterval);
-  };
+  window.dismissBroadcastModal = () => { document.getElementById('broadcast-modal').classList.remove('active'); clearInterval(broadcastTimerInterval); };
 
   function addToFeed(notif, source) {
-    const feed    = document.getElementById('broadcast-history-feed');
-    const emptyEl = document.getElementById('empty-broadcast-msg');
-    if (emptyEl) emptyEl.remove();
-    const time = notif.timestamp
-      ? new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const feed = document.getElementById('broadcast-history-feed');
+    document.getElementById('empty-broadcast-msg')?.remove();
+    const time = notif.timestamp ? new Date(notif.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
     const card = document.createElement('div');
     card.className = 'live-broadcast-card';
-    card.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-        <strong style="font-size:12px;color:var(--navy);font-weight:800;">${source}</strong>
-        <small style="font-size:10px;color:var(--text-muted);font-weight:700;">${time}</small>
-      </div>
-      <div style="font-size:13px;color:var(--text-secondary);line-height:1.4;font-weight:600;">${notif.message}</div>`;
+    card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><strong style="font-size:12px;color:var(--navy);font-weight:800;">${source}</strong><small style="font-size:10px;color:var(--text-muted);font-weight:700;">${time}</small></div><div style="font-size:13px;color:var(--text-secondary);line-height:1.4;font-weight:600;">${notif.message}</div>`;
     feed.insertBefore(card, feed.firstChild);
   }
 
-  // Listen to both global (admin) and fleet (manager) broadcasts
   supabase.channel('global-fleet-broadcast')
-    .on('broadcast', { event: 'urgent-alert' }, ({ payload }) => {
-      showBroadcastModal(payload.message, '🚨 Platform Override — Bex Admin');
-      addToFeed(payload, '🚨 BEX ADMIN');
-    })
-    .on('broadcast', { event: 'fleet-directive' }, ({ payload }) => {
-      if (!payload.org_id || payload.org_id === ORG_ID) {
-        showBroadcastModal(payload.message, '📢 Manager Directive');
-        addToFeed(payload, '📢 MANAGER');
-      }
-    })
+    .on('broadcast', { event: 'urgent-alert' }, ({ payload }) => { showBroadcastModal(payload.message, '🚨 Platform Override — Bex Admin'); addToFeed(payload, '🚨 BEX ADMIN'); })
+    .on('broadcast', { event: 'fleet-directive' }, ({ payload }) => { if (!payload.org_id || payload.org_id === ORG_ID) { showBroadcastModal(payload.message, '📢 Manager Directive'); addToFeed(payload, '📢 MANAGER'); } })
     .subscribe();
 
-  // ── 6. SOS — scoped to org ─────────────────────────────────────────────
-  const sosBtn      = document.getElementById('sos-btn');
+  // SOS
+  const sosBtn = document.getElementById('sos-btn');
   const sosProgress = document.getElementById('sos-progress');
-  const sosLabel    = document.getElementById('sos-label');
-  let sosHoldTimer  = null;
-  let sosStartTime  = 0;
+  const sosLabel = document.getElementById('sos-label');
+  let sosHoldTimer = null, sosStartTime = 0;
 
-  const startSosHold = (e) => {
-    e.preventDefault();
-    sosStartTime = Date.now();
-    sosBtn.classList.add('holding');
-    sosHoldTimer = setInterval(() => {
-      const elapsed = Date.now() - sosStartTime;
-      const pct = Math.min((elapsed / 5000) * 100, 100);
-      sosProgress.style.width = pct + '%';
-      if (elapsed >= 5000) { triggerSOS(); clearSosHold(); }
-    }, 100);
-  };
-
-  const clearSosHold = () => {
-    clearInterval(sosHoldTimer);
-    sosBtn.classList.remove('holding');
-    sosProgress.style.width = '0%';
-  };
+  const startSosHold = (e) => { e.preventDefault(); sosStartTime = Date.now(); sosBtn.classList.add('holding'); sosHoldTimer = setInterval(() => { const elapsed = Date.now() - sosStartTime; sosProgress.style.width = Math.min((elapsed/5000)*100,100)+'%'; if (elapsed >= 5000) { triggerSOS(); clearSosHold(); } }, 100); };
+  const clearSosHold = () => { clearInterval(sosHoldTimer); sosBtn.classList.remove('holding'); sosProgress.style.width = '0%'; };
 
   async function triggerSOS() {
     navigator.geolocation.getCurrentPosition(async (pos) => {
       const { latitude, longitude } = pos.coords;
-
-      // emergency_alerts scoped to org
-      await supabase.from('emergency_alerts').insert([{
-        driver_id:       USER_ID,
-        lat:             latitude,
-        lng:             longitude,
-        status:          'active',
-        organization_id: ORG_ID
-      }]);
-
-      // notification scoped to org
-      await supabase.from('notifications').insert([{
-        user_id:         USER_ID,
-        title:           '🚨 EMERGENCY SOS SIGNAL',
-        message:         `CRITICAL: Driver ${driverName} needs help. Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-        type:            'emergency',
-        status:          'active',
-        organization_id: ORG_ID
-      }]);
-
-      sosBtn.classList.add('sent');
-      sosLabel.textContent = 'SIGNAL SENT';
+      await supabase.from('emergency_alerts').insert([{ driver_id: USER_ID, lat: latitude, lng: longitude, status: 'active', organization_id: ORG_ID }]);
+      await supabase.from('notifications').insert([{ user_id: USER_ID, title: '🚨 EMERGENCY SOS SIGNAL', message: `CRITICAL: Driver ${driverName} needs help. Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`, type: 'emergency', status: 'active', organization_id: ORG_ID }]);
+      sosBtn.classList.add('sent'); sosLabel.textContent = 'SIGNAL SENT';
       setTimeout(() => { sosBtn.classList.remove('sent'); sosLabel.textContent = 'HOLD 5s FOR SOS'; }, 3000);
-
     }, () => alert('GPS access required for SOS.'), { enableHighAccuracy: true });
   }
 
@@ -380,76 +327,76 @@
   window.addEventListener('mouseup', clearSosHold);
   window.addEventListener('touchend', clearSosHold);
 
-  // ── 7. Trip controls ───────────────────────────────────────────────────
+  // ── Trip controls — watchPosition does the real-time tracking ─────────
   document.getElementById('start-trip-btn').onclick = async () => {
     if (!busId) { showToast('No bus assigned to your profile.', 'error'); return; }
     tripActive = true;
     document.getElementById('start-trip-btn').disabled = true;
     document.getElementById('end-trip-btn').disabled   = false;
     document.getElementById('desktop-status').innerHTML = '<span class="live-dot" style="background:var(--green);width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;"></span> LIVE';
-    document.getElementById('gps-status').textContent   = 'LIVE';
-    document.getElementById('gps-status').style.color   = 'var(--green)';
+    document.getElementById('gps-status').textContent  = 'LIVE';
+    document.getElementById('gps-status').style.color  = 'var(--green)';
 
     tripTimer = setInterval(() => {
       tripSeconds++;
-      const m = String(Math.floor(tripSeconds / 60)).padStart(2, '0');
-      const s = String(tripSeconds % 60).padStart(2, '0');
+      const m = String(Math.floor(tripSeconds/60)).padStart(2,'0');
+      const s = String(tripSeconds%60).padStart(2,'0');
       document.getElementById('time-val').textContent = `${m}:${s}`;
     }, 1000);
 
-    // Set bus active — scoped to org
-    await supabase.from('buses').update({ status: 'active', last_seen: new Date().toISOString() })
-      .eq('id', busId).eq('organization_id', ORG_ID);
+    await supabase.from('buses').update({ status: 'active', last_seen: new Date().toISOString() }).eq('id', busId).eq('organization_id', ORG_ID);
 
-    if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(async (pos) => {
+    if (!navigator.geolocation) { showToast('Geolocation not supported on this device.', 'error'); return; }
+
+    watchId = navigator.geolocation.watchPosition(
+      async (pos) => {
         const { latitude, longitude, speed } = pos.coords;
         const kmh = Math.round((speed || 0) * 3.6);
         document.getElementById('speed-val').innerHTML = `${kmh} <small style="font-size:14px">km/h</small>`;
 
+        // Update or create marker
         if (busMarker) busMarker.setLatLng([latitude, longitude]);
         else busMarker = L.marker([latitude, longitude], { icon: busIcon }).addTo(map);
-        map.flyTo([latitude, longitude], 16);
 
-        // Upsert GPS to buses table
+        // Smoothly follow driver
+        map.panTo([latitude, longitude]);
+
+        // Save to DB
         await supabase.from('buses').upsert({
-          id:              busId,
-          current_lat:     latitude,
-          current_lng:     longitude,
-          speed:           kmh,
-          status:          'active',
-          last_seen:       new Date().toISOString(),
+          id: busId, current_lat: latitude, current_lng: longitude,
+          speed: kmh, status: 'active',
+          last_seen: new Date().toISOString(),
           organization_id: ORG_ID
         }, { onConflict: 'id' });
 
-      }, null, { enableHighAccuracy: true });
-    }
+        // Hide GPS banner if it was showing
+        document.getElementById('gps-banner').classList.remove('show');
+      },
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) {
+          document.getElementById('gps-banner').classList.add('show');
+          showToast('Location access denied. Enable GPS to track your trip.', 'error');
+        }
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
   };
 
   document.getElementById('end-trip-btn').onclick = async () => {
     tripActive = false;
     clearInterval(tripTimer);
     if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-
     document.getElementById('start-trip-btn').disabled = false;
     document.getElementById('end-trip-btn').disabled   = true;
     document.getElementById('gps-status').textContent  = 'OFFLINE';
     document.getElementById('gps-status').style.color  = '';
-
-    if (busId) {
-      await supabase.from('buses').update({ status: 'offline', speed: 0, last_seen: new Date().toISOString() })
-        .eq('id', busId).eq('organization_id', ORG_ID);
-    }
+    if (busId) await supabase.from('buses').update({ status: 'offline', speed: 0, last_seen: new Date().toISOString() }).eq('id', busId).eq('organization_id', ORG_ID);
     showToast('Trip ended. Bus marked offline.', 'success');
   };
 
-  function showToast(m, t = 'info') {
-    const c = document.getElementById('toast-container');
-    if (!c) return;
-    const d = document.createElement('div');
-    d.className = `toast ${t} active`;
-    d.textContent = m;
-    c.appendChild(d);
+  function showToast(m, t='info') {
+    const c = document.getElementById('toast-container'); if (!c) return;
+    const d = document.createElement('div'); d.className = `toast ${t} active`; d.textContent = m; c.appendChild(d);
     setTimeout(() => d.remove(), 4000);
   }
 </script>
