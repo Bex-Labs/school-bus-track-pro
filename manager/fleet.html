@@ -31,7 +31,7 @@
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-     (max-width: 768px) {
+    @media (max-width: 768px) {
       .admin-sidebar { display: none; }
       .admin-main { padding-bottom: 80px; }
       .desktop-only { display: none; }
