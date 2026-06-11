@@ -128,6 +128,31 @@ if (loginForm && supabase) {
       return;
     }
 
+    // ── Fetch profile to get actual DB role ───────────────────────────
+    const { data: profileData } = await supabase
+      .from('profiles').select('role, organization_id').eq('id', data.user.id).single();
+
+    const actualRole   = profileData?.role || null;
+    const selectedRole = window.selectedRole || 'parent';
+
+    // ── Strict role tab enforcement ───────────────────────────────────
+    // If selected tab doesn't match DB role, block login
+    if (actualRole && actualRole !== selectedRole) {
+      await supabase.auth.signOut();
+      const roleNames = {
+        driver:         'Driver',
+        parent:         'Parent',
+        school_manager: 'School Manager',
+        super_admin:    'Bex Admin'
+      };
+      const actualName   = roleNames[actualRole]   || actualRole;
+      const selectedName = roleNames[selectedRole] || selectedRole;
+      showToast(`This account is registered as "${actualName}". Please select the ${actualName} tab and try again.`, 'error');
+      btn.disabled = false;
+      btn.innerHTML = 'Login <i class="bi bi-arrow-right-short" style="font-size:22px;"></i>';
+      return;
+    }
+
     // Tenant isolation check — only on school subdomains
     if (window.activeTenantId) {
       const { data: profile } = await supabase
