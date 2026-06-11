@@ -31,11 +31,16 @@
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    @media (max-width: 768px) {
+     (max-width: 768px) {
       .admin-sidebar { display: none; }
-      .admin-main { padding-bottom: 100px; }
+      .admin-main { padding-bottom: 80px; }
       .desktop-only { display: none; }
       .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .bottom-nav.mobile-only { height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center !important; background: var(--navy) !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 999 !important; }
+      .bottom-nav.mobile-only a { flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0 !important; color: rgba(255,255,255,0.6) !important; text-decoration: none !important; }
+      .bottom-nav.mobile-only a i { font-size: 22px !important; color: rgba(255,255,255,0.6) !important; }
+      .bottom-nav.mobile-only a.active i { color: var(--yellow) !important; }
+      .bottom-nav.mobile-only a.active { color: var(--yellow) !important; }
     }
   </style>
 </head>
@@ -166,10 +171,12 @@
 </div>
 
 <nav class="bottom-nav mobile-only">
-  <a href="fleet.html" class="active"><i class="bi bi-radar"></i>Command</a>
-  <a href="crisis-center.html"><i class="bi bi-exclamation-octagon-fill"></i>Crisis</a>
-  <a href="users.html"><i class="bi bi-people-fill"></i>Users</a>
-  <a href="analytics.html"><i class="bi bi-graph-up-arrow"></i>Stats</a>
+  <a href="fleet.html" class="active"><i class="bi bi-radar"></i></a>
+  <a href="crisis-center.html"><i class="bi bi-exclamation-octagon-fill"></i></a>
+  <a href="users.html"><i class="bi bi-people-fill"></i></a>
+  <a href="buses.html"><i class="bi bi-bus-front-fill"></i></a>
+  <a href="routes.html"><i class="bi bi-map-fill"></i></a>
+  <a href="analytics.html"><i class="bi bi-graph-up-arrow"></i></a>
   <a href="profile.html"><i class="bi bi-person-gear"></i></a>
 </nav>
 

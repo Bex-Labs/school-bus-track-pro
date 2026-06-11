@@ -71,8 +71,9 @@
       .buses-grid { grid-template-columns: 1fr !important; }
       .bottom-nav.mobile-only { height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center !important; background: var(--navy) !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 999 !important; }
       .bottom-nav.mobile-only a { flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0 !important; color: rgba(255,255,255,0.6) !important; }
-      .bottom-nav.mobile-only a i { font-size: 22px !important; }
+      .bottom-nav.mobile-only a i { font-size: 22px !important; color: rgba(255,255,255,0.6) !important; }
       .bottom-nav.mobile-only a.active { color: var(--yellow) !important; }
+        .bottom-nav.mobile-only a.active i { color: var(--yellow) !important; }
     }
   </style>
 </head>
@@ -486,8 +487,28 @@
 
     if (error) { showToast('Save failed: ' + error.message, 'error'); btn.disabled = false; btn.innerHTML = '<i class="bi bi-bus-front-fill"></i> Save Bus'; return; }
 
-    if (driverId) {
-      await supabase.from('profiles').update({ bus_id: editId || busId }).eq('id', driverId);
+    // ── Assign driver via edge function (bypasses RLS) ─────────────────
+    const { data: { session } } = await supabase.auth.getSession();
+    const oldBus = allBuses.find(b => b.id === (editId || busId));
+    const oldDriverId = oldBus?.driver_id || null;
+
+    const assignRes = await fetch('https://bxhzckjmyhachqotgulg.supabase.co/functions/v1/assign-bus', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({
+        bus_id:        editId || busId,
+        driver_id:     driverId,
+        org_id:        ORG_ID,
+        old_driver_id: oldDriverId !== driverId ? oldDriverId : null
+      })
+    });
+
+    const assignResult = await assignRes.json();
+    if (!assignResult.success) {
+      showToast('Bus saved but driver assignment failed: ' + assignResult.error, 'error');
     }
 
     btn.disabled = false; btn.innerHTML = '<i class="bi bi-bus-front-fill"></i> Save Bus';

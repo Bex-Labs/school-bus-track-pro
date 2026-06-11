@@ -31,7 +31,15 @@
       #route-map { height: 300px !important; }
       .route-scroll-area { height: 350px !important; }
     }
-  </style>
+        .bottom-nav.mobile-only { display: none; }
+      @media (max-width: 768px) {
+        .bottom-nav.mobile-only { height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center !important; background: var(--navy) !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 999 !important; }
+        .bottom-nav.mobile-only a { flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0 !important; color: rgba(255,255,255,0.6) !important; text-decoration: none !important; }
+        .bottom-nav.mobile-only a i { font-size: 22px !important; color: rgba(255,255,255,0.6) !important; }
+        .bottom-nav.mobile-only a.active i { color: var(--yellow) !important; }
+        .bottom-nav.mobile-only a.active { color: var(--yellow) !important; }
+      }
+    </style>
 </head>
 <body>
 <div class="admin-layout">
