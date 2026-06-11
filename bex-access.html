@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Bex Central Access</title>
+  <link rel="icon" type="image/png" href="assets/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/auth.css">
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-visual-panel">
+      <div class="auth-bg-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+      </div>
+      <div class="visual-content">
+        <img src="assets/images/logo.png" alt="Logo" style="width:100px;margin-bottom:40px;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.3));">
+        <h2>Bex Internal<br>Operations Hub</h2>
+        <p>Restricted access. Authorized Bex personnel only.</p>
+      </div>
+    </div>
+
+    <div class="auth-form-panel">
+      <div class="auth-card">
+        <div class="auth-logo">
+          <div class="logo-text">Bex Central<span>Internal Access</span></div>
+        </div>
+
+        <div style="display:inline-flex;align-items:center;gap:8px;background:#fef2f2;border:1px solid #fca5a5;border-radius:var(--r-full);padding:6px 14px;margin-bottom:20px;">
+          <i class="bi bi-shield-lock-fill" style="color:#dc2626;font-size:13px;"></i>
+          <span style="font-size:11px;font-weight:800;color:#991b1b;text-transform:uppercase;letter-spacing:0.5px;">Restricted Zone</span>
+        </div>
+
+        <h1 class="auth-heading">Admin Login</h1>
+        <p class="auth-subtext">Bex team credentials only. Unauthorized access is logged.</p>
+
+        <form id="admin-login-form">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <div class="input-wrap">
+              <i class="bi bi-envelope input-icon"></i>
+              <input type="email" id="admin-email" class="form-control" placeholder="admin@bexlabs.com" required autocomplete="email">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <div class="input-wrap">
+              <i class="bi bi-shield-lock input-icon"></i>
+              <input type="password" id="admin-password" class="form-control" placeholder="••••••••" required>
+              <i class="bi bi-eye eye-toggle" id="eye-toggle" onclick="togglePw()"></i>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-yellow btn-full btn-lg" id="admin-login-btn">
+            <i class="bi bi-shield-lock-fill"></i> Access Hub
+          </button>
+        </form>
+
+        <div class="auth-footer" style="margin-top:16px;">
+          <a href="index.html" style="font-size:13px;color:var(--text-muted);">
+            <i class="bi bi-arrow-left"></i> Back to public login
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import { supabase } from './js/config.js';
+
+    function togglePw() {
+      const pw = document.getElementById('admin-password');
+      const ic = document.getElementById('eye-toggle');
+      pw.type = pw.type === 'password' ? 'text' : 'password';
+      ic.className = pw.type === 'password' ? 'bi bi-eye eye-toggle' : 'bi bi-eye-slash eye-toggle';
+    }
+    window.togglePw = togglePw;
+
+    function showToast(m, t='info') {
+      const c = document.getElementById('toast-container');
+      const d = document.createElement('div'); d.className = `toast ${t} active`; d.textContent = m; c.appendChild(d);
+      setTimeout(() => d.remove(), 5000);
+    }
+
+    document.getElementById('admin-login-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const email    = document.getElementById('admin-email').value.trim();
+      const password = document.getElementById('admin-password').value;
+      const btn      = document.getElementById('admin-login-btn');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-arrow-clockwise" style="animation:spin 1s linear infinite;display:inline-block;"></i> Verifying...';
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        showToast('Access denied: ' + error.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-shield-lock-fill"></i> Access Hub';
+        return;
+      }
+
+      // Verify this is actually a super_admin
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+
+      if (!profile || profile.role !== 'super_admin') {
+        await supabase.auth.signOut();
+        showToast('Access denied: Not an authorized Bex admin account.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-shield-lock-fill"></i> Access Hub';
+        return;
+      }
+
+      // Confirmed super_admin — redirect to admin dashboard
+      window.location.href = 'admin/bex-dashboard.html';
+    };
+  </script>
+  <style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>
+</body>
+</html>

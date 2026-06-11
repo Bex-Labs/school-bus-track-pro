@@ -48,7 +48,7 @@
         <h1 class="auth-heading" id="auth-title">Welcome back</h1>
         <p class="auth-subtext" id="auth-subtext">Sign in to your portal — Driver, Parent, or Tenant Manager.</p>
 
-        <!-- Role Selector — Bex Admin hidden, revealed via ?bex=true -->
+        <!-- Role Selector — public roles only -->
         <div class="role-selector" id="role-selector">
           <button class="role-pill" data-role="driver" onclick="selectRole('driver')">
             <i class="bi bi-truck-front-fill"></i>Driver
@@ -58,9 +58,6 @@
           </button>
           <button class="role-pill" data-role="school_manager" onclick="selectRole('school_manager')">
             <i class="bi bi-building-gear"></i>Manager
-          </button>
-          <button class="role-pill" data-role="super_admin" onclick="selectRole('super_admin')" id="bex-admin-pill" style="display:none;">
-            <i class="bi bi-shield-lock-fill"></i>Bex Admin
           </button>
         </div>
 
@@ -252,18 +249,6 @@
       pw.type = pw.type === 'password' ? 'text' : 'password';
       icon.className = pw.type === 'password' ? 'bi bi-eye eye-toggle' : 'bi bi-eye-slash eye-toggle';
     }
-
-    // ── SECRET URL — reveal Bex Admin pill ───────────────────────────────
-    (function revealAdminIfSecret() {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('bex') === 'true') {
-        sessionStorage.setItem('bex_access', 'true');
-      }
-      if (sessionStorage.getItem('bex_access') === 'true') {
-        const pill = document.getElementById('bex-admin-pill');
-        if (pill) pill.style.display = '';
-      }
-    })();
 
     // ── URL PARAM HANDLER ────────────────────────────────────────────────
     (function handleURLParams() {
