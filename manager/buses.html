@@ -14,20 +14,25 @@
     .admin-main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--bg); }
     .admin-content { flex: 1; overflow-y: auto; padding: 24px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
 
-    /* Modals */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 2000; backdrop-filter: blur(4px); align-items: center; justify-content: center; }
     .modal-overlay.active { display: flex; }
     .modal-card { background: white; width: 95%; max-width: 480px; padding: 28px; border-radius: var(--r-xl); border: 1px solid var(--border); box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto; }
     .form-input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--r-md); margin-top: 4px; margin-bottom: 14px; outline: none; font-size: 13px; color: var(--navy); background: var(--bg); box-sizing: border-box; transition: border-color 0.2s; }
     .form-input:focus { border-color: var(--navy); }
 
-    /* KPIs */
+    /* Driver profile popup */
+    .driver-profile-popup { display: none; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--r-lg); padding: 16px; margin-bottom: 14px; animation: fadeIn 0.2s ease; }
+    .driver-profile-popup.show { display: flex; align-items: center; gap: 14px; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    .driver-avatar-lg { width: 56px; height: 56px; border-radius: 50%; background: var(--yellow); color: var(--navy); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; flex-shrink: 0; background-size: cover; background-position: center; border: 2px solid var(--border); }
+    .driver-info-row { font-size: 12px; color: var(--text-secondary); margin-top: 3px; display: flex; align-items: center; gap: 6px; }
+    .driver-info-row i { color: var(--navy); font-size: 11px; }
+
     .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
     .kpi-node { background: white; border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; text-align: center; }
     .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; }
     .kpi-value { font-size: 28px; font-weight: 900; color: var(--navy); line-height: 1; }
 
-    /* Bus cards grid */
     .buses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
     .bus-card-item { background: white; border: 1px solid var(--border); border-radius: var(--r-xl); padding: 20px; transition: 0.2s; position: relative; overflow: hidden; }
     .bus-card-item:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--navy); }
@@ -38,15 +43,19 @@
     .bus-status-dot.offline { background: #cbd5e1; }
     .bus-id-badge { font-size: 22px; font-weight: 900; color: var(--navy); font-family: monospace; letter-spacing: 1px; }
     .bus-meta { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
-    .bus-driver-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-full); padding: 4px 10px; font-size: 11px; font-weight: 700; color: var(--navy); margin-top: 10px; }
+    .bus-driver-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-full); padding: 4px 10px; font-size: 11px; font-weight: 700; color: var(--navy); margin-top: 10px; cursor: pointer; transition: 0.2s; }
+    .bus-driver-chip:hover { background: white; border-color: var(--navy); }
     .bus-actions { display: flex; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
     .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
     .empty-state i { font-size: 48px; display: block; margin-bottom: 16px; opacity: 0.4; }
 
-    /* Filter bar */
     .filter-deck { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
     .search-input { flex: 1; min-width: 180px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; }
     .status-select { padding: 0 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; color: var(--navy); height: 40px; }
+
+    /* Driver quick-view modal */
+    .driver-modal-card { background: white; width: 95%; max-width: 360px; padding: 28px; border-radius: var(--r-xl); border: 1px solid var(--border); box-shadow: var(--shadow-lg); text-align: center; }
+    .driver-modal-avatar { width: 80px; height: 80px; border-radius: 50%; background: var(--yellow); color: var(--navy); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; margin: 0 auto 16px; background-size: cover; background-position: center; border: 3px solid var(--border); }
 
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -58,7 +67,6 @@
       .admin-content { overflow: visible !important; padding: 16px 16px 100px 16px !important; }
       .admin-sidebar { display: none !important; }
       .admin-topbar { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; height: auto !important; padding: 16px !important; }
-      .topbar-title { font-size: 20px !important; }
       .kpi-grid { grid-template-columns: 1fr 1fr !important; }
       .buses-grid { grid-template-columns: 1fr !important; }
       .bottom-nav.mobile-only { height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center !important; background: var(--navy) !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 999 !important; }
@@ -81,7 +89,7 @@
 
     <label class="form-label">Bus ID <span style="color:var(--red);">*</span></label>
     <input type="text" id="bus-id-input" class="form-input" placeholder="e.g. BUS-001" required>
-    <small style="font-size:11px;color:var(--text-secondary);display:block;margin-top:-10px;margin-bottom:14px;">Unique identifier for this bus. Cannot be changed after creation.</small>
+    <small style="font-size:11px;color:var(--text-secondary);display:block;margin-top:-10px;margin-bottom:14px;">Unique identifier. Cannot be changed after creation.</small>
 
     <label class="form-label">Plate Number <span style="color:var(--red);">*</span></label>
     <input type="text" id="bus-plate" class="form-input" placeholder="e.g. LND-234-XY" required>
@@ -93,9 +101,23 @@
     <input type="text" id="bus-model" class="form-input" placeholder="e.g. Toyota Coaster 2022">
 
     <label class="form-label">Assign Driver (Optional)</label>
-    <select id="bus-driver" class="form-input" style="height:40px;">
+    <select id="bus-driver" class="form-input" style="height:40px;" onchange="onDriverSelect(this.value)">
       <option value="">No driver assigned</option>
     </select>
+
+    <!-- Driver profile preview — appears when a driver is selected -->
+    <div class="driver-profile-popup" id="driver-preview">
+      <div class="driver-avatar-lg" id="preview-avatar">?</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:800;font-size:14px;color:var(--navy);" id="preview-name">---</div>
+        <div class="driver-info-row"><i class="bi bi-envelope-fill"></i><span id="preview-email">---</span></div>
+        <div class="driver-info-row"><i class="bi bi-telephone-fill"></i><span id="preview-phone">---</span></div>
+        <div class="driver-info-row" id="preview-bus-wrap" style="display:none;">
+          <i class="bi bi-bus-front-fill" style="color:var(--yellow);"></i>
+          <span id="preview-current-bus" style="color:#f59e0b;font-weight:700;"></span>
+        </div>
+      </div>
+    </div>
 
     <div style="display:flex;gap:12px;margin-top:8px;">
       <button class="btn btn-yellow btn-full" style="font-weight:800;" id="btn-save-bus" onclick="saveBus()">
@@ -116,6 +138,33 @@
       <button class="btn btn-red" style="font-weight:800;" id="btn-confirm-delete" onclick="confirmDelete()">Delete</button>
       <button class="btn btn-ghost" onclick="closeModal('delete-modal')">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- Driver Quick-View Modal (from bus card chip click) -->
+<div class="modal-overlay" id="driver-view-modal">
+  <div class="driver-modal-card">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+      <i class="bi bi-x-lg" style="cursor:pointer;" onclick="closeModal('driver-view-modal')"></i>
+    </div>
+    <div class="driver-modal-avatar" id="dvm-avatar">?</div>
+    <h3 style="font-weight:900;font-size:18px;color:var(--navy);margin-bottom:4px;" id="dvm-name">---</h3>
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px;margin-bottom:16px;">Driver</div>
+    <div style="text-align:left;display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-radius:var(--r-md);font-size:13px;">
+        <i class="bi bi-envelope-fill" style="color:var(--navy);"></i>
+        <span id="dvm-email" style="font-weight:600;color:var(--navy);">---</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-radius:var(--r-md);font-size:13px;">
+        <i class="bi bi-telephone-fill" style="color:var(--navy);"></i>
+        <span id="dvm-phone" style="font-weight:600;color:var(--navy);">---</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-radius:var(--r-md);font-size:13px;">
+        <i class="bi bi-bus-front-fill" style="color:var(--yellow);"></i>
+        <span id="dvm-bus" style="font-weight:600;color:var(--navy);">---</span>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-full" onclick="closeModal('driver-view-modal')">Close</button>
   </div>
 </div>
 
@@ -163,7 +212,6 @@
     </header>
 
     <div class="admin-content">
-      <!-- KPIs -->
       <div class="kpi-grid">
         <div class="kpi-node"><div class="kpi-label">Total Buses</div><div class="kpi-value" id="kpi-total">0</div></div>
         <div class="kpi-node"><div class="kpi-label">Active</div><div class="kpi-value" style="color:var(--green);" id="kpi-active">0</div></div>
@@ -171,7 +219,6 @@
         <div class="kpi-node"><div class="kpi-label">Unassigned</div><div class="kpi-value" style="color:#f59e0b;" id="kpi-unassigned">0</div></div>
       </div>
 
-      <!-- Filters -->
       <div class="filter-deck">
         <input type="text" id="search-bar" class="search-input" placeholder="Search bus ID or plate...">
         <select id="status-filter" class="status-select">
@@ -181,7 +228,6 @@
         </select>
       </div>
 
-      <!-- Bus Cards -->
       <div class="buses-grid" id="buses-grid">
         <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-muted);">
           <i class="bi bi-arrow-clockwise spin" style="font-size:28px;display:block;margin-bottom:12px;"></i>
@@ -216,7 +262,6 @@
 
   const ORG_ID = profile.organization_id;
 
-  // Sidebar
   const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
   document.getElementById('sidebar-school-name').innerHTML = `${org?.name || 'Your School'} <small>Manager Console</small>`;
   document.getElementById('sidebar-manager-name').textContent = profile.full_name || 'Manager';
@@ -227,9 +272,10 @@
   let allDrivers = [];
   let pendingDeleteId = null;
 
-  // ── Load drivers for assignment dropdown ─────────────────────────────
+  // ── Load drivers ────────────────────────────────────────────────────────
   async function loadDrivers() {
-    const { data } = await supabase.from('profiles').select('id, full_name, bus_id')
+    const { data } = await supabase.from('profiles')
+      .select('id, full_name, bus_id, email, phone, avatar_url')
       .eq('organization_id', ORG_ID).eq('role', 'driver').order('full_name');
     allDrivers = data || [];
     refreshDriverDropdown();
@@ -239,16 +285,79 @@
     const sel = document.getElementById('bus-driver');
     sel.innerHTML = '<option value="">No driver assigned</option>' +
       allDrivers.map(d => {
-        const assigned = d.bus_id && d.bus_id !== (document.getElementById('bus-edit-id').value || '__new__')
-          ? ` (assigned: ${d.bus_id})` : '';
+        const editId = document.getElementById('bus-edit-id').value || '__new__';
+        const assigned = d.bus_id && d.bus_id !== editId ? ` (on: ${d.bus_id})` : '';
         return `<option value="${d.id}" ${d.id === selectedDriverId ? 'selected' : ''}>${d.full_name}${assigned}</option>`;
       }).join('');
+    // Trigger preview for pre-selected driver
+    if (selectedDriverId) onDriverSelect(selectedDriverId);
+    else hideDriverPreview();
   }
 
-  // ── Load buses ────────────────────────────────────────────────────────
+  // ── Driver preview in modal ──────────────────────────────────────────────
+  window.onDriverSelect = (driverId) => {
+    const preview = document.getElementById('driver-preview');
+    if (!driverId) { hideDriverPreview(); return; }
+
+    const d = allDrivers.find(x => x.id === driverId);
+    if (!d) { hideDriverPreview(); return; }
+
+    // Avatar
+    const av = document.getElementById('preview-avatar');
+    if (d.avatar_url) {
+      av.style.backgroundImage = `url(${d.avatar_url})`;
+      av.style.backgroundSize  = 'cover';
+      av.textContent = '';
+    } else {
+      av.style.backgroundImage = 'none';
+      av.textContent = d.full_name.charAt(0).toUpperCase();
+    }
+
+    document.getElementById('preview-name').textContent  = d.full_name;
+    document.getElementById('preview-email').textContent = d.email || 'No email';
+    document.getElementById('preview-phone').textContent = d.phone || 'No phone';
+
+    const editId = document.getElementById('bus-edit-id').value;
+    const busWrap = document.getElementById('preview-bus-wrap');
+    if (d.bus_id && d.bus_id !== editId) {
+      document.getElementById('preview-current-bus').textContent = `Already on bus ${d.bus_id} — will be reassigned`;
+      busWrap.style.display = 'flex';
+    } else {
+      busWrap.style.display = 'none';
+    }
+
+    preview.classList.add('show');
+  };
+
+  function hideDriverPreview() {
+    document.getElementById('driver-preview').classList.remove('show');
+  }
+
+  // ── Driver quick-view from bus card ─────────────────────────────────────
+  window.viewDriverFromCard = (driverId) => {
+    const d = allDrivers.find(x => x.id === driverId);
+    if (!d) return;
+
+    const av = document.getElementById('dvm-avatar');
+    if (d.avatar_url) {
+      av.style.backgroundImage = `url(${d.avatar_url})`;
+      av.style.backgroundSize  = 'cover';
+      av.textContent = '';
+    } else {
+      av.style.backgroundImage = 'none';
+      av.textContent = d.full_name.charAt(0).toUpperCase();
+    }
+
+    document.getElementById('dvm-name').textContent  = d.full_name;
+    document.getElementById('dvm-email').textContent = d.email || 'No email on file';
+    document.getElementById('dvm-phone').textContent = d.phone || 'No phone on file';
+    document.getElementById('dvm-bus').textContent   = d.bus_id ? `Assigned to Bus ${d.bus_id}` : 'No bus assigned';
+    openModal('driver-view-modal');
+  };
+
+  // ── Load buses ──────────────────────────────────────────────────────────
   async function loadBuses() {
-    const { data, error } = await supabase.from('buses').select('*')
-      .eq('organization_id', ORG_ID).order('id');
+    const { data, error } = await supabase.from('buses').select('*').eq('organization_id', ORG_ID).order('id');
     if (error) { showToast('Failed to load buses: ' + error.message, 'error'); return; }
     allBuses = data || [];
     updateKPIs(allBuses);
@@ -256,15 +365,15 @@
   }
 
   function updateKPIs(buses) {
-    document.getElementById('kpi-total').textContent     = buses.length;
-    document.getElementById('kpi-active').textContent    = buses.filter(b => b.status === 'active').length;
-    document.getElementById('kpi-offline').textContent   = buses.filter(b => b.status !== 'active').length;
+    document.getElementById('kpi-total').textContent      = buses.length;
+    document.getElementById('kpi-active').textContent     = buses.filter(b => b.status === 'active').length;
+    document.getElementById('kpi-offline').textContent    = buses.filter(b => b.status !== 'active').length;
     document.getElementById('kpi-unassigned').textContent = buses.filter(b => !b.driver_id).length;
   }
 
   function renderGrid(buses) {
-    const grid   = document.getElementById('buses-grid');
-    const term   = document.getElementById('search-bar').value.toLowerCase();
+    const grid    = document.getElementById('buses-grid');
+    const term    = document.getElementById('search-bar').value.toLowerCase();
     const statusF = document.getElementById('status-filter').value;
 
     const filtered = buses.filter(b => {
@@ -287,8 +396,13 @@
       const isActive = b.status === 'active';
       const driver   = allDrivers.find(d => d.id === b.driver_id);
       const driverChip = driver
-        ? `<div class="bus-driver-chip"><i class="bi bi-person-fill" style="color:var(--green);"></i>${driver.full_name}</div>`
-        : `<div class="bus-driver-chip" style="color:var(--text-muted);border-style:dashed;"><i class="bi bi-person-dash"></i> No driver assigned</div>`;
+        ? `<div class="bus-driver-chip" onclick="viewDriverFromCard('${driver.id}')" title="View driver profile">
+             <i class="bi bi-person-fill" style="color:var(--green);"></i>${driver.full_name}
+             <i class="bi bi-info-circle" style="font-size:10px;opacity:0.5;"></i>
+           </div>`
+        : `<div class="bus-driver-chip" style="color:var(--text-muted);border-style:dashed;cursor:default;">
+             <i class="bi bi-person-dash"></i> No driver assigned
+           </div>`;
 
       return `<div class="bus-card-item ${isActive ? 'active-bus' : 'offline-bus'}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
@@ -300,105 +414,78 @@
               ${b.plate_number ? ` · ${b.plate_number}` : ''}
             </div>
           </div>
-          <span class="badge ${isActive ? 'badge-green' : 'badge-red'}" style="font-size:10px;">${(b.status || 'offline').toUpperCase()}</span>
+          <span class="badge ${isActive ? 'badge-green' : 'badge-red'}" style="font-size:10px;">${(b.status||'offline').toUpperCase()}</span>
         </div>
-        ${b.model ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;"><i class="bi bi-truck-front"></i> ${b.model}</div>` : ''}
+        ${b.model    ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;"><i class="bi bi-truck-front"></i> ${b.model}</div>` : ''}
         ${b.capacity ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;"><i class="bi bi-people-fill"></i> ${b.capacity} seats</div>` : ''}
         <div style="margin-top:8px;">${driverChip}</div>
         <div class="bus-actions">
-          <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openEditBus('${b.id}')">
-            <i class="bi bi-pencil"></i> Edit
-          </button>
-          <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openDeleteBus('${b.id}')">
-            <i class="bi bi-trash text-red"></i> Delete
-          </button>
+          <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openEditBus('${b.id}')"><i class="bi bi-pencil"></i> Edit</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openDeleteBus('${b.id}')"><i class="bi bi-trash text-red"></i> Delete</button>
         </div>
       </div>`;
     }).join('');
   }
 
-  // ── Open Add modal ────────────────────────────────────────────────────
   window.openAddBus = () => {
-    document.getElementById('bus-modal-title').textContent = 'Add Bus';
-    document.getElementById('bus-edit-id').value   = '';
-    document.getElementById('bus-id-input').value  = '';
-    document.getElementById('bus-id-input').readOnly = false;
+    document.getElementById('bus-modal-title').textContent  = 'Add Bus';
+    document.getElementById('bus-edit-id').value            = '';
+    document.getElementById('bus-id-input').value           = '';
+    document.getElementById('bus-id-input').readOnly        = false;
     document.getElementById('bus-id-input').style.background = '';
-    document.getElementById('bus-plate').value     = '';
-    document.getElementById('bus-capacity').value  = '';
-    document.getElementById('bus-model').value     = '';
+    document.getElementById('bus-plate').value              = '';
+    document.getElementById('bus-capacity').value           = '';
+    document.getElementById('bus-model').value              = '';
+    hideDriverPreview();
     refreshDriverDropdown();
     openModal('bus-modal');
   };
 
-  // ── Open Edit modal ───────────────────────────────────────────────────
   window.openEditBus = (id) => {
     const b = allBuses.find(x => x.id === id); if (!b) return;
-    document.getElementById('bus-modal-title').textContent = 'Edit Bus';
-    document.getElementById('bus-edit-id').value   = b.id;
-    document.getElementById('bus-id-input').value  = b.id;
-    document.getElementById('bus-id-input').readOnly = true; // ID locked on edit
+    document.getElementById('bus-modal-title').textContent  = 'Edit Bus';
+    document.getElementById('bus-edit-id').value            = b.id;
+    document.getElementById('bus-id-input').value           = b.id;
+    document.getElementById('bus-id-input').readOnly        = true;
     document.getElementById('bus-id-input').style.background = '#f8fafc';
-    document.getElementById('bus-plate').value     = b.plate_number || '';
-    document.getElementById('bus-capacity').value  = b.capacity || '';
-    document.getElementById('bus-model').value     = b.model || '';
+    document.getElementById('bus-plate').value              = b.plate_number || '';
+    document.getElementById('bus-capacity').value           = b.capacity || '';
+    document.getElementById('bus-model').value              = b.model || '';
     refreshDriverDropdown(b.driver_id || '');
     openModal('bus-modal');
   };
 
-  // ── Save bus (add or edit) ────────────────────────────────────────────
   window.saveBus = async () => {
-    const btn        = document.getElementById('btn-save-bus');
-    const editId     = document.getElementById('bus-edit-id').value;
-    const busId      = document.getElementById('bus-id-input').value.trim().toUpperCase();
-    const plate      = document.getElementById('bus-plate').value.trim().toUpperCase();
-    const capacity   = parseInt(document.getElementById('bus-capacity').value) || null;
-    const model      = document.getElementById('bus-model').value.trim() || null;
-    const driverId   = document.getElementById('bus-driver').value || null;
+    const btn      = document.getElementById('btn-save-bus');
+    const editId   = document.getElementById('bus-edit-id').value;
+    const busId    = document.getElementById('bus-id-input').value.trim().toUpperCase();
+    const plate    = document.getElementById('bus-plate').value.trim().toUpperCase();
+    const capacity = parseInt(document.getElementById('bus-capacity').value) || null;
+    const model    = document.getElementById('bus-model').value.trim() || null;
+    const driverId = document.getElementById('bus-driver').value || null;
 
     if (!busId) { showToast('Bus ID is required.', 'error'); return; }
     if (!plate) { showToast('Plate number is required.', 'error'); return; }
 
     btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Saving...';
 
-    const busData = {
-      plate_number:    plate,
-      capacity,
-      model,
-      driver_id:       driverId,
-      organization_id: ORG_ID,
-      status:          'offline'
-    };
-
+    const busData = { plate_number: plate, capacity, model, driver_id: driverId, organization_id: ORG_ID, status: 'offline' };
     let error;
 
     if (editId) {
-      // Update existing
       ({ error } = await supabase.from('buses').update(busData).eq('id', editId).eq('organization_id', ORG_ID));
-
-      // Update old driver — unassign if different
       const oldBus = allBuses.find(b => b.id === editId);
       if (oldBus?.driver_id && oldBus.driver_id !== driverId) {
         await supabase.from('profiles').update({ bus_id: null }).eq('id', oldBus.driver_id);
       }
     } else {
-      // Insert new — check for duplicate ID
       const { data: existing } = await supabase.from('buses').select('id').eq('id', busId).single();
-      if (existing) {
-        showToast(`Bus ID "${busId}" already exists.`, 'error');
-        btn.disabled = false; btn.innerHTML = '<i class="bi bi-bus-front-fill"></i> Save Bus';
-        return;
-      }
+      if (existing) { showToast(`Bus ID "${busId}" already exists.`, 'error'); btn.disabled = false; btn.innerHTML = '<i class="bi bi-bus-front-fill"></i> Save Bus'; return; }
       ({ error } = await supabase.from('buses').insert([{ id: busId, ...busData }]));
     }
 
-    if (error) {
-      showToast('Save failed: ' + error.message, 'error');
-      btn.disabled = false; btn.innerHTML = '<i class="bi bi-bus-front-fill"></i> Save Bus';
-      return;
-    }
+    if (error) { showToast('Save failed: ' + error.message, 'error'); btn.disabled = false; btn.innerHTML = '<i class="bi bi-bus-front-fill"></i> Save Bus'; return; }
 
-    // Assign driver — update profiles.bus_id
     if (driverId) {
       await supabase.from('profiles').update({ bus_id: editId || busId }).eq('id', driverId);
     }
@@ -406,11 +493,9 @@
     btn.disabled = false; btn.innerHTML = '<i class="bi bi-bus-front-fill"></i> Save Bus';
     closeModal('bus-modal');
     showToast(editId ? 'Bus updated.' : 'Bus added.', 'success');
-    await loadDrivers();
-    await loadBuses();
+    await loadDrivers(); await loadBuses();
   };
 
-  // ── Delete bus ────────────────────────────────────────────────────────
   window.openDeleteBus = (id) => {
     pendingDeleteId = id;
     document.getElementById('delete-confirm-msg').textContent = `Delete bus "${id}"? This cannot be undone. The assigned driver will be unassigned.`;
@@ -421,47 +506,33 @@
     if (!pendingDeleteId) return;
     const btn = document.getElementById('btn-confirm-delete');
     btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
-
-    // Unassign driver first
     const bus = allBuses.find(b => b.id === pendingDeleteId);
-    if (bus?.driver_id) {
-      await supabase.from('profiles').update({ bus_id: null }).eq('id', bus.driver_id);
-    }
-
+    if (bus?.driver_id) await supabase.from('profiles').update({ bus_id: null }).eq('id', bus.driver_id);
     const { error } = await supabase.from('buses').delete().eq('id', pendingDeleteId).eq('organization_id', ORG_ID);
     btn.disabled = false; btn.innerHTML = 'Delete';
-
     if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
-    closeModal('delete-modal');
-    pendingDeleteId = null;
+    closeModal('delete-modal'); pendingDeleteId = null;
     showToast('Bus removed.', 'success');
-    await loadDrivers();
-    await loadBuses();
+    await loadDrivers(); await loadBuses();
   };
 
-  // ── Filters ───────────────────────────────────────────────────────────
-  document.getElementById('search-bar').oninput    = () => renderGrid(allBuses);
+  document.getElementById('search-bar').oninput     = () => renderGrid(allBuses);
   document.getElementById('status-filter').onchange = () => renderGrid(allBuses);
 
-  // ── Realtime ──────────────────────────────────────────────────────────
   supabase.channel(`buses-${ORG_ID}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'buses', filter: `organization_id=eq.${ORG_ID}` }, async () => {
-      await loadDrivers(); await loadBuses();
-    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'buses', filter: `organization_id=eq.${ORG_ID}` }, async () => { await loadDrivers(); await loadBuses(); })
     .subscribe();
 
   window.openModal  = (id) => document.getElementById(id).classList.add('active');
   window.closeModal = (id) => document.getElementById(id).classList.remove('active');
 
-  function showToast(m, t = 'info') {
+  function showToast(m, t='info') {
     const c = document.getElementById('toast-container');
     const d = document.createElement('div'); d.className = `toast ${t} active`; d.textContent = m; c.appendChild(d);
     setTimeout(() => d.remove(), 4000);
   }
 
-  // ── Init ──────────────────────────────────────────────────────────────
-  await loadDrivers();
-  await loadBuses();
+  await loadDrivers(); await loadBuses();
 </script>
 </body>
 </html>

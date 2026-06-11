@@ -79,6 +79,7 @@
         </p>
 
         <!-- Role Selector -->
+        <!-- Bex Admin pill hidden by default — accessible via ?bex=true only -->
         <div class="role-selector" id="role-selector">
           <button class="role-pill" data-role="driver" onclick="selectRole('driver')">
             <i class="bi bi-truck-front-fill"></i>Driver
@@ -89,7 +90,7 @@
           <button class="role-pill" data-role="school_manager" onclick="selectRole('school_manager')">
             <i class="bi bi-building-gear"></i>Manager
           </button>
-          <button class="role-pill" data-role="super_admin" onclick="selectRole('super_admin')">
+          <button class="role-pill" data-role="super_admin" onclick="selectRole('super_admin')" id="bex-admin-pill" style="display:none;">
             <i class="bi bi-shield-lock-fill"></i>Bex Admin
           </button>
         </div>
@@ -284,6 +285,24 @@
         icon.className = 'bi bi-eye eye-toggle';
       }
     }
+
+    // ── SECRET URL HANDLER — reveal Bex Admin pill ────────────────────────
+    // Access via: index.html?bex=true
+    // Share this link only with Bex team staff
+    (function revealAdminIfSecret() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('bex') === 'true') {
+        const pill = document.getElementById('bex-admin-pill');
+        if (pill) pill.style.display = '';
+        // Store in session so it persists on reload within same tab
+        sessionStorage.setItem('bex_access', 'true');
+      }
+      // Restore from session storage
+      if (sessionStorage.getItem('bex_access') === 'true') {
+        const pill = document.getElementById('bex-admin-pill');
+        if (pill) pill.style.display = '';
+      }
+    })();
 
     // ── URL PARAM HANDLER ─────────────────────────────────────────────────
     // Reads ?mode, ?role, ?code, ?email from URL and pre-fills the form

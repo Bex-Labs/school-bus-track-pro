@@ -2,6 +2,10 @@
  * AUTH.JS — Authentication & Role-Based Multi-Tenant Routing
  * Tenant model: organizations table, organization_id on profiles
  * Roles: super_admin | school_manager | driver | parent
+ *
+ * FIX: Role routing is ALWAYS based on profiles.role from DB.
+ * The role pill on the login page only affects signup form fields.
+ * It NEVER affects which dashboard a user is routed to after login.
  */
 
 import { supabase, getUserRole } from './config.js';
@@ -22,9 +26,7 @@ function rootPath(path) {
 
 // ─── Generate a URL-safe subdomain slug from a school name ────────────────
 function slugify(name) {
-  return name
-    .toLowerCase()
-    .trim()
+  return name.toLowerCase().trim()
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
@@ -35,59 +37,28 @@ async function resolveActiveTenant() {
   window.activeTenantId = null;
   const host = window.location.hostname;
 
-  // Skip on local environments
-  if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')) {
-    console.log('🛠️ Local environment — subdomain tenant resolution bypassed.');
-    return;
-  }
+  if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')) return;
 
-  // Skip on Vercel preview/production deployments and other known hosting platforms
-  // These are not school subdomains — they are the root app deployment
   const isHostingPlatform = (
-    host.endsWith('.vercel.app') ||
-    host.endsWith('.netlify.app') ||
-    host.endsWith('.pages.dev') ||
-    host.endsWith('.github.io') ||
-    host.endsWith('.onrender.com') ||
-    host.endsWith('.railway.app') ||
-    host.endsWith('.fly.dev')
+    host.endsWith('.vercel.app') || host.endsWith('.netlify.app') ||
+    host.endsWith('.pages.dev')  || host.endsWith('.github.io') ||
+    host.endsWith('.onrender.com') || host.endsWith('.railway.app') || host.endsWith('.fly.dev')
   );
-
-  if (isHostingPlatform) {
-    console.log('🌐 Hosting platform detected — subdomain tenant resolution bypassed.');
-    return;
-  }
+  if (isHostingPlatform) return;
 
   const parts = host.split('.');
+  if (parts.length <= 2 || ['www', 'admin', 'app'].includes(parts[0])) return;
 
-  // Root domain (e.g. yourdomain.com) or known non-tenant subdomains
-  if (parts.length <= 2 || ['www', 'admin', 'app'].includes(parts[0])) {
-    console.log('🌐 Root domain — no tenant context attached.');
-    return;
-  }
-
-  // Only reach here if URL is a real school subdomain e.g. greenwood.yourdomain.com
   const subToken = parts[0].toLowerCase().trim();
-
-  const { data: org, error } = await supabase
-    .from('organizations')
-    .select('id, name')
-    .eq('subdomain', subToken)
-    .single();
+  const { data: org, error } = await supabase.from('organizations').select('id, name').eq('subdomain', subToken).single();
 
   if (!error && org) {
     window.activeTenantId = org.id;
-
     const brandHeader = document.getElementById('login-school-title');
     if (brandHeader) brandHeader.innerHTML = `${org.name} <span>Command Engine</span>`;
-
     const subText = document.getElementById('visual-dynamic-subtext');
     if (subText) subText.textContent = `Exclusive logistics terminal for ${org.name}. Powered by School Bus Track Pro.`;
-
-    console.log(`✅ Tenant locked: ${org.name} [${org.id}]`);
-  } else {
-    // Only show error if we genuinely tried a school subdomain and failed
-    console.warn(`⚠️ Subdomain "${subToken}" not found in organizations table.`);
+  } else if (subToken) {
     showToast('Invalid or unrecognised school domain.', 'error');
   }
 }
@@ -107,7 +78,7 @@ if (supabase) {
     ) return;
 
     if (event === 'SIGNED_IN' && session && isAuthPage) {
-      redirectByRole(session.user);
+      redirectByRole();
     }
 
     if (event === 'SIGNED_OUT') {
@@ -123,8 +94,13 @@ if (supabase) {
 }
 
 // ─── Redirect user to their role dashboard ────────────────────────────────
-async function redirectByRole(user) {
+// ALWAYS reads role from DB — never from UI selection
+async function redirectByRole() {
   const role = await getUserRole();
+  if (!role) {
+    showToast('Could not determine account role. Please contact support.', 'error');
+    return;
+  }
   const path = ROLE_REDIRECTS[role] || ROLE_REDIRECTS.parent;
   const targetFolder = path.split('/')[1];
   if (window.location.pathname.includes(`/${targetFolder}/`)) return;
@@ -152,13 +128,10 @@ if (loginForm && supabase) {
       return;
     }
 
-    // Tenant isolation check — only applies when on a school subdomain
+    // Tenant isolation check — only on school subdomains
     if (window.activeTenantId) {
       const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id, role')
-        .eq('id', data.user.id)
-        .single();
+        .from('profiles').select('organization_id, role').eq('id', data.user.id).single();
 
       if (profile && profile.role !== 'super_admin') {
         if (profile.organization_id !== window.activeTenantId) {
@@ -175,7 +148,8 @@ if (loginForm && supabase) {
       localStorage.setItem('sbtp_remember', email);
     }
 
-    redirectByRole(data.user);
+    // ── Route by DB role — ignore role pill completely ────────────────────
+    await redirectByRole();
   });
 
   // Restore remembered email
@@ -200,75 +174,46 @@ if (signupForm && supabase) {
     const role     = window.selectedRole || 'parent';
     const btn      = document.getElementById('signup-btn');
 
+    // ── Block super_admin self-registration ───────────────────────────────
+    // Super admins are created only by the Bex team directly in the DB
+    if (role === 'super_admin') {
+      showToast('Super admin accounts cannot be self-registered.', 'error');
+      return;
+    }
+
     let targetOrgId = null;
 
-    // ── SUPER ADMIN: no org needed ────────────────────────────────────────
-    if (role === 'super_admin') {
-      targetOrgId = null;
-
     // ── SCHOOL MANAGER: create a new organization ─────────────────────────
-    } else if (role === 'school_manager') {
+    if (role === 'school_manager') {
       const schoolNameInput = document.getElementById('signup-school-name');
       const schoolName = schoolNameInput ? schoolNameInput.value.trim() : '';
-
-      if (!schoolName) {
-        showToast('Please enter your school name.', 'error');
-        return;
-      }
+      if (!schoolName) { showToast('Please enter your school name.', 'error'); return; }
 
       const subdomain = slugify(schoolName);
+      const { data: existing } = await supabase.from('organizations').select('id').eq('subdomain', subdomain).single();
+      if (existing) { showToast('A school with that name already exists. Try a more specific name.', 'error'); return; }
 
-      // Check subdomain isn't already taken
-      const { data: existing } = await supabase
-        .from('organizations')
-        .select('id')
-        .eq('subdomain', subdomain)
-        .single();
-
-      if (existing) {
-        showToast('A school with that name already exists. Try a more specific name.', 'error');
-        return;
-      }
-
-      // Create the organization
       const { data: newOrg, error: orgError } = await supabase
         .from('organizations')
-        .insert({ name: schoolName, subdomain: subdomain, account_status: 'active' })
-        .select('id')
-        .single();
+        .insert({ name: schoolName, subdomain, account_status: 'active' })
+        .select('id').single();
 
-      if (orgError || !newOrg) {
-        showToast('Failed to create school. Please try again.', 'error');
-        return;
-      }
-
+      if (orgError || !newOrg) { showToast('Failed to create school. Please try again.', 'error'); return; }
       targetOrgId = newOrg.id;
 
     // ── DRIVER / PARENT: join via school code ─────────────────────────────
     } else {
-      // If already on a subdomain, tenant is already resolved
       targetOrgId = window.activeTenantId;
 
       if (!targetOrgId) {
         const codeInput = document.getElementById('signup-tenant-code');
         const code = codeInput ? codeInput.value.toLowerCase().trim().replace(/\s+/g, '-') : '';
-
-        if (!code) {
-          showToast('Please enter your School ID / Code.', 'error');
-          return;
-        }
+        if (!code) { showToast('Please enter your School ID / Code.', 'error'); return; }
 
         const { data: org, error: orgError } = await supabase
-          .from('organizations')
-          .select('id')
-          .eq('subdomain', code)
-          .single();
+          .from('organizations').select('id').eq('subdomain', code).single();
 
-        if (orgError || !org) {
-          showToast('School not found. Check the code and try again.', 'error');
-          return;
-        }
-
+        if (orgError || !org) { showToast('School not found. Check the code and try again.', 'error'); return; }
         targetOrgId = org.id;
       }
     }
@@ -276,17 +221,11 @@ if (signupForm && supabase) {
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Creating profile...';
 
-    // ── Create auth user ──────────────────────────────────────────────────
     const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
+      email, password,
       options: {
-        emailRedirectTo: window.location.origin + rootPath('confirm.html'),
-        data: {
-          full_name: name,
-          role: role,
-          organization_id: targetOrgId,
-        }
+        emailRedirectTo: window.location.origin + '/confirm.html',
+        data: { full_name: name, role, organization_id: targetOrgId }
       }
     });
 
@@ -297,25 +236,20 @@ if (signupForm && supabase) {
       return;
     }
 
-    // ── Write to profiles table ───────────────────────────────────────────
     if (data.user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          full_name: name,
-          role: role,
-          organization_id: targetOrgId,
-          email: email,
-        })
-        .eq('id', data.user.id);
+      // Write profile — role comes from the form selection, not user_metadata
+      const { error: profileError } = await supabase.from('profiles').upsert({
+        id:              data.user.id,
+        full_name:       name,
+        role:            role,
+        organization_id: targetOrgId,
+        email:           email,
+      }, { onConflict: 'id' });
 
       if (profileError) {
-        // Profile may not exist yet if email confirmation is required — that's OK.
-        // The trigger or confirm.html should handle final profile setup.
-        console.warn('Profile update deferred — awaiting email confirmation.', profileError.message);
+        console.warn('Profile upsert deferred — awaiting email confirmation.', profileError.message);
       }
 
-      // Show the generated school code to the manager so they can share it
       if (role === 'school_manager' && targetOrgId) {
         const subdomain = slugify(document.getElementById('signup-school-name').value.trim());
         showToast(`School created! Share this code with your staff: ${subdomain}`, 'success', 8000);
@@ -331,32 +265,6 @@ if (signupForm && supabase) {
   });
 }
 
-// ─── GOOGLE OAUTH ─────────────────────────────────────────────────────────
-const googleBtn = document.getElementById('google-btn');
-if (googleBtn && supabase) {
-  googleBtn.addEventListener('click', async () => {
-    const role = window.selectedRole || 'parent';
-    const targetOrgId = role === 'super_admin' ? null : (window.activeTenantId || null);
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin + rootPath('confirm.html'),
-        data: {
-          role: role,
-          organization_id: targetOrgId,
-        },
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent'
-        }
-      }
-    });
-
-    if (error) showToast(error.message, 'error');
-  });
-}
-
 // ─── FORGOT PASSWORD ──────────────────────────────────────────────────────
 const forgotForm = document.getElementById('forgot-form');
 if (forgotForm && supabase) {
@@ -364,12 +272,14 @@ if (forgotForm && supabase) {
     e.preventDefault();
     const email = document.getElementById('email').value.trim();
     const btn   = document.getElementById('send-btn');
-
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Sending...';
 
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const BASE_URL = isLocalhost ? 'http://localhost:3000' : 'https://bustrack-alpha.vercel.app';
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + rootPath('reset-password.html')
+      redirectTo: `${BASE_URL}/reset-password.html`
     });
 
     if (error) {
@@ -380,7 +290,7 @@ if (forgotForm && supabase) {
     }
 
     document.getElementById('step-request').style.display = 'none';
-    document.getElementById('step-sent').style.display   = 'block';
+    document.getElementById('step-sent').style.display    = 'block';
     document.getElementById('sent-to').textContent = email;
   });
 }
@@ -394,8 +304,8 @@ if (resetForm && supabase) {
     const cpw = document.getElementById('confirm-password').value;
     const btn = document.getElementById('reset-btn');
 
-    if (pw !== cpw)     { showToast('Passwords do not match.', 'error'); return; }
-    if (pw.length < 8)  { showToast('Password must be at least 8 characters.', 'error'); return; }
+    if (pw !== cpw)    { showToast('Passwords do not match.', 'error'); return; }
+    if (pw.length < 8) { showToast('Password must be at least 8 characters.', 'error'); return; }
 
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Updating...';
@@ -409,6 +319,7 @@ if (resetForm && supabase) {
       return;
     }
 
+    await supabase.auth.signOut();
     document.getElementById('step-reset').style.display = 'none';
     document.getElementById('step-done').style.display  = 'block';
   });

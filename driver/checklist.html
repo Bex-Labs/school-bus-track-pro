@@ -223,6 +223,7 @@
     const notes    = document.getElementById('notes').value || '';
 
     if (!odometer) { alert('Please enter the odometer reading.'); return; }
+    if (!busId)    { alert('No bus assigned to your profile. Contact your manager.'); return; }
 
     btn.disabled  = true;
     btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Logging...';
@@ -230,22 +231,27 @@
     try {
       const timestamp = new Date().toISOString();
 
-      // Write to inspections table — scoped to org
+      // Write to inspections table — scoped to org, includes bus_id
       const { error: inspErr } = await supabase.from('inspections').insert([{
-        driver_id:       USER_ID,
+        driver_id:        USER_ID,
+        bus_id:           busId,
         odometer_reading: parseInt(odometer),
-        notes,
-        status:          'completed',
-        organization_id: ORG_ID,
-        timestamp
+        notes:            notes,
+        status:           'completed',
+        organization_id:  ORG_ID,
+        timestamp:        timestamp
       }]);
-      if (inspErr) throw inspErr;
+
+      if (inspErr) {
+        console.error('Inspection insert error:', inspErr);
+        throw new Error(inspErr.message);
+      }
 
       // Log to notifications — scoped to org
       await supabase.from('notifications').insert([{
         user_id:         USER_ID,
         title:           '✅ DAILY INSPECTION PASSED',
-        message:         `Pre-trip safety check cleared for Bus ${busId || 'N/A'}. Odometer: ${parseInt(odometer)} km.`,
+        message:         `Pre-trip safety check cleared for Bus ${busId}. Odometer: ${parseInt(odometer)} km.`,
         type:            'info',
         status:          'logged',
         organization_id: ORG_ID,
@@ -256,9 +262,15 @@
       window.location.href = 'dashboard.html';
 
     } catch (err) {
-      alert('Inspection log failed: ' + err.message);
+      console.error('Checklist submission failed:', err.message);
       btn.disabled  = false;
-      updateProgressUI();
+      btn.innerHTML = '<i class="bi bi-check-all"></i> Submit Inspection';
+      // Show detailed error
+      const toast = document.createElement('div');
+      toast.className = 'toast error active';
+      toast.textContent = 'Submission failed: ' + err.message;
+      document.getElementById('toast-container').appendChild(toast);
+      setTimeout(() => toast.remove(), 6000);
     }
   });
 </script>
