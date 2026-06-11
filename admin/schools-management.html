@@ -119,7 +119,7 @@
       <div class="nav-group-label">System Management</div>
       <a href="users-directory.html" class="nav-link"><i class="bi bi-people-fill"></i><span>User Directory</span></a>
       <a href="analytics-room.html" class="nav-link"><i class="bi bi-graph-up-arrow"></i><span>Analytics Room</span></a>
-      <a href="notification-gateway.html" class="nav-link"><i class="bi bi-envelope-check-fill"></i><span>Notification Gateway</span></a>
+      <a href="billing-usage.html" class="nav-link"><i class="bi bi-envelope-check-fill"></i><span>Notification Gateway</span></a>
       <a href="audit-logs.html" class="nav-link"><i class="bi bi-journal-text"></i><span>System Audit</span></a>
       <div class="nav-group-label">Account</div>
       <a href="profile.html" class="nav-link"><i class="bi bi-person-gear"></i><span>My Profile</span></a>
@@ -165,7 +165,7 @@
   <a href="schools-management.html" class="active"><i class="bi bi-building"></i></a>
   <a href="users-directory.html"><i class="bi bi-people-fill"></i></a>
   <a href="analytics-room.html"><i class="bi bi-graph-up-arrow"></i></a>
-  <a href="notification-gateway.html"><i class="bi bi-envelope-check-fill"></i></a>
+  <a href="billing-usage.html"><i class="bi bi-envelope-check-fill"></i></a>
   <a href="audit-logs.html"><i class="bi bi-journal-text"></i></a>
   <a href="profile.html"><i class="bi bi-person-gear"></i></a>
 </nav>
@@ -208,6 +208,7 @@
           <div style="display:inline-flex;gap:6px;">
             <button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="openManagerSetup('${s.id}','${s.name}','${s.subdomain}')"><i class="bi bi-person-gear"></i> Manager</button>
             <button class="btn btn-ghost btn-sm ${isSuspended ? 'text-green' : 'text-red'}" style="font-weight:800;font-size:12px;" onclick="toggleSchoolStatus('${s.id}','${s.account_status}')">${isSuspended ? 'Restore' : 'Suspend'}</button>
+            <button class="btn btn-ghost btn-sm text-red" style="font-size:11px;" onclick="deleteSchool('${s.id}','${s.name}')"><i class="bi bi-trash"></i></button>
           </div>
         </td>
       </tr>`;
@@ -287,6 +288,14 @@
     if (!confirm(`Set school to ${next.toUpperCase()}?`)) return;
     await supabase.from('organizations').update({ account_status: next }).eq('id', id);
     loadSchools(); showToast(`School ${next}.`, 'success');
+  };
+
+  window.deleteSchool = async (id, name) => {
+    if (!confirm(`Permanently delete "${name}"?\n\nThis will remove the school workspace. All associated users, buses and data will be orphaned. This cannot be undone.`)) return;
+    const { error } = await supabase.from('organizations').delete().eq('id', id);
+    if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
+    loadSchools();
+    showToast(`"${name}" deleted.`, 'success');
   };
 
   window.switchProvisionTab = (tab) => {
