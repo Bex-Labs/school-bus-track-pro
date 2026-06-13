@@ -26,7 +26,7 @@
     .filter-deck { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
     .search-input { flex: 1; min-width: 180px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; }
     .role-select { padding: 0 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; color: var(--navy); height: 40px; }
-    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
     .kpi-node { background: white; border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; text-align: center; }
     .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; }
     .kpi-value { font-size: 28px; font-weight: 900; color: var(--navy); }
@@ -39,13 +39,12 @@
       .admin-content { overflow: visible !important; padding: 16px 16px 100px 16px !important; }
       .admin-sidebar { display: none !important; }
       .admin-topbar { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; height: auto !important; padding: 16px !important; }
-      .topbar-title { font-size: 20px !important; }
       .kpi-grid { grid-template-columns: 1fr 1fr !important; }
       .bottom-nav.mobile-only { height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center !important; background: var(--navy) !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 999 !important; }
       .bottom-nav.mobile-only a { flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0 !important; color: rgba(255,255,255,0.6) !important; }
       .bottom-nav.mobile-only a i { font-size: 22px !important; color: rgba(255,255,255,0.6) !important; }
+      .bottom-nav.mobile-only a.active i { color: var(--yellow) !important; }
       .bottom-nav.mobile-only a.active { color: var(--yellow) !important; }
-        .bottom-nav.mobile-only a.active i { color: var(--yellow) !important; }
     }
   </style>
 </head>
@@ -70,6 +69,7 @@
       <input type="email" id="new-email" class="form-input" placeholder="john@school.com">
       <label class="form-label">Role</label>
       <select id="new-role" class="form-input" style="height:40px;">
+        <option value="school_manager">School Manager</option>
         <option value="driver">Driver</option>
         <option value="parent">Parent</option>
       </select>
@@ -84,6 +84,7 @@
       <input type="email" id="invite-email" class="form-input" placeholder="jane@school.com">
       <label class="form-label">Role</label>
       <select id="invite-role" class="form-input" style="height:40px;">
+        <option value="school_manager">School Manager</option>
         <option value="driver">Driver</option>
         <option value="parent">Parent</option>
       </select>
@@ -107,7 +108,6 @@
     <input type="text" id="edit-full-name" class="form-input">
     <label class="form-label">Phone (Optional)</label>
     <input type="text" id="edit-phone" class="form-input" placeholder="+234...">
-    <!-- Bus assignment — drivers only -->
     <div id="edit-bus-wrap">
       <label class="form-label">Assign Bus</label>
       <select id="edit-bus-id" class="form-input" style="height:40px;">
@@ -153,13 +153,14 @@
     <header class="admin-topbar">
       <div>
         <h1 class="topbar-title">User Management</h1>
-        <p style="font-size:13px;color:var(--text-secondary);">Manage drivers and parents in your school.</p>
+        <p style="font-size:13px;color:var(--text-secondary);">Manage all users in your school.</p>
       </div>
       <button class="btn btn-yellow btn-sm" onclick="openModal('create-modal')"><i class="bi bi-person-plus-fill"></i> Add User</button>
     </header>
     <div class="admin-content">
       <div class="kpi-grid">
         <div class="kpi-node"><div class="kpi-label">Total Users</div><div class="kpi-value" id="count-total">0</div></div>
+        <div class="kpi-node"><div class="kpi-label">Managers</div><div class="kpi-value" id="count-managers">0</div></div>
         <div class="kpi-node"><div class="kpi-label">Drivers</div><div class="kpi-value" id="count-drivers">0</div></div>
         <div class="kpi-node"><div class="kpi-label">Pending</div><div class="kpi-value" style="color:#f59e0b;" id="count-pending">0</div></div>
       </div>
@@ -217,7 +218,6 @@
 
   const ORG_ID = profile.organization_id;
 
-  // Sidebar
   const { data: org } = await supabase.from('organizations').select('name, subdomain').eq('id', ORG_ID).single();
   const SCHOOL_NAME = org?.name || 'Your School';
   const SCHOOL_CODE = org?.subdomain || '';
@@ -229,11 +229,9 @@
   let allUsers = [];
   let allBuses = [];
 
-  // Load buses for this org
   async function loadBuses() {
     const { data } = await supabase.from('buses').select('id').eq('organization_id', ORG_ID).order('id');
     allBuses = data || [];
-    // Populate bus dropdown in edit modal
     const sel = document.getElementById('edit-bus-id');
     sel.innerHTML = '<option value="">No bus assigned</option>' +
       allBuses.map(b => `<option value="${b.id}">${b.id}</option>`).join('');
@@ -251,9 +249,10 @@
   }
 
   function updateKPIs(users) {
-    document.getElementById('count-total').textContent   = users.length;
-    document.getElementById('count-drivers').textContent = users.filter(u => u.role === 'driver').length;
-    document.getElementById('count-pending').textContent = users.filter(u => !u.is_verified && u.account_status !== 'deactivated').length;
+    document.getElementById('count-total').textContent    = users.length;
+    document.getElementById('count-managers').textContent = users.filter(u => u.role === 'school_manager').length;
+    document.getElementById('count-drivers').textContent  = users.filter(u => u.role === 'driver').length;
+    document.getElementById('count-pending').textContent  = users.filter(u => !u.is_verified && u.account_status !== 'deactivated').length;
   }
 
   function getStatus(u) {
@@ -263,9 +262,9 @@
   }
 
   function renderTable(users) {
-    const body     = document.getElementById('users-body');
-    const term     = document.getElementById('search-bar').value.toLowerCase();
-    const roleF    = document.getElementById('role-filter').value;
+    const body    = document.getElementById('users-body');
+    const term    = document.getElementById('search-bar').value.toLowerCase();
+    const roleF   = document.getElementById('role-filter').value;
     const filtered = users.filter(u => {
       const matchSearch = u.full_name?.toLowerCase().includes(term) || u.email?.toLowerCase().includes(term);
       const matchRole   = roleF === 'ALL' || u.role === roleF;
@@ -281,48 +280,66 @@
 
     body.innerHTML = filtered.map(u => {
       const status = getStatus(u);
-      let pill;
-      if (status === 'suspended') pill = `<button class="status-pill status-suspended" onclick="cycleStatus('${u.id}','${u.account_status}',${!!u.is_verified})">SUSPENDED</button>`;
-      else if (status === 'verified') pill = `<button class="status-pill status-verified" onclick="cycleStatus('${u.id}','${u.account_status}',${!!u.is_verified})">VERIFIED</button>`;
-      else pill = `<button class="status-pill status-pending" onclick="cycleStatus('${u.id}','${u.account_status}',${!!u.is_verified})">PENDING</button>`;
+      const isSelf = u.id === profile.id;
 
-      // Bus column — drivers only
+      let pill;
+      if (status === 'suspended') {
+        pill = `<button class="status-pill status-suspended" onclick="restoreUser('${u.id}')">SUSPENDED</button>`;
+      } else if (status === 'verified') {
+        pill = `<button class="status-pill status-verified" onclick="suspendUser('${u.id}')">VERIFIED</button>`;
+      } else {
+        pill = `<button class="status-pill status-pending" onclick="verifyUser('${u.id}')">PENDING</button>`;
+      }
+
       const busCell = u.role === 'driver'
         ? `<code style="font-weight:700;color:var(--navy);">${u.bus_id || '---'}</code>`
         : `<span style="color:var(--text-muted);font-size:12px;">N/A</span>`;
 
       return `<tr>
-        <td><strong>${u.full_name || 'Anonymous'}</strong></td>
+        <td><strong>${u.full_name || 'Anonymous'}</strong>${isSelf ? ' <span style="font-size:10px;color:var(--text-muted);">(you)</span>' : ''}</td>
         <td style="font-size:12px;">${u.email || '---'}</td>
-        <td><span class="badge ${roleColors[u.role] || 'badge-navy'}">${(u.role || '').replace('_', ' ').toUpperCase()}</span></td>
+        <td><span class="badge ${roleColors[u.role] || 'badge-navy'}">${(u.role||'').replace('_',' ').toUpperCase()}</span></td>
         <td>${pill}</td>
         <td>${busCell}</td>
         <td style="text-align:right;">
           <div style="display:inline-flex;gap:6px;">
+            ${status !== 'verified' ? `<button class="btn btn-ghost btn-sm" style="color:#166534;border-color:#22c55e;" onclick="verifyUser('${u.id}')" title="Verify"><i class="bi bi-patch-check-fill"></i></button>` : ''}
+            ${status === 'verified' && !isSelf ? `<button class="btn btn-ghost btn-sm text-red" onclick="suspendUser('${u.id}')" title="Suspend"><i class="bi bi-slash-circle-fill"></i></button>` : ''}
+            ${status === 'suspended' ? `<button class="btn btn-ghost btn-sm" style="color:var(--green);" onclick="restoreUser('${u.id}')" title="Restore"><i class="bi bi-arrow-counterclockwise"></i></button>` : ''}
             <button class="btn btn-ghost btn-sm" onclick="openEditModal('${u.id}')" title="Edit"><i class="bi bi-pencil"></i></button>
-            <button class="btn btn-ghost btn-sm" onclick="sendReset('${u.email}')" title="Send password reset"><i class="bi bi-shield-lock"></i></button>
-            <button class="btn btn-ghost btn-sm text-red" onclick="deleteUser('${u.id}')" title="Delete"><i class="bi bi-trash"></i></button>
+            <button class="btn btn-ghost btn-sm text-yellow" onclick="sendReset('${u.email}')" title="Password reset"><i class="bi bi-shield-lock"></i></button>
+            ${!isSelf ? `<button class="btn btn-ghost btn-sm text-red" onclick="deleteUser('${u.id}')" title="Delete"><i class="bi bi-trash"></i></button>` : ''}
           </div>
         </td>
       </tr>`;
     }).join('');
   }
 
-  // Cycle status — only scoped by user id, no org filter on update
-  window.cycleStatus = async (id, currentAccountStatus, currentIsVerified) => {
-    let update = {};
-    if (currentAccountStatus === 'deactivated') {
-      update = { account_status: 'active', is_verified: true };
-    } else if (currentIsVerified) {
-      if (!confirm('Suspend this account?')) return;
-      update = { account_status: 'deactivated' };
-    } else {
-      update = { is_verified: true, account_status: 'active' };
-    }
-    const { error } = await supabase.from('profiles').update(update).eq('id', id);
-    if (error) { showToast('Update failed: ' + error.message, 'error'); return; }
-    loadUsers();
-    showToast('Status updated.', 'success');
+  // ── Per-user actions ──────────────────────────────────────────────────
+  window.verifyUser = async (id) => {
+    const { error } = await supabase.from('profiles').update({ is_verified: true, account_status: 'active' }).eq('id', id);
+    if (!error) { loadUsers(); showToast('User verified.', 'success'); }
+    else showToast('Failed: ' + error.message, 'error');
+  };
+
+  window.suspendUser = async (id) => {
+    if (!confirm('Suspend this account?')) return;
+    const { error } = await supabase.from('profiles').update({ account_status: 'deactivated' }).eq('id', id);
+    if (!error) { loadUsers(); showToast('User suspended.', 'success'); }
+    else showToast('Failed: ' + error.message, 'error');
+  };
+
+  window.restoreUser = async (id) => {
+    const { error } = await supabase.from('profiles').update({ account_status: 'active', is_verified: true }).eq('id', id);
+    if (!error) { loadUsers(); showToast('User restored.', 'success'); }
+    else showToast('Failed: ' + error.message, 'error');
+  };
+
+  window.deleteUser = async (id) => {
+    if (!confirm('Permanently delete this user? This cannot be undone.')) return;
+    const { error } = await supabase.from('profiles').delete().eq('id', id);
+    if (!error) { loadUsers(); showToast('User deleted.', 'success'); }
+    else showToast('Failed: ' + error.message, 'error');
   };
 
   window.openEditModal = (id) => {
@@ -331,14 +348,9 @@
     document.getElementById('edit-profile-role').value = u.role;
     document.getElementById('edit-full-name').value    = u.full_name || '';
     document.getElementById('edit-phone').value        = u.phone || '';
-    // Show bus dropdown only for drivers
     const busWrap = document.getElementById('edit-bus-wrap');
-    if (u.role === 'driver') {
-      busWrap.style.display = 'block';
-      document.getElementById('edit-bus-id').value = u.bus_id || '';
-    } else {
-      busWrap.style.display = 'none';
-    }
+    busWrap.style.display = u.role === 'driver' ? 'block' : 'none';
+    if (u.role === 'driver') document.getElementById('edit-bus-id').value = u.bus_id || '';
     openModal('edit-modal');
   };
 
@@ -349,35 +361,20 @@
       full_name: document.getElementById('edit-full-name').value.trim(),
       phone:     document.getElementById('edit-phone').value.trim() || null,
     };
-    // Only save bus_id for drivers
-    if (role === 'driver') {
-      updateData.bus_id = document.getElementById('edit-bus-id').value || null;
-    }
+    if (role === 'driver') updateData.bus_id = document.getElementById('edit-bus-id').value || null;
     const { error } = await supabase.from('profiles').update(updateData).eq('id', id);
     if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
-    closeModal('edit-modal');
-    loadUsers();
-    showToast('User updated.', 'success');
+    closeModal('edit-modal'); loadUsers(); showToast('User updated.', 'success');
   };
 
   window.sendReset = async (email) => {
     if (!email) return;
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/reset-password.html'
-    });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password.html' });
     if (error) { showToast('Reset failed: ' + error.message, 'error'); return; }
     showToast('Password reset email sent.', 'success');
   };
 
-  window.deleteUser = async (id) => {
-    if (!confirm('Permanently delete this user?')) return;
-    const { error } = await supabase.from('profiles').delete().eq('id', id);
-    if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
-    loadUsers();
-    showToast('User removed.', 'success');
-  };
-
-  // Create account
+  // ── Create account ────────────────────────────────────────────────────
   window.createAccount = async () => {
     const btn       = document.getElementById('btn-create-account');
     const email     = document.getElementById('new-email').value.trim();
@@ -397,7 +394,7 @@
     else showToast(result.error || 'Failed.', 'error');
   };
 
-  // Send invite
+  // ── Send invite ───────────────────────────────────────────────────────
   window.sendInvite = async () => {
     const btn       = document.getElementById('btn-send-invite');
     const email     = document.getElementById('invite-email').value.trim();
@@ -431,10 +428,11 @@
   document.getElementById('role-filter').onchange = () => renderTable(allUsers);
 
   supabase.channel('users-manager')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, loadUsers)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles',
+      filter: `organization_id=eq.${ORG_ID}` }, loadUsers)
     .subscribe();
 
-  function showToast(m, t = 'info') {
+  function showToast(m, t='info') {
     const c = document.getElementById('toast-container');
     const d = document.createElement('div'); d.className = `toast ${t} active`; d.textContent = m; c.appendChild(d);
     setTimeout(() => d.remove(), 4000);
