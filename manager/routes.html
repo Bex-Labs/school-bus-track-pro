@@ -197,12 +197,32 @@
     if (n) n.textContent = profile.full_name; if (a) a.textContent = profile.full_name.charAt(0).toUpperCase();
   }
   document.getElementById('signout-btn-sidebar').onclick = () => signOut();
+
+  function showToast(m, t='info') {
+    const c = document.getElementById('toast-container');
+    const d = document.createElement('div'); d.className = `toast ${t} active`; d.textContent = m; c.appendChild(d);
+    setTimeout(() => d.remove(), 4000);
+  }
+
   window.createNewRoutePrompt = async () => {
     const routeName = prompt('Enter the name for the new route:');
     if (!routeName) return;
-    const { error } = await supabase.from('routes').insert([{ name: routeName, organization_id: ORG_ID }]);
+
+    const { data: buses } = await supabase.from('buses').select('id, plate_number, driver_id').eq('organization_id', ORG_ID).order('id');
+
+    let busId = null;
+    if (buses && buses.length > 0) {
+      const busOptions = buses.map((b, i) => `${i + 1}. Bus ${b.id}${b.plate_number ? ' (' + b.plate_number + ')' : ''}`).join('\n');
+      const choice = prompt(`Assign a bus to this route (enter number, or cancel to skip):\n\n${busOptions}`);
+      if (choice) {
+        const idx = parseInt(choice) - 1;
+        if (idx >= 0 && idx < buses.length) busId = buses[idx].id;
+      }
+    }
+
+    const { error } = await supabase.from('routes').insert([{ name: routeName, organization_id: ORG_ID, bus_id: busId }]);
     if (error) alert('Creation failed: ' + error.message);
-    else location.reload();
+    else { showToast(busId ? `Route created and assigned to Bus ${busId}.` : 'Route created.', 'success'); location.reload(); }
   };
 </script>
 <script type="module" src="../js/routes.js"></script>

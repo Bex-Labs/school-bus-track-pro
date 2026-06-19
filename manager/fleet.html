@@ -255,6 +255,7 @@
 
       if (error) throw error;
       if (buses) {
+        window._allBuses = buses;
         renderDirectory(buses);
         renderTelemetryTable(buses);
         updateKPIs(buses);
@@ -323,7 +324,7 @@
     list.innerHTML = buses.map(bus => {
       const isLive = bus.status === 'active';
       return `
-      <div class="bus-card ${isLive ? 'active-unit' : ''}" onclick="window.focusUnit(${bus.current_lat}, ${bus.current_lng})">
+      <div class="bus-card ${isLive ? 'active-unit' : ''}" onclick="window.focusUnit('${bus.id}')">`
         <div class="bus-icon ${isLive ? 'online' : 'offline'}"><i class="bi bi-truck-front-fill"></i></div>
         <div style="flex:1">
           <div style="font-weight:800;font-size:14px;">${bus.id}</div>
@@ -349,7 +350,7 @@
         <td>${bus.speed || 0} km/h</td>
         <td style="font-family:monospace;font-size:11px;">${(bus.current_lat||0).toFixed(4)}, ${(bus.current_lng||0).toFixed(4)}</td>
         <td>${bus.last_seen ? new Date(bus.last_seen).toLocaleTimeString() : '---'}</td>
-        <td style="text-align:right;"><button class="btn btn-ghost btn-sm" onclick="window.focusUnit(${bus.current_lat},${bus.current_lng})">Locate</button></td>
+        <td style="text-align:right;"><button class="btn btn-ghost btn-sm" onclick="window.focusUnit('${bus.id}')">Locate</button></td>
       </tr>`;
     }).join('');
   }
@@ -452,7 +453,14 @@
     })
     .subscribe();
 
-  window.focusUnit = (la, ln) => { if (la && ln) map.flyTo([la, ln], 16); };
+  window.focusUnit = (busId) => {
+    const bus = (window._allBuses || []).find(b => b.id === busId);
+    if (bus && bus.current_lat && bus.current_lng) {
+      map.flyTo([bus.current_lat, bus.current_lng], 16);
+    } else {
+      showToast('No live coordinates for this bus yet.', 'info');
+    }
+  };
 
   function showToast(m, t = 'info') {
     const c = document.getElementById('toast-container');
