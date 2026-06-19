@@ -324,7 +324,7 @@
     list.innerHTML = buses.map(bus => {
       const isLive = bus.status === 'active';
       return `
-      <div class="bus-card ${isLive ? 'active-unit' : ''}" onclick="window.focusUnit('${bus.id}')">`
+      <div class="bus-card ${isLive ? 'active-unit' : ''}" onclick="window.focusUnit('${bus.id}')">
         <div class="bus-icon ${isLive ? 'online' : 'offline'}"><i class="bi bi-truck-front-fill"></i></div>
         <div style="flex:1">
           <div style="font-weight:800;font-size:14px;">${bus.id}</div>
