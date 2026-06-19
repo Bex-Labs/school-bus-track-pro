@@ -233,47 +233,79 @@
 
   let busMarker = null;
 
-  // Load student + bus
+  // Load student + bus separately (bus_id is text, not a FK join)
   const { data: student } = await supabase
     .from('students')
-    .select('*, bus_id(id, current_lat, current_lng, speed, organization_id, driver_id(full_name, phone))')
+    .select('*')
     .eq('parent_id', USER_ID)
     .eq('organization_id', ORG_ID)
     .single();
 
   if (student && student.bus_id) {
-    const busData = student.bus_id;
-    if (busData.organization_id !== ORG_ID) {
-      console.warn('Bus org mismatch.');
-    } else {
-      const busId = busData.id;
+    const busId = student.bus_id;
+
+    // Fetch bus data separately
+    const { data: busData } = await supabase
+      .from('buses')
+      .select('*')
+      .eq('id', busId)
+      .eq('organization_id', ORG_ID)
+      .single();
+
+    // Fetch driver
+    let driver = null;
+    if (busData?.driver_id) {
+      const { data: driverData } = await supabase
+        .from('profiles')
+        .select('full_name, phone')
+        .eq('id', busData.driver_id)
+        .single();
+      driver = driverData;
+    }
+
+    if (busData) {
       document.getElementById('bus-id-display').textContent   = busId;
       document.getElementById('child-status-top').textContent = `${student.full_name} · ON ROUTE`;
       document.getElementById('boarding-status').textContent  = 'ON BUS';
 
-      const driver = busData.driver_id;
       if (driver) {
         document.getElementById('driver-name-display').textContent = driver.full_name;
-        document.getElementById('driver-initial').textContent       = driver.full_name.charAt(0);
+        document.getElementById('driver-initial').textContent      = driver.full_name.charAt(0);
         if (driver.phone) {
           document.getElementById('driver-phone-link').href = `tel:${driver.phone.trim().replace(/^0/, '+234')}`;
         }
       }
 
-      updateMap(busData);
+      if (busData.current_lat && busData.current_lng) updateMap(busData);
 
       // Route stops
-      const { data: routes } = await supabase.from('routes').select('id').eq('bus_id', busId).eq('organization_id', ORG_ID).limit(1);
+      const { data: routes } = await supabase
+        .from('routes').select('id, name')
+        .eq('bus_id', busId)
+        .eq('organization_id', ORG_ID)
+        .limit(1);
+
       if (routes?.length > 0) {
-        const { data: stops } = await supabase.from('stops').select('*').eq('route_id', routes[0].id).eq('organization_id', ORG_ID).order('order_index', { ascending: true });
+        const { data: stops } = await supabase
+          .from('stops').select('*')
+          .eq('route_id', routes[0].id)
+          .eq('organization_id', ORG_ID)
+          .order('order_index', { ascending: true });
+
         if (stops?.length > 0) {
           document.getElementById('stops-container').innerHTML = stops.map((s, i) => `
             <div style="padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:12px;">
               <div style="font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Stop ${i+1}</div>
               <div style="font-weight:700;color:var(--navy);font-size:14px;">${s.name}</div>
-              <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;"><i class="bi bi-clock"></i> ${s.arrival_time || '--:--'} · ${s.students || 0} students</div>
+              <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">
+                <i class="bi bi-clock"></i> ${s.arrival_time || '--:--'} · <i class="bi bi-people-fill"></i> ${s.students || 0} students
+              </div>
             </div>`).join('');
+        } else {
+          document.getElementById('stops-container').innerHTML = '<div style="color:var(--text-muted);font-size:13px;">No stops configured for this route yet.</div>';
         }
+      } else {
+        document.getElementById('stops-container').innerHTML = '<div style="color:var(--text-muted);font-size:13px;">No route assigned to this bus yet.</div>';
       }
 
       // Realtime bus position updates
@@ -283,8 +315,10 @@
     }
   } else {
     document.getElementById('child-status-top').textContent = 'No bus assigned';
+    document.getElementById('bus-id-display').textContent   = '---';
     document.getElementById('boarding-status').textContent  = 'UNASSIGNED';
-    // No bus — just show parent's current location
+    document.getElementById('driver-name-display').textContent = 'No driver';
+    document.getElementById('stops-container').innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Register a child and assign a bus on your profile page.</div>';
     map.setView(homeCoords, 14);
   }
 

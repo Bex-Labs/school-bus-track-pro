@@ -93,15 +93,54 @@ async function loadRoutesList() {
   const filtered = (routes || []).filter(r => r.name.toLowerCase().includes(searchTerm));
   if (badge) badge.textContent = `${filtered.length} routes`;
 
+  if (!filtered.length) {
+    container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px;"><i class="bi bi-map" style="font-size:28px;display:block;margin-bottom:8px;opacity:0.4;"></i>No routes yet. Create one above.</div>';
+    return;
+  }
+
   container.innerHTML = filtered.map(r => `
     <div class="route-card ${activeRouteId === r.id ? 'active' : ''}" onclick="window.selectRoute('${r.id}','${r.name}')">
-      <div style="font-weight:800;font-size:13px;color:var(--navy);">${r.name}</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div style="font-weight:800;font-size:13px;color:var(--navy);flex:1;">${r.name}</div>
+        <button class="btn btn-ghost btn-sm text-red" style="padding:2px 6px;margin-left:8px;flex-shrink:0;" 
+          onclick="event.stopPropagation(); window.deleteRoute('${r.id}','${r.name.replace(/'/g, "\\'")}')">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
       <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;display:flex;justify-content:space-between;">
         <span><i class="bi bi-bus-front"></i> ${r.bus_id || 'Unassigned'}</span>
         <span><i class="bi bi-geo-alt"></i> ${r.stops?.[0]?.count || 0} stops</span>
       </div>
     </div>`).join('');
 }
+
+// Delete route — also deletes its stops
+window.deleteRoute = async (id, name) => {
+  if (!confirm(`Delete route "${name}"? All stops on this route will also be removed.`)) return;
+
+  // Delete stops first
+  await supabase.from('stops').delete().eq('route_id', id).eq('organization_id', ORG_ID);
+
+  // Delete route
+  const { error } = await supabase.from('routes').delete().eq('id', id).eq('organization_id', ORG_ID);
+
+  if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
+
+  // Clear active route if it was the deleted one
+  if (activeRouteId === id) {
+    activeRouteId = null;
+    currentStops  = [];
+    renderStopsTable();
+    routeLayers.clearLayers();
+    const titleEl = document.getElementById('map-route-title');
+    if (titleEl) titleEl.textContent = 'Drafting Canvas';
+    const indicator = document.getElementById('edit-indicator');
+    if (indicator) indicator.style.display = 'none';
+  }
+
+  showToast(`Route "${name}" deleted.`, 'success');
+  loadRoutesList();
+};
 
 // Select route — stops scoped to org
 window.selectRoute = async (id, name) => {
