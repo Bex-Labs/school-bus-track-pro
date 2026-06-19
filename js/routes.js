@@ -304,4 +304,104 @@ function showToast(msg, type = 'info') {
 
 window.saveRouteToDatabase = saveRouteToDatabase;
 
+// ── Create Route Modal ────────────────────────────────────────────────────
+
+window.createNewRoutePrompt = async () => {
+  document.getElementById('new-route-name').value  = '';
+  document.getElementById('selected-bus-id').value = '';
+  document.getElementById('create-route-modal').style.display = 'flex';
+
+  const picker = document.getElementById('route-bus-picker');
+  picker.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">
+    <i class="bi bi-arrow-clockwise spin" style="display:inline-block;margin-right:6px;"></i> Loading buses...
+  </div>`;
+
+  const { data: buses } = await supabase
+    .from('buses').select('id, plate_number, status, driver_id')
+    .eq('organization_id', ORG_ID).order('id');
+
+  if (!buses || !buses.length) {
+    picker.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">No buses registered in your school.</div>`;
+    return;
+  }
+
+  const driverIds = buses.filter(b => b.driver_id).map(b => b.driver_id);
+  let driversMap = {};
+  if (driverIds.length > 0) {
+    const { data: drivers } = await supabase.from('profiles').select('id, full_name, phone, avatar_url').in('id', driverIds);
+    if (drivers) drivers.forEach(d => { driversMap[d.id] = d; });
+  }
+
+  // Default: no bus selected
+  picker.innerHTML = `
+    <div id="bus-card-none" onclick="selectRouteBus('', this)"
+      style="padding:12px 16px;border:2px solid var(--border);border-radius:12px;cursor:pointer;background:var(--bg);display:flex;align-items:center;gap:10px;transition:0.2s;">
+      <i class="bi bi-slash-circle" style="font-size:20px;color:var(--text-muted);"></i>
+      <div style="font-weight:700;color:var(--navy);font-size:13px;">No bus assigned</div>
+      <i class="bi bi-check-circle-fill route-check" style="margin-left:auto;color:var(--navy);font-size:18px;display:none;"></i>
+    </div>` +
+    buses.map(b => {
+      const driver   = b.driver_id ? driversMap[b.driver_id] : null;
+      const isActive = b.status === 'active';
+      const avatar   = driver?.avatar_url
+        ? `<div style="width:34px;height:34px;border-radius:50%;background:url(${driver.avatar_url}) center/cover;flex-shrink:0;border:2px solid var(--border);"></div>`
+        : `<div style="width:34px;height:34px;border-radius:50%;background:var(--yellow);color:var(--navy);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0;">${driver ? driver.full_name.charAt(0) : '?'}</div>`;
+
+      return `<div id="bus-card-${b.id}" onclick="selectRouteBus('${b.id}', this)"
+        style="padding:14px 16px;border:2px solid var(--border);border-radius:12px;cursor:pointer;background:var(--bg);transition:0.2s;display:flex;align-items:center;gap:12px;">
+        <div style="width:42px;height:42px;border-radius:10px;background:var(--navy);color:white;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">
+          <i class="bi bi-bus-front-fill"></i>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:900;font-size:15px;color:var(--navy);font-family:monospace;">${b.id}</div>
+          <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-top:1px;">
+            ${b.plate_number || 'No plate'} · <span style="color:${isActive ? 'var(--green)' : 'var(--text-muted)'};">${isActive ? 'Active' : 'Offline'}</span>
+          </div>
+          ${driver
+            ? `<div style="display:flex;align-items:center;gap:6px;margin-top:6px;">${avatar}
+                <div>
+                  <div style="font-size:12px;font-weight:700;color:var(--navy);">${driver.full_name}</div>
+                  ${driver.phone ? `<div style="font-size:10px;color:var(--text-muted);">${driver.phone}</div>` : ''}
+                </div>
+               </div>`
+            : `<div style="font-size:11px;color:#f59e0b;font-weight:700;margin-top:4px;"><i class="bi bi-person-dash"></i> No driver assigned</div>`
+          }
+        </div>
+        <i class="bi bi-check-circle-fill route-check" style="margin-left:auto;color:var(--navy);font-size:18px;display:none;flex-shrink:0;"></i>
+      </div>`;
+    }).join('');
+};
+
+window.selectRouteBus = (busId, el) => {
+  document.querySelectorAll('#route-bus-picker > div').forEach(c => {
+    c.style.borderColor = 'var(--border)';
+    c.style.background  = 'var(--bg)';
+    const check = c.querySelector('.route-check');
+    if (check) check.style.display = 'none';
+  });
+  el.style.borderColor = 'var(--navy)';
+  el.style.background  = '#f0f4ff';
+  const check = el.querySelector('.route-check');
+  if (check) check.style.display = 'block';
+  document.getElementById('selected-bus-id').value = busId;
+};
+
+window.submitCreateRoute = async () => {
+  const routeName = document.getElementById('new-route-name').value.trim();
+  const busId     = document.getElementById('selected-bus-id').value || null;
+  const btn       = document.getElementById('btn-create-route');
+  if (!routeName) { showToast('Route name is required.', 'error'); return; }
+  btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Creating...';
+  const { error } = await supabase.from('routes').insert([{ name: routeName, organization_id: ORG_ID, bus_id: busId || null }]);
+  btn.disabled = false; btn.innerHTML = '<i class="bi bi-plus-circle-fill"></i> Create Route';
+  if (error) { showToast('Creation failed: ' + error.message, 'error'); return; }
+  showToast(busId ? `Route created and assigned to Bus ${busId}.` : 'Route created.', 'success');
+  window.closeCreateModal();
+  loadRoutesList();
+};
+
+window.closeCreateModal = () => {
+  document.getElementById('create-route-modal').style.display = 'none';
+};
+
 init();
