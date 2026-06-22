@@ -20,28 +20,56 @@
     .route-card.active { border-left-color: var(--yellow); background: #FAFBFD; box-shadow: var(--shadow-md); }
     #route-map { border-radius: 12px; z-index: 1; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
     .table-fixed-header { position: sticky; top: 0; background: #F8FAFC; z-index: 2; }
+    .bottom-nav.mobile-only { display: none; }
     @media (max-width: 768px) {
       .admin-sidebar { display: none; }
       .admin-main { height: 100vh; }
       .admin-content { padding: 12px; padding-bottom: 100px; }
       .admin-topbar { height: auto !important; padding: 15px !important; flex-direction: column !important; align-items: flex-start !important; gap: 10px; }
       .bento-grid { display: flex; flex-direction: column; gap: 15px; }
-      .tile-4 { order: 2; }
-      .tile-8 { order: 1; }
+      .tile-4 { order: 2; } .tile-8 { order: 1; }
       #route-map { height: 300px !important; }
       .route-scroll-area { height: 350px !important; }
+      .bottom-nav.mobile-only { height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center !important; background: var(--navy) !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 999 !important; }
+      .bottom-nav.mobile-only a { flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0 !important; color: rgba(255,255,255,0.6) !important; text-decoration: none !important; }
+      .bottom-nav.mobile-only a i { font-size: 22px !important; color: rgba(255,255,255,0.6) !important; }
+      .bottom-nav.mobile-only a.active i { color: var(--yellow) !important; }
     }
-        .bottom-nav.mobile-only { display: none; }
-      @media (max-width: 768px) {
-        .bottom-nav.mobile-only { height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center !important; background: var(--navy) !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 999 !important; }
-        .bottom-nav.mobile-only a { flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0 !important; color: rgba(255,255,255,0.6) !important; text-decoration: none !important; }
-        .bottom-nav.mobile-only a i { font-size: 22px !important; color: rgba(255,255,255,0.6) !important; }
-        .bottom-nav.mobile-only a.active i { color: var(--yellow) !important; }
-        .bottom-nav.mobile-only a.active { color: var(--yellow) !important; }
-      }
-    </style>
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
+
+<!-- Create Route Modal -->
+<div id="create-route-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:3000;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+  <div style="background:white;width:95%;max-width:500px;padding:28px;border-radius:20px;border:1px solid var(--border);box-shadow:0 25px 50px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="font-weight:900;font-size:16px;color:var(--navy);">Create New Route</h3>
+      <i class="bi bi-x-lg" style="cursor:pointer;font-size:16px;" onclick="window.closeCreateModal()"></i>
+    </div>
+    <div style="margin-bottom:20px;">
+      <label style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:6px;">Route Name <span style="color:var(--red);">*</span></label>
+      <input type="text" id="new-route-name" placeholder="e.g. Morning Route A"
+        style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r-md);font-size:14px;color:var(--navy);outline:none;box-sizing:border-box;"
+        onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+    <div>
+      <label style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:10px;">Assign Bus (Optional)</label>
+      <div id="route-bus-picker" style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;">
+        <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">Loading buses...</div>
+      </div>
+    </div>
+    <input type="hidden" id="selected-bus-id">
+    <div style="display:flex;gap:12px;margin-top:24px;">
+      <button class="btn btn-yellow btn-full" style="font-weight:800;" id="btn-create-route" onclick="window.submitCreateRoute()">
+        <i class="bi bi-plus-circle-fill"></i> Create Route
+      </button>
+      <button class="btn btn-ghost" onclick="window.closeCreateModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="admin-layout">
   <aside class="admin-sidebar">
     <div class="sidebar-logo">
@@ -80,11 +108,9 @@
         <h1 class="topbar-title">Route Architect</h1>
         <p style="font-size:13px;color:var(--text-secondary);">Design, sequence, and optimize transport paths</p>
       </div>
-      <div style="display:flex;gap:12px;align-items:center;">
-        <button class="btn btn-yellow btn-sm" onclick="window.createNewRoutePrompt()">
-          <i class="bi bi-plus-lg"></i> Create New Route
-        </button>
-      </div>
+      <button class="btn btn-yellow btn-sm" onclick="window.createNewRoutePrompt()">
+        <i class="bi bi-plus-lg"></i> Create New Route
+      </button>
     </header>
 
     <div class="admin-content">
@@ -102,7 +128,7 @@
             <div class="route-scroll-area" id="route-list"></div>
           </div>
           <div class="tile" style="padding:20px;">
-            <div style="font-family:var(--font-display);font-size:14px;font-weight:800;margin-bottom:16px;color:var(--navy);display:flex;align-items:center;gap:8px;">
+            <div style="font-size:14px;font-weight:800;margin-bottom:16px;color:var(--navy);display:flex;align-items:center;gap:8px;">
               <i class="bi bi-pin-map-fill text-yellow"></i> Stop Configurator
             </div>
             <div class="form-group">
@@ -176,47 +202,10 @@
     <a href="routes.html" class="active"><i class="bi bi-map-fill"></i></a>
     <a href="analytics.html"><i class="bi bi-graph-up-arrow"></i></a>
     <a href="profile.html"><i class="bi bi-person-gear"></i></a>
-</nav>
+  </nav>
 </div>
 
 <div id="toast-container"></div>
-
-<!-- Create Route Modal -->
-<div class="modal-overlay" id="create-route-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:3000;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
-  <div style="background:white;width:95%;max-width:500px;padding:28px;border-radius:20px;border:1px solid var(--border);box-shadow:0 25px 50px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-      <h3 style="font-weight:900;font-size:16px;color:var(--navy);">Create New Route</h3>
-      <i class="bi bi-x-lg" style="cursor:pointer;font-size:16px;" onclick="closeCreateModal()"></i>
-    </div>
-
-    <!-- Route name -->
-    <div style="margin-bottom:20px;">
-      <label style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:6px;">Route Name <span style="color:var(--red);">*</span></label>
-      <input type="text" id="new-route-name" placeholder="e.g. Morning Route A"
-        style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r-md);font-size:14px;color:var(--navy);outline:none;box-sizing:border-box;"
-        onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'">
-    </div>
-
-    <!-- Bus picker -->
-    <div>
-      <label style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:10px;">Assign Bus (Optional)</label>
-      <div id="route-bus-picker" style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;">
-        <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">
-          <i class="bi bi-arrow-clockwise" style="animation:spin 1s linear infinite;display:inline-block;margin-right:6px;"></i> Loading buses...
-        </div>
-      </div>
-    </div>
-
-    <input type="hidden" id="selected-bus-id">
-
-    <div style="display:flex;gap:12px;margin-top:24px;">
-      <button class="btn btn-yellow btn-full" style="font-weight:800;" id="btn-create-route" onclick="submitCreateRoute()">
-        <i class="bi bi-plus-circle-fill"></i> Create Route
-      </button>
-      <button class="btn btn-ghost" onclick="closeCreateModal()">Cancel</button>
-    </div>
-  </div>
-</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -234,65 +223,6 @@
     if (n) n.textContent = profile.full_name; if (a) a.textContent = profile.full_name.charAt(0).toUpperCase();
   }
   document.getElementById('signout-btn-sidebar').onclick = () => signOut();
-
-  function showToast(m, t='info') {
-    const c = document.getElementById('toast-container');
-    const d = document.createElement('div'); d.className = `toast ${t} active`; d.textContent = m; c.appendChild(d);
-    setTimeout(() => d.remove(), 4000);
-  }
-
-  window.createNewRoutePrompt = async () => {
-    const routeName = prompt('Enter the name for the new route:');
-    if (!routeName) return;
-
-    const { data: buses } = await supabase.from('buses').select('id, plate_number, driver_id').eq('organization_id', ORG_ID).order('id');
-
-    let busId = null;
-    if (buses && buses.length > 0) {
-      const busOptions = buses.map((b, i) => `${i + 1}. Bus ${b.id}${b.plate_number ? ' (' + b.plate_number + ')' : ''}`).join('\n');
-      const choice = prompt(`Assign a bus to this route (enter number, or cancel to skip):\n\n${busOptions}`);
-      if (choice) {
-        const idx = parseInt(choice) - 1;
-        if (idx >= 0 && idx < buses.length) busId = buses[idx].id;
-      }
-    }
-
-    const { error } = await supabase.from('routes').insert([{ name: routeName, organization_id: ORG_ID, bus_id: busId }]);
-    if (error) alert('Creation failed: ' + error.message);
-    else { showToast(busId ? `Route created and assigned to Bus ${busId}.` : 'Route created.', 'success'); location.reload(); }
-  };
-
-  // ── Delete route ───────────────────────────────────────────────────────
-  window.deleteRoute = async (routeId, routeName) => {
-    if (!confirm(`Delete route "${routeName}"?\n\nAll stops on this route will also be deleted. This cannot be undone.`)) return;
-    // Delete stops first
-    await supabase.from('stops').delete().eq('route_id', routeId);
-    // Delete route
-    const { error } = await supabase.from('routes').delete().eq('id', routeId).eq('organization_id', ORG_ID);
-    if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
-    showToast(`Route "${routeName}" deleted.`, 'success');
-    location.reload();
-  };
-
-  // ── Patch route cards after routes.js renders them ────────────────────
-  // routes.js renders route cards into #route-list — we observe and add delete buttons
-  const observer = new MutationObserver(() => {
-    document.querySelectorAll('.route-card').forEach(card => {
-      if (card.dataset.deleteAdded) return;
-      card.dataset.deleteAdded = 'true';
-      const routeId   = card.dataset.routeId   || card.getAttribute('data-route-id');
-      const routeName = card.dataset.routeName  || card.querySelector('[data-name]')?.textContent || card.textContent.trim().split('\n')[0].trim();
-      if (!routeId) return;
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'btn btn-ghost btn-sm text-red';
-      deleteBtn.style.cssText = 'position:absolute;top:8px;right:8px;padding:4px 8px;font-size:11px;';
-      deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
-      deleteBtn.onclick = (e) => { e.stopPropagation(); window.deleteRoute(routeId, routeName); };
-      card.style.position = 'relative';
-      card.appendChild(deleteBtn);
-    });
-  });
-  observer.observe(document.getElementById('route-list'), { childList: true, subtree: true });
 </script>
 <script type="module" src="../js/routes.js"></script>
 </body>
