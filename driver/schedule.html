@@ -2,18 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Route Schedule | School Bus Track Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Route Manifest | School Bus Track Pro</title>
   <link rel="icon" type="image/png" href="../assets/images/logo.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="../assets/css/main.css">
   <link rel="stylesheet" href="../assets/css/admin.css">
   <link rel="stylesheet" href="../assets/css/driver.css">
   <style>
+    html, body { height: 100%; margin: 0; }
+    .admin-layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+    .admin-main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .admin-content { flex: 1; overflow-y: auto; padding: 24px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+
+    /* Progress header */
+    .route-hero { background: var(--navy); border-radius: var(--r-xl); padding: 24px; color: white; margin-bottom: 20px; }
+    .route-hero-title { font-size: 22px; font-weight: 900; margin-bottom: 4px; }
+    .route-hero-meta { font-size: 13px; opacity: 0.6; margin-bottom: 16px; }
+    .progress-track { height: 8px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+    .progress-fill { height: 100%; background: var(--yellow); border-radius: 4px; transition: width 0.6s ease; }
+    .progress-labels { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; opacity: 0.7; }
+
+    /* Stop cards */
+    .stop-list { display: flex; flex-direction: column; gap: 12px; }
+    .stop-item { background: white; border: 2px solid var(--border); border-radius: var(--r-xl); padding: 18px 20px; transition: 0.2s; position: relative; overflow: hidden; }
+    .stop-item.stop-done { border-color: var(--green); background: #f0fdf4; opacity: 0.85; }
+    .stop-item.stop-active { border-color: var(--yellow); box-shadow: 0 4px 20px rgba(253,184,19,0.2); }
+    .stop-item.stop-upcoming { opacity: 0.5; }
+    .stop-item.stop-active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--yellow); }
+    .stop-item.stop-done::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--green); }
+
+    .stop-number { width: 32px; height: 32px; border-radius: 50%; background: var(--bg); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: var(--navy); flex-shrink: 0; }
+    .stop-number.active { background: var(--yellow); border-color: var(--yellow); color: var(--navy); }
+    .stop-number.done { background: var(--green); border-color: var(--green); color: white; }
+
+    .stop-name { font-size: 15px; font-weight: 800; color: var(--navy); }
+    .stop-detail { font-size: 12px; color: var(--text-secondary); font-weight: 600; margin-top: 3px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .stop-time-badge { background: var(--navy); color: white; padding: 3px 10px; border-radius: var(--r-full); font-size: 11px; font-weight: 800; }
+    .stop-time-badge.active { background: var(--yellow); color: var(--navy); }
+
+    .stop-actions { display: flex; gap: 10px; margin-top: 14px; }
+
+    /* KPI row */
+    .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    .kpi-mini { background: white; border: 1px solid var(--border); border-radius: var(--r-lg); padding: 14px; text-align: center; }
+    .kpi-mini-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.5px; }
+    .kpi-mini-value { font-size: 22px; font-weight: 900; color: var(--navy); }
+
     .spin { animation: spin 1.5s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    .timeline-stop.done .timeline-dot { background: var(--green); }
-    .timeline-stop.active .stop-card { border: 1.5px solid var(--yellow); box-shadow: var(--shadow-md); }
+
+    @media (max-width: 768px) {
+      html, body { overflow: auto !important; height: auto !important; }
+      .admin-layout { height: auto !important; overflow: visible !important; }
+      .admin-main { height: auto !important; overflow: visible !important; }
+      .admin-content { overflow: visible !important; padding: 16px 16px 100px !important; }
+      .admin-sidebar { display: none !important; }
+      .admin-topbar { flex-direction: row !important; align-items: center !important; padding: 14px 16px !important; height: auto !important; }
+      .kpi-row { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
+      .kpi-mini-value { font-size: 18px !important; }
+    }
   </style>
 </head>
 <body>
@@ -48,62 +96,63 @@
 
   <main class="admin-main">
     <header class="admin-topbar">
-      <div class="d-flex align-center gap-12">
-        <a href="dashboard.html" class="desktop-only text-navy" style="font-size:20px;"><i class="bi bi-arrow-left-circle"></i></a>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <a href="dashboard.html" style="color:var(--navy);font-size:20px;"><i class="bi bi-arrow-left-circle"></i></a>
         <div>
-          <h1 class="topbar-title" id="route-name">Route Schedule</h1>
-          <p style="font-size:13px;color:var(--text-secondary);" id="route-meta">Fetching stop data...</p>
+          <h1 class="topbar-title" id="route-name">Route Manifest</h1>
+          <p style="font-size:13px;color:var(--text-secondary);" id="route-meta">Loading...</p>
         </div>
       </div>
-      <span class="badge badge-yellow" id="trip-status-badge">STANDBY</span>
+      <span class="badge badge-yellow" id="trip-status-badge" style="font-size:11px;font-weight:800;">STANDBY</span>
     </header>
 
     <div class="admin-content">
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <div class="kpi-label">Progress</div>
-          <div class="kpi-value" id="stop-count">0 / 0</div>
-          <div style="height:6px;background:var(--bg);border-radius:3px;margin-top:10px;overflow:hidden;">
-            <div id="progress-bar" style="height:100%;background:var(--yellow);width:0%;transition:width 0.6s;"></div>
-          </div>
+
+      <!-- KPI row -->
+      <div class="kpi-row">
+        <div class="kpi-mini">
+          <div class="kpi-mini-label">Progress</div>
+          <div class="kpi-mini-value" id="kpi-progress">0/0</div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Start Time</div>
-          <div class="kpi-value" id="start-time" style="font-size:24px;">07:30 AM</div>
+        <div class="kpi-mini">
+          <div class="kpi-mini-label">First Stop</div>
+          <div class="kpi-mini-value" id="kpi-start" style="font-size:16px;">--:--</div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Destination ETA</div>
-          <div class="kpi-value text-yellow" id="eta-school" style="font-size:24px;">08:15 AM</div>
+        <div class="kpi-mini">
+          <div class="kpi-mini-label">Last Stop</div>
+          <div class="kpi-mini-value text-yellow" id="kpi-eta" style="font-size:16px;">--:--</div>
         </div>
       </div>
 
-      <div class="bento-grid">
-        <div class="tile tile-8">
-          <div class="table-header"><div class="table-title">Route Timeline</div></div>
-          <div id="timeline-container" style="padding:24px;">
-            <div style="text-align:center;padding:60px;color:var(--text-muted);">
-              <i class="bi bi-arrow-clockwise spin" style="display:block;font-size:2.5rem;margin-bottom:15px;color:var(--yellow);"></i>
-              <p style="font-weight:600;">Syncing route data...</p>
-            </div>
+      <!-- Route hero with progress bar -->
+      <div class="route-hero" id="route-hero" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+          <div>
+            <div class="route-hero-title" id="hero-route-name">Route</div>
+            <div class="route-hero-meta" id="hero-bus-name">Bus ---</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px;font-weight:800;opacity:0.6;text-transform:uppercase;margin-bottom:4px;">Completion</div>
+            <div style="font-size:28px;font-weight:900;" id="hero-pct">0%</div>
           </div>
         </div>
-
-        <div class="tile tile-4">
-          <div class="table-header"><div class="table-title">Route Info</div></div>
-          <div style="padding:24px;">
-            <div style="background:var(--navy);border-radius:var(--r-lg);padding:20px;color:white;margin-bottom:20px;">
-              <small style="opacity:0.6;text-transform:uppercase;font-weight:700;font-size:10px;">Assigned Vehicle</small>
-              <div style="font-size:18px;font-weight:800;margin-top:4px;" id="info-bus-id">Loading...</div>
-            </div>
-            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;">
-              Mark each stop as "Done" to notify parents of student arrival.
-            </p>
-            <a href="dashboard.html" class="btn btn-yellow btn-full">
-              <i class="bi bi-geo-alt"></i> Return to Live Map
-            </a>
-          </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="hero-progress" style="width:0%;"></div>
+        </div>
+        <div class="progress-labels">
+          <span id="hero-completed">0 completed</span>
+          <span id="hero-remaining">0 remaining</span>
         </div>
       </div>
+
+      <!-- Stop list -->
+      <div class="stop-list" id="stop-list">
+        <div style="text-align:center;padding:60px 20px;color:var(--text-muted);">
+          <i class="bi bi-arrow-clockwise spin" style="font-size:32px;display:block;margin-bottom:12px;color:var(--yellow);"></i>
+          <div style="font-weight:700;">Loading route data...</div>
+        </div>
+      </div>
+
     </div>
   </main>
 </div>
@@ -117,151 +166,157 @@
 
 <div id="toast-container"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script type="module">
   import { supabase, getUserProfile } from '../js/config.js';
   import { requireAuth, signOut } from '../js/auth.js';
 
-  // ── 0. Auth gate ───────────────────────────────────────────────────────
   await requireAuth();
   const profile = await getUserProfile();
-
-  if (!profile || !profile.organization_id) {
-    setTimeout(() => signOut(), 2000);
-    throw new Error('No organization_id on profile.');
-  }
+  if (!profile || !profile.organization_id) { setTimeout(() => signOut(), 2000); throw new Error('No org.'); }
 
   const ORG_ID  = profile.organization_id;
   const USER_ID = profile.id;
 
-  // ── 1. Sidebar ─────────────────────────────────────────────────────────
+  // Sidebar
   const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
-  if (org) {
-    const el = document.getElementById('sidebar-school-name');
-    if (el) el.innerHTML = `${org.name} <small>Driver Hub</small>`;
-  }
+  if (org) document.getElementById('sidebar-school-name').innerHTML = `${org.name} <small>Driver Hub</small>`;
 
-  const { data: fullProfile } = await supabase
-    .from('profiles').select('full_name, bus_id').eq('id', USER_ID).single();
+  const { data: fp } = await supabase.from('profiles').select('full_name, bus_id').eq('id', USER_ID).single();
+  const driverName = fp?.full_name || 'Driver';
+  const busId      = fp?.bus_id || null;
 
-  const driverName = fullProfile?.full_name || 'Driver';
-  const busId      = fullProfile?.bus_id || null;
-
-  document.getElementById('sidebar-name').textContent  = driverName;
+  document.getElementById('sidebar-name').textContent    = driverName;
   document.getElementById('sidebar-initial').textContent = driverName.charAt(0);
-  document.getElementById('sidebar-bus').textContent   = busId ? `BUS ${busId}` : 'No bus assigned';
-  document.getElementById('info-bus-id').textContent   = busId ? `BUS ${busId}` : 'Unassigned';
+  document.getElementById('sidebar-bus').textContent     = busId ? `BUS ${busId}` : 'No bus assigned';
   document.getElementById('logout-btn').onclick = () => signOut();
 
   let routeStops     = [];
   let completedStops = JSON.parse(localStorage.getItem('completed_stops') || '[]');
 
-  // ── 2. Load stops — scoped to org via routes ───────────────────────────
+  // ── Load route ────────────────────────────────────────────────────────
   if (!busId) {
     document.getElementById('route-name').textContent = 'No Bus Assigned';
     document.getElementById('route-meta').textContent = 'Contact your manager.';
-    document.getElementById('timeline-container').innerHTML =
-      '<div style="text-align:center;padding:40px;color:var(--text-muted);">No bus assigned to your profile.</div>';
+    document.getElementById('stop-list').innerHTML = `
+      <div style="text-align:center;padding:40px;background:white;border-radius:var(--r-xl);border:1px solid var(--border);">
+        <i class="bi bi-bus-front" style="font-size:40px;color:var(--border);display:block;margin-bottom:12px;"></i>
+        <div style="font-weight:800;color:var(--navy);margin-bottom:6px;">No Bus Assigned</div>
+        <div style="font-size:13px;color:var(--text-muted);">Contact your school manager to get a bus assigned.</div>
+      </div>`;
   } else {
-    // Get route for this bus within this org
-    const { data: routes } = await supabase
-      .from('routes')
-      .select('id, name')
-      .eq('bus_id', busId)
-      .eq('organization_id', ORG_ID)
-      .limit(1);
+    const { data: routes } = await supabase.from('routes').select('id, name')
+      .eq('bus_id', busId).eq('organization_id', ORG_ID).limit(1);
 
     if (routes && routes.length > 0) {
       const route = routes[0];
-      document.getElementById('route-name').textContent = route.name;
+      document.getElementById('route-name').textContent      = route.name;
+      document.getElementById('hero-route-name').textContent = route.name;
+      document.getElementById('hero-bus-name').textContent   = `Bus ${busId}`;
+      document.getElementById('route-hero').style.display    = 'block';
 
-      // Get stops for this route scoped to org — standardized on `stops` table
-      const { data: stops } = await supabase
-        .from('stops')
-        .select('*')
-        .eq('route_id', route.id)
-        .eq('organization_id', ORG_ID)
+      const { data: stops } = await supabase.from('stops').select('*')
+        .eq('route_id', route.id).eq('organization_id', ORG_ID)
         .order('order_index', { ascending: true });
 
       if (stops && stops.length > 0) {
         routeStops = stops;
-        document.getElementById('route-meta').textContent = `${stops.length} Stops`;
-        document.getElementById('eta-school').textContent = stops[stops.length - 1].arrival_time || '--:--';
-        renderTimeline();
+        document.getElementById('route-meta').textContent      = `${stops.length} stop${stops.length > 1 ? 's' : ''}`;
+        document.getElementById('kpi-start').textContent       = stops[0].arrival_time || '--:--';
+        document.getElementById('kpi-eta').textContent         = stops[stops.length - 1].arrival_time || '--:--';
+        renderStops();
       } else {
-        document.getElementById('timeline-container').innerHTML =
-          '<div style="text-align:center;padding:40px;color:var(--text-muted);"><i class="bi bi-map-fill" style="font-size:3rem;opacity:0.3;"></i><p>No stops assigned to this route yet.</p></div>';
+        document.getElementById('route-meta').textContent = 'No stops yet';
+        document.getElementById('stop-list').innerHTML = `
+          <div style="text-align:center;padding:40px;background:white;border-radius:var(--r-xl);border:1px solid var(--border);">
+            <i class="bi bi-geo-alt" style="font-size:40px;color:var(--border);display:block;margin-bottom:12px;"></i>
+            <div style="font-weight:800;color:var(--navy);margin-bottom:6px;">No Stops Configured</div>
+            <div style="font-size:13px;color:var(--text-muted);">The manager hasn't added stops to this route yet.</div>
+          </div>`;
       }
     } else {
       document.getElementById('route-name').textContent = `Bus ${busId}`;
       document.getElementById('route-meta').textContent = 'No route assigned';
-      document.getElementById('timeline-container').innerHTML =
-        '<div style="text-align:center;padding:40px;color:var(--text-muted);">No route found for your bus.</div>';
+      document.getElementById('stop-list').innerHTML = `
+        <div style="text-align:center;padding:40px;background:white;border-radius:var(--r-xl);border:1px solid var(--border);">
+          <i class="bi bi-map" style="font-size:40px;color:var(--border);display:block;margin-bottom:12px;"></i>
+          <div style="font-weight:800;color:var(--navy);margin-bottom:6px;">No Route Assigned</div>
+          <div style="font-size:13px;color:var(--text-muted);">Your manager hasn't assigned a route to your bus yet.</div>
+        </div>`;
     }
   }
 
-  function renderTimeline() {
-    const container = document.getElementById('timeline-container');
-    container.innerHTML = '';
+  function renderStops() {
+    const list    = document.getElementById('stop-list');
+    const total   = routeStops.length;
+    const done    = completedStops.length;
+    const pct     = total > 0 ? Math.round((done / total) * 100) : 0;
     let nextFound = false;
 
-    routeStops.forEach((stop, index) => {
+    // Update hero
+    document.getElementById('kpi-progress').textContent   = `${done}/${total}`;
+    document.getElementById('hero-pct').textContent       = `${pct}%`;
+    document.getElementById('hero-progress').style.width  = `${pct}%`;
+    document.getElementById('hero-completed').textContent = `${done} completed`;
+    document.getElementById('hero-remaining').textContent = `${total - done} remaining`;
+
+    if (done === total && total > 0) {
+      document.getElementById('trip-status-badge').textContent = 'COMPLETE ✓';
+      document.getElementById('trip-status-badge').style.background = 'var(--green)';
+    }
+
+    list.innerHTML = routeStops.map((stop, i) => {
       const isDone = completedStops.includes(stop.id);
-      let status = 'upcoming';
+      let status = 'stop-upcoming';
       if (isDone) {
-        status = 'done';
+        status = 'stop-done';
       } else if (!nextFound) {
-        status = 'active';
+        status = 'stop-active';
         nextFound = true;
-        document.getElementById('trip-status-badge').textContent = 'IN PROGRESS';
+        if (document.getElementById('trip-status-badge').textContent === 'STANDBY') {
+          document.getElementById('trip-status-badge').textContent = 'IN PROGRESS';
+        }
       }
 
-      container.innerHTML += `
-        <div class="timeline-stop ${status}">
-          <div class="timeline-dot" style="${status === 'active' ? 'background:var(--yellow);box-shadow:0 0 0 4px rgba(253,184,19,0.2)' : ''}"></div>
-          <div class="stop-card" style="${status === 'upcoming' ? 'opacity:0.5' : 'opacity:1'}">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-              <div>
-                <div style="font-weight:800;font-size:15px;color:var(--navy);">${index === routeStops.length - 1 ? '🏫 ' : ''}${stop.name}</div>
-                <div style="font-size:12px;margin-top:4px;"><i class="bi bi-people-fill"></i> ${stop.students || 0} Expected</div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-weight:700;color:var(--text-muted);font-size:13px;">${stop.arrival_time || '--:--'}</div>
-                ${status === 'active' ? '<span class="badge badge-yellow" style="margin-top:5px;display:inline-block;">CURRENT</span>' : ''}
-                ${status === 'done'   ? '<i class="bi bi-check-circle-fill" style="color:var(--green);font-size:18px;"></i>' : ''}
-              </div>
+      const isLast   = i === routeStops.length - 1;
+      const numClass = isDone ? 'done' : (status === 'stop-active' ? 'active' : '');
+
+      return `
+        <div class="stop-item ${status}">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div class="stop-number ${numClass}">
+              ${isDone ? '<i class="bi bi-check-lg"></i>' : (i + 1)}
             </div>
-            ${status === 'active' ? `
-              <div style="margin-top:15px;display:flex;gap:10px;">
-                <button class="btn btn-navy btn-sm" style="flex:1;" onclick="window.markArrived('${stop.id}','${stop.name}')">
-                  <i class="bi bi-geo-alt"></i> Arrived
-                </button>
-                <button class="btn btn-yellow btn-sm" style="flex:1;" onclick="window.completeStop('${stop.id}')">
-                  <i class="bi bi-check-lg"></i> Done
-                </button>
-              </div>` : ''}
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                <div class="stop-name">${isLast ? '🏫 ' : ''}${stop.name}</div>
+                <span class="stop-time-badge ${status === 'stop-active' ? 'active' : ''}">${stop.arrival_time || '--:--'}</span>
+              </div>
+              <div class="stop-detail">
+                <span><i class="bi bi-people-fill" style="color:var(--navy);"></i> ${stop.students || 0} students</span>
+                ${isDone ? '<span style="color:var(--green);font-weight:800;"><i class="bi bi-check-circle-fill"></i> Completed</span>' : ''}
+                ${status === 'stop-active' ? '<span style="color:var(--yellow);font-weight:800;"><i class="bi bi-record-circle-fill"></i> Current stop</span>' : ''}
+              </div>
+              ${status === 'stop-active' ? `
+                <div class="stop-actions">
+                  <button class="btn btn-navy" style="flex:1;font-weight:800;" onclick="window.markArrived('${stop.id}','${stop.name.replace(/'/g,"\\'")}')">
+                    <i class="bi bi-geo-alt-fill"></i> Arrived
+                  </button>
+                  <button class="btn btn-yellow" style="flex:1;font-weight:800;" onclick="window.completeStop('${stop.id}')">
+                    <i class="bi bi-check-lg"></i> Done
+                  </button>
+                </div>` : ''}
+            </div>
           </div>
         </div>`;
-    });
-
-    updateProgress();
+    }).join('');
   }
 
-  function updateProgress() {
-    const pct = routeStops.length > 0 ? (completedStops.length / routeStops.length) * 100 : 0;
-    document.getElementById('progress-bar').style.width  = pct + '%';
-    document.getElementById('stop-count').textContent    = `${completedStops.length} / ${routeStops.length}`;
-  }
-
-  // ── 3. Stop actions — notification scoped to org ───────────────────────
   window.markArrived = async (stopId, name) => {
-    showToast(`📍 Arrival logged at ${name}`, 'info');
+    showToast(`📍 Arrived at ${name}`, 'success');
     await supabase.from('notifications').insert([{
-      user_id:         USER_ID,
-      title:           'Arrival Update',
-      message:         `Bus ${busId} has reached ${name}.`,
-      type:            'info',
-      organization_id: ORG_ID
+      user_id: USER_ID, title: 'Bus Arrival',
+      message: `Bus ${busId} has arrived at ${name}.`,
+      type: 'info', organization_id: ORG_ID
     }]);
   };
 
@@ -270,16 +325,13 @@
       completedStops.push(stopId);
       localStorage.setItem('completed_stops', JSON.stringify(completedStops));
     }
-    showToast('Stop completed. Moving to next...', 'success');
-    renderTimeline();
+    showToast('Stop marked complete.', 'success');
+    renderStops();
   };
 
-  function showToast(msg, type = 'info') {
+  function showToast(msg, type='info') {
     const c = document.getElementById('toast-container');
-    const t = document.createElement('div');
-    t.className = `toast ${type}`;
-    t.textContent = msg;
-    c.appendChild(t);
+    const t = document.createElement('div'); t.className = `toast ${type} active`; t.textContent = msg; c.appendChild(t);
     setTimeout(() => t.remove(), 3000);
   }
 </script>

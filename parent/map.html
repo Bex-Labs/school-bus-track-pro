@@ -272,8 +272,28 @@
         document.getElementById('driver-name-display').textContent = driver.full_name;
         document.getElementById('driver-initial').textContent      = driver.full_name.charAt(0);
         if (driver.phone) {
-          document.getElementById('driver-phone-link').href = `tel:${driver.phone.trim().replace(/^0/, '+234')}`;
+          const driverTel = driver.phone.trim().replace(/^0/, '+234');
+          document.getElementById('driver-phone-link').href = `tel:${driverTel}`;
+          document.getElementById('driver-phone-link').title = driver.phone;
+        } else {
+          document.getElementById('driver-phone-link').style.opacity = '0.4';
+          document.getElementById('driver-phone-link').title = 'No phone on file';
         }
+      }
+
+      // Fetch school manager phone for hotline
+      const { data: managers } = await supabase
+        .from('profiles')
+        .select('phone, full_name')
+        .eq('organization_id', ORG_ID)
+        .eq('role', 'school_manager')
+        .not('phone', 'is', null)
+        .limit(1);
+
+      const managerPhone = managers?.[0]?.phone;
+      const hotlineEl    = document.querySelector('a[href^="tel:"]');
+      if (hotlineEl && managerPhone) {
+        hotlineEl.href = `tel:${managerPhone.trim().replace(/^0/, '+234')}`;
       }
 
       if (busData.current_lat && busData.current_lng) updateMap(busData);
