@@ -218,23 +218,84 @@
   }
   function buildCombinedStream() {
     const feed = document.getElementById('alert-feed');
-    const formattedSOS = cachedNotifications.map(n => ({ id: n.id, title: '🚨 EMERGENCY SOS SIGNAL', message: n.message, type: 'emergency', timestamp: new Date(n.created_at), isResolved: !!n.resolved_at, refCode: n.id.split('-')[0].toUpperCase() }));
-    const formattedReports = cachedReports.map(r => ({ id: r.id, title: `Incident: ${r.report_type}`, message: r.details, type: 'report', timestamp: new Date(r.submitted_at), isResolved: r.status === 'resolved', refCode: r.reference || r.id.split('-')[0].toUpperCase() }));
+    const formattedSOS = cachedNotifications.map(n => {
+      const isHealth = n.title?.includes('HEALTH') || n.sos_type === 'health';
+      return {
+        id: n.id, 
+        title: isHealth ? '🚑 HEALTH EMERGENCY SOS' : '🚨 ROAD EMERGENCY SOS',
+        message: n.message, type: 'emergency',
+        sos_type: isHealth ? 'health' : 'standard',
+        timestamp: new Date(n.created_at),
+        isResolved: !!n.resolved_at,
+        refCode: n.id.split('-')[0].toUpperCase()
+      };
+    });
+    const formattedReports = cachedReports.map(r => ({
+      id: r.id,
+      title: `📋 Incident: ${r.report_type || 'Report'}`,
+      message: r.details,
+      type: 'report',
+      photo_url: r.photo_url || null,
+      timestamp: new Date(r.submitted_at),
+      isResolved: r.status === 'resolved',
+      refCode: r.reference || r.id.split('-')[0].toUpperCase()
+    }));
+
     let combined = [...formattedSOS, ...formattedReports].sort((a, b) => b.timestamp - a.timestamp);
     if (currentFilter !== 'all') combined = combined.filter(i => i.type === currentFilter);
-    if (combined.length === 0) { feed.innerHTML = '<div style="text-align:center;padding:100px;color:var(--text-muted);"><i class="bi bi-shield-check" style="font-size:3rem;display:block;margin-bottom:10px;"></i>No active incidents.</div>'; return; }
+
+    if (combined.length === 0) {
+      feed.innerHTML = '<div style="text-align:center;padding:100px;color:var(--text-muted);"><i class="bi bi-shield-check" style="font-size:3rem;display:block;margin-bottom:10px;"></i>No active incidents.</div>';
+      return;
+    }
+
     feed.innerHTML = combined.map(item => {
-      const isSOS = item.type === 'emergency';
-      const timeStr = item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const isSOS    = item.type === 'emergency';
+      const isHealth = item.sos_type === 'health';
+      const color    = isSOS ? (isHealth ? '#7c3aed' : 'var(--red)') : 'var(--navy)';
+      const bgColor  = isSOS ? (isHealth ? '#f5f3ff' : 'var(--red-light)') : 'var(--bg)';
+      const icon     = isSOS ? (isHealth ? 'bi-heart-pulse-fill' : 'bi-broadcast-pin') : 'bi-person-exclamation';
+      const timeStr  = item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      const photoHTML = item.photo_url
+        ? `<div style="margin-top:8px;">
+             <img src="${item.photo_url}" onclick="window.openIncidentPhoto('${item.photo_url}')"
+               style="height:60px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid var(--border);"
+               title="Click to view full photo">
+             <span style="font-size:10px;color:var(--text-muted);margin-left:6px;font-weight:700;">Photo attached — click to view</span>
+           </div>` : '';
+
       return `<div class="incident-card type-${isSOS ? 'emergency' : 'info'} ${item.isResolved ? 'resolved' : ''} ${isSOS && !item.isResolved ? 'emergency-pulse' : ''}">
-        <div class="stream-icon" style="background:${isSOS ? 'var(--red-light)' : 'var(--bg)'};color:${isSOS ? 'var(--red)' : 'var(--navy)'}"><i class="bi ${isSOS ? 'bi-broadcast-pin' : 'bi-person-exclamation'}"></i></div>
-        <div class="stream-details" style="flex:1"><h4 style="display:flex;justify-content:space-between;"><span>${item.title}</span><span style="font-size:9px;opacity:0.4;font-family:monospace;">REF: ${item.refCode}</span></h4>
-        <p><strong>Status:</strong> ${item.isResolved ? 'RESOLVED' : 'ACTIVE'} · <strong>Received:</strong> ${timeStr}</p>
-        <p style="margin-top:6px;opacity:0.9;font-size:12px;line-height:1.5;">${item.message}</p></div>
-        <div style="display:flex;gap:8px;">${!item.isResolved ? `<button class="btn btn-navy btn-sm" style="padding:6px 14px;font-size:11px;" onclick="resolveItem('${item.id}','${item.type}')">Resolve</button>` : `<i class="bi bi-check-all text-green" style="font-size:24px;"></i>`}
-        <button class="btn btn-ghost btn-sm" style="padding:6px 14px;font-size:11px;" onclick="window.locateIncident('${item.message}')">Locate</button></div></div>`;
+        <div class="stream-icon" style="background:${bgColor};color:${color};"><i class="bi ${icon}"></i></div>
+        <div class="stream-details" style="flex:1;">
+          <h4 style="display:flex;justify-content:space-between;">
+            <span style="color:${color};">${item.title}</span>
+            <span style="font-size:9px;opacity:0.4;font-family:monospace;">REF: ${item.refCode}</span>
+          </h4>
+          <p><strong>Status:</strong> ${item.isResolved ? 'RESOLVED' : 'ACTIVE'} · <strong>Received:</strong> ${timeStr}</p>
+          <p style="margin-top:6px;opacity:0.9;font-size:12px;line-height:1.5;">${item.message || ''}</p>
+          ${photoHTML}
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          ${!item.isResolved
+            ? `<button class="btn btn-navy btn-sm" style="padding:6px 14px;font-size:11px;" onclick="resolveItem('${item.id}','${item.type}')">Resolve</button>`
+            : `<i class="bi bi-check-all text-green" style="font-size:24px;"></i>`}
+          <button class="btn btn-ghost btn-sm" style="padding:6px 14px;font-size:11px;" onclick="window.locateIncident('${item.message}')">Locate</button>
+        </div>
+      </div>`;
     }).join('');
   }
+
+  // Photo lightbox for incident reports
+  window.openIncidentPhoto = (url) => {
+    const lb = document.createElement('div');
+    lb.id = 'incident-lightbox';
+    lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;';
+    lb.innerHTML = `<img src="${url}" style="max-width:90vw;max-height:80vh;border-radius:12px;object-fit:contain;">
+      <button onclick="document.getElementById('incident-lightbox').remove()" style="margin-top:16px;background:white;border:none;padding:8px 20px;border-radius:20px;font-weight:800;cursor:pointer;">Close</button>`;
+    lb.onclick = (e) => { if (e.target === lb) lb.remove(); };
+    document.body.appendChild(lb);
+  };
   function updateMapMarkers(alerts) {
     mapMarkers.forEach(m => cmap.removeLayer(m)); mapMarkers = [];
     alerts.forEach(a => {

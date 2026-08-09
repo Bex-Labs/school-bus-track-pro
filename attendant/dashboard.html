@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Attendant Dashboard | School Bus Track Pro</title>
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <style>
+    html, body { height: 100%; margin: 0; }
+    .admin-layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+    .admin-main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .admin-content { flex: 1; overflow-y: auto; padding: 24px; scrollbar-width: thin; }
+
+    #bus-map { border-radius: var(--r-xl); border: 1px solid var(--border); box-shadow: var(--shadow-sm); z-index: 1; }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .kpi-node { background: white; border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; text-align: center; }
+    .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; }
+    .kpi-value { font-size: 28px; font-weight: 900; color: var(--navy); line-height: 1; }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+    .info-card { background: white; border: 1px solid var(--border); border-radius: var(--r-xl); padding: 20px; }
+    .info-card-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 14px; }
+
+    .driver-strip { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg); border-radius: var(--r-lg); border: 1px solid var(--border); }
+    .driver-av { width: 44px; height: 44px; border-radius: 50%; background: var(--yellow); color: var(--navy); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; flex-shrink: 0; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .status-dot.online { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,0.6); animation: pulse 2s infinite; }
+    .status-dot.offline { background: #cbd5e1; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    .broadcast-box { background: var(--navy); border-radius: var(--r-xl); padding: 20px; color: white; margin-top: 20px; }
+    .broadcast-input { width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: var(--r-md); padding: 10px 14px; color: white; font-size: 13px; outline: none; box-sizing: border-box; }
+    .broadcast-input::placeholder { color: rgba(255,255,255,0.4); }
+
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+      html, body { overflow: auto !important; height: auto !important; }
+      .admin-layout { height: auto !important; overflow: visible !important; }
+      .admin-main { height: auto !important; overflow: visible !important; }
+      .admin-content { overflow: visible !important; padding: 16px 16px 100px !important; }
+      .admin-sidebar { display: none !important; }
+      .admin-topbar { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; height: auto !important; padding: 16px !important; }
+      .kpi-grid { grid-template-columns: 1fr 1fr !important; }
+      .info-grid { grid-template-columns: 1fr !important; }
+      #bus-map { height: 260px !important; }
+      .bottom-nav.mobile-only { height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center !important; background: var(--navy) !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 999 !important; }
+      .bottom-nav.mobile-only a { flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0 !important; color: rgba(255,255,255,0.6) !important; text-decoration: none !important; }
+      .bottom-nav.mobile-only a i { font-size: 22px !important; color: rgba(255,255,255,0.6) !important; }
+      .bottom-nav.mobile-only a.active i { color: var(--yellow) !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar" style="display:flex;flex-direction:column;height:100vh;">
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png" alt="Logo">
+      <div class="logo-text" id="sidebar-school-name">School Bus Track Pro <small>Attendant Hub</small></div>
+    </div>
+    <nav class="sidebar-nav" style="flex:1;overflow-y:auto;">
+      <div class="nav-group-label">Operations</div>
+      <a href="dashboard.html" class="nav-link active"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
+      <a href="students.html" class="nav-link"><i class="bi bi-people-fill"></i><span>Student Register</span></a>
+      <a href="schedule.html" class="nav-link"><i class="bi bi-calendar-check-fill"></i><span>Route Manifest</span></a>
+      <div class="nav-group-label">Account</div>
+      <a href="profile.html" class="nav-link"><i class="bi bi-person-gear"></i><span>My Profile</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-user" style="display:flex;align-items:center;gap:12px;">
+        <div id="sidebar-avatar" style="width:36px;height:36px;background:var(--yellow);color:var(--navy);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-weight:800;">A</div>
+        <div style="color:white;font-size:13px;">
+          <div style="font-weight:800;" id="sidebar-name">Attendant</div>
+          <div style="opacity:0.6;font-size:11px;" id="sidebar-bus">Bus ---</div>
+        </div>
+      </div>
+      <button id="signout-btn" class="btn btn-red btn-full btn-sm" style="margin-top:16px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);width:100%;">
+        <i class="bi bi-power"></i> Log Out
+      </button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1 class="topbar-title">Attendant Dashboard</h1>
+        <p style="font-size:13px;color:var(--text-secondary);" id="topbar-meta">Loading...</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="badge" id="bus-status-badge" style="font-size:12px;font-weight:800;background:#e2e8f0;color:var(--navy);">
+          <span class="status-dot offline"></span>OFFLINE
+        </span>
+        <a href="students.html" class="btn btn-yellow btn-sm">
+          <i class="bi bi-people-fill"></i> Register Students
+        </a>
+      </div>
+    </header>
+
+    <div class="admin-content">
+
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-node">
+          <div class="kpi-label">On Board</div>
+          <div class="kpi-value" style="color:var(--green);" id="kpi-onboard">0</div>
+        </div>
+        <div class="kpi-node">
+          <div class="kpi-label">Expected</div>
+          <div class="kpi-value" id="kpi-expected">0</div>
+        </div>
+        <div class="kpi-node">
+          <div class="kpi-label">Absent</div>
+          <div class="kpi-value" style="color:#f59e0b;" id="kpi-absent">0</div>
+        </div>
+        <div class="kpi-node">
+          <div class="kpi-label">Bus Speed</div>
+          <div class="kpi-value" id="kpi-speed">0<small style="font-size:13px;font-weight:600;">km/h</small></div>
+        </div>
+      </div>
+
+      <!-- Map -->
+      <div style="background:white;border:1px solid var(--border);border-radius:var(--r-xl);overflow:hidden;margin-bottom:20px;">
+        <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-weight:800;color:var(--navy);font-size:14px;"><i class="bi bi-geo-alt-fill" style="color:var(--yellow);"></i> Live Bus Position</div>
+          <span id="last-sync" style="font-size:11px;color:var(--text-muted);">Waiting for GPS...</span>
+        </div>
+        <div id="bus-map" style="height:320px;width:100%;"></div>
+      </div>
+
+      <!-- Info grid -->
+      <div class="info-grid">
+
+        <!-- Driver info -->
+        <div class="info-card">
+          <div class="info-card-title"><i class="bi bi-truck-front-fill"></i> Assigned Driver</div>
+          <div class="driver-strip" id="driver-strip">
+            <div class="driver-av" id="driver-initial">?</div>
+            <div style="flex:1;">
+              <div style="font-weight:800;font-size:14px;color:var(--navy);" id="driver-name">Loading...</div>
+              <div style="font-size:12px;color:var(--text-secondary);" id="driver-email">---</div>
+            </div>
+            <a id="driver-call" href="tel:" class="btn btn-yellow btn-sm" style="flex-shrink:0;">
+              <i class="bi bi-telephone-fill"></i>
+            </a>
+          </div>
+          <div style="margin-top:12px;padding:10px 14px;background:var(--bg);border-radius:var(--r-md);border:1px solid var(--border);">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Assigned Bus</div>
+            <div style="font-size:20px;font-weight:900;color:var(--navy);font-family:monospace;" id="bus-id-display">---</div>
+            <div style="font-size:12px;color:var(--text-secondary);" id="bus-plate-display">---</div>
+          </div>
+        </div>
+
+        <!-- Route info -->
+        <div class="info-card">
+          <div class="info-card-title"><i class="bi bi-map-fill"></i> Active Route</div>
+          <div id="route-info-content">
+            <div style="text-align:center;padding:20px;color:var(--text-muted);">
+              <i class="bi bi-map" style="font-size:28px;display:block;margin-bottom:8px;opacity:0.3;"></i>
+              <div style="font-size:13px;">No route assigned yet</div>
+            </div>
+          </div>
+          <a href="schedule.html" class="btn btn-navy btn-full btn-sm" style="margin-top:12px;">
+            <i class="bi bi-calendar-check-fill"></i> View Full Manifest
+          </a>
+        </div>
+
+      </div>
+
+      <!-- Broadcast received -->
+      <div id="broadcast-panel" style="display:none;" class="broadcast-box">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;opacity:0.6;margin-bottom:8px;">
+          <i class="bi bi-megaphone-fill"></i> Manager Broadcast
+        </div>
+        <div id="broadcast-message" style="font-size:14px;font-weight:700;"></div>
+        <div id="broadcast-time" style="font-size:11px;opacity:0.5;margin-top:6px;"></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav mobile-only">
+  <a href="dashboard.html" class="active"><i class="bi bi-speedometer2"></i></a>
+  <a href="students.html"><i class="bi bi-people-fill"></i></a>
+  <a href="schedule.html"><i class="bi bi-calendar-check-fill"></i></a>
+  <a href="profile.html"><i class="bi bi-person-gear"></i></a>
+</nav>
+
+<div id="toast-container"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+  import { supabase, getUserProfile } from '../js/config.js';
+  import { requireAuth, signOut } from '../js/auth.js';
+
+  await requireAuth();
+  const profile = await getUserProfile();
+  if (!profile || profile.role !== 'bus_attendant') {
+    await supabase.auth.signOut(); window.location.href = '../index.html'; throw new Error('Not authorized.');
+  }
+
+  const ORG_ID  = profile.organization_id;
+  const USER_ID = profile.id;
+
+  // Sidebar
+  const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
+  if (org) document.getElementById('sidebar-school-name').innerHTML = `${org.name} <small>Attendant Hub</small>`;
+  document.getElementById('sidebar-name').textContent = profile.full_name || 'Attendant';
+  document.getElementById('sidebar-avatar').textContent = (profile.full_name || 'A').charAt(0).toUpperCase();
+  document.getElementById('signout-btn').onclick = () => signOut();
+
+  // Find bus assigned to this attendant
+  const { data: busData } = await supabase.from('buses')
+    .select('*, profiles!buses_driver_id_fkey(full_name, email, phone, avatar_url)')
+    .eq('attendant_id', USER_ID).eq('organization_id', ORG_ID).single();
+
+  if (!busData) {
+    document.getElementById('topbar-meta').textContent = 'No bus assigned — contact your manager.';
+    document.getElementById('sidebar-bus').textContent = 'No bus assigned';
+    document.getElementById('bus-id-display').textContent = 'N/A';
+    document.getElementById('kpi-expected').textContent = '0';
+  } else {
+    const busId = busData.id;
+    document.getElementById('sidebar-bus').textContent     = `Bus ${busId}`;
+    document.getElementById('topbar-meta').textContent     = `Bus ${busId} · ${busData.plate_number || 'No plate'}`;
+    document.getElementById('bus-id-display').textContent  = busId;
+    document.getElementById('bus-plate-display').textContent = busData.plate_number || '---';
+
+    // Bus status badge
+    if (busData.status === 'active') {
+      const badge = document.getElementById('bus-status-badge');
+      badge.innerHTML = '<span class="status-dot online"></span>LIVE';
+      badge.style.background = '#f0fdf4'; badge.style.color = 'var(--green)';
+    }
+
+    // Speed
+    document.getElementById('kpi-speed').innerHTML = `${busData.speed || 0}<small style="font-size:13px;font-weight:600;">km/h</small>`;
+
+    // Driver info
+    const driver = busData.profiles;
+    if (driver) {
+      document.getElementById('driver-name').textContent  = driver.full_name || 'Driver';
+      document.getElementById('driver-email').textContent = driver.email || '---';
+      document.getElementById('driver-initial').textContent = (driver.full_name || 'D').charAt(0).toUpperCase();
+      if (driver.phone) document.getElementById('driver-call').href = `tel:${driver.phone}`;
+    }
+
+    // Student count
+    const { data: students } = await supabase.from('students')
+      .select('id').eq('bus_id', busId).eq('organization_id', ORG_ID);
+    const totalStudents = students?.length || 0;
+    document.getElementById('kpi-expected').textContent = totalStudents;
+
+    // Today's attendance
+    const today = new Date().toISOString().split('T')[0];
+    const { data: logs } = await supabase.from('attendance_logs')
+      .select('id, student_id').eq('bus_id', busId)
+      .eq('organization_id', ORG_ID).eq('direction', 'boarding')
+      .gte('scanned_at', today + 'T00:00:00Z');
+    const onBoard = logs?.length || 0;
+    document.getElementById('kpi-onboard').textContent = onBoard;
+    document.getElementById('kpi-absent').textContent  = Math.max(0, totalStudents - onBoard);
+
+    // Route info
+    const { data: routes } = await supabase.from('routes').select('id, name')
+      .eq('bus_id', busId).eq('organization_id', ORG_ID).limit(1);
+    if (routes && routes.length > 0) {
+      const route = routes[0];
+      const { data: stops } = await supabase.from('stops').select('name, arrival_time')
+        .eq('route_id', route.id).order('order_index').limit(3);
+      document.getElementById('route-info-content').innerHTML = `
+        <div style="font-weight:800;font-size:15px;color:var(--navy);margin-bottom:10px;">${route.name}</div>
+        ${(stops || []).map((s, i) => `
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+            <div style="width:22px;height:22px;background:var(--navy);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;">${i+1}</div>
+            <div style="flex:1;font-size:13px;font-weight:600;color:var(--navy);">${s.name}</div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);">${s.arrival_time || '--:--'}</div>
+          </div>`).join('')}
+        ${stops && stops.length > 0 ? '' : '<div style="font-size:13px;color:var(--text-muted);">No stops configured yet.</div>'}`;
+    }
+
+    // Map
+    const map = L.map('bus-map', { zoomControl: true, attributionControl: false });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+
+    let busMarker = null;
+    const defaultCoords = [6.5244, 3.3792];
+    map.setView(defaultCoords, 13);
+
+    function updateMap(bus) {
+      if (!bus.current_lat || !bus.current_lng) return;
+      const pos = [bus.current_lat, bus.current_lng];
+      document.getElementById('last-sync').textContent = `Last sync: ${new Date().toLocaleTimeString()}`;
+      if (!busMarker) {
+        busMarker = L.marker(pos, {
+          icon: L.divIcon({
+            html: `<div style="background:var(--yellow);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 10px rgba(0,0,0,0.3);">
+              <i class="bi bi-bus-front-fill" style="color:var(--navy);font-size:16px;"></i></div>`,
+            iconSize: [36, 36], iconAnchor: [18, 18], className: ''
+          })
+        }).addTo(map).bindPopup(`<b>Bus ${busId}</b><br>${bus.speed || 0} km/h`);
+        map.setView(pos, 15);
+      } else {
+        busMarker.setLatLng(pos);
+        map.panTo(pos);
+      }
+      document.getElementById('kpi-speed').innerHTML = `${bus.speed || 0}<small style="font-size:13px;font-weight:600;">km/h</small>`;
+    }
+
+    if (busData.current_lat && busData.current_lng) updateMap(busData);
+
+    // Realtime bus updates
+    supabase.channel(`attendant-bus-${busId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'buses', filter: `id=eq.${busId}` },
+        payload => {
+          updateMap(payload.new);
+          const badge = document.getElementById('bus-status-badge');
+          if (payload.new.status === 'active') {
+            badge.innerHTML = '<span class="status-dot online"></span>LIVE';
+            badge.style.background = '#f0fdf4'; badge.style.color = 'var(--green)';
+          } else {
+            badge.innerHTML = '<span class="status-dot offline"></span>OFFLINE';
+            badge.style.background = '#e2e8f0'; badge.style.color = 'var(--navy)';
+          }
+        })
+      .subscribe();
+
+    // Realtime notifications (broadcast)
+    supabase.channel(`attendant-notif-${ORG_ID}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications',
+        filter: `organization_id=eq.${ORG_ID}` }, payload => {
+          const n = payload.new;
+          if (n.type === 'broadcast') {
+            const panel = document.getElementById('broadcast-panel');
+            document.getElementById('broadcast-message').textContent = n.message;
+            document.getElementById('broadcast-time').textContent = new Date(n.created_at).toLocaleTimeString();
+            panel.style.display = 'block';
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('Fleet Broadcast', { body: n.message });
+            }
+          }
+        })
+      .subscribe();
+  }
+
+  function showToast(m, t='info') {
+    const c = document.getElementById('toast-container');
+    const d = document.createElement('div'); d.className = `toast ${t} active`; d.textContent = m; c.appendChild(d);
+    setTimeout(() => d.remove(), 4000);
+  }
+</script>
+</body>
+</html>

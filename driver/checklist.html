@@ -120,19 +120,71 @@
           </div>
 
           <div class="tile tile-4">
-            <div class="table-header"><div class="table-title">Technical Log</div></div>
+            <div class="table-header"><div class="table-title">⛽ Fuel Log</div></div>
             <div style="padding:24px;">
-              <div class="form-group">
-                <label class="form-label">Current Odometer (KM)</label>
+
+              <!-- Fuel dashboard photo BEFORE trip — compulsory -->
+              <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" style="display:flex;align-items:center;gap:6px;">
+                  <i class="bi bi-camera-fill" style="color:var(--yellow);"></i>
+                  Fuel Dashboard Photo (Before Trip) <span style="color:var(--red);">*</span>
+                </label>
+                <div id="photo-before-preview" style="width:100%;height:120px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--r-lg);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative;" onclick="document.getElementById('photo-before-input').click()">
+                  <div id="photo-before-placeholder" style="text-align:center;color:var(--text-muted);">
+                    <i class="bi bi-camera" style="font-size:28px;display:block;margin-bottom:6px;"></i>
+                    <div style="font-size:12px;font-weight:700;">Tap to snap fuel gauge</div>
+                  </div>
+                  <img id="photo-before-img" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;">
+                  <div id="photo-before-check" style="display:none;position:absolute;top:8px;right:8px;background:var(--green);color:white;border-radius:50%;width:24px;height:24px;display:none;align-items:center;justify-content:center;">
+                    <i class="bi bi-check-lg" style="font-size:12px;"></i>
+                  </div>
+                </div>
+                <input type="file" id="photo-before-input" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoUpload(this,'before')">
+              </div>
+
+              <!-- Current fuel level -->
+              <div class="form-group" style="margin-bottom:12px;">
+                <label class="form-label">Current Fuel Level (%) <span style="color:var(--red);">*</span></label>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <input type="range" id="fuel-level-before" min="0" max="100" value="50" style="flex:1;accent-color:var(--yellow);" oninput="document.getElementById('fuel-level-before-val').textContent=this.value+'%'">
+                  <span id="fuel-level-before-val" style="font-size:16px;font-weight:900;color:var(--navy);min-width:45px;text-align:right;">50%</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);font-weight:700;margin-top:2px;">
+                  <span>Empty</span><span>Half</span><span>Full</span>
+                </div>
+              </div>
+
+              <!-- Fuel added -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+                <div class="form-group">
+                  <label class="form-label">Fuel Added (L)</label>
+                  <input type="number" id="fuel-added" class="form-control" placeholder="0.00" min="0" step="0.5">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Cost (₦)</label>
+                  <input type="number" id="fuel-cost" class="form-control" placeholder="0.00" min="0" step="100">
+                </div>
+              </div>
+
+              <!-- Odometer -->
+              <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label">Odometer Reading (KM) <span style="color:var(--red);">*</span></label>
                 <input type="number" class="form-control" id="odometer" placeholder="e.g. 45230" required>
               </div>
-              <div class="form-group" style="margin-top:15px;">
+
+              <!-- Inspection notes -->
+              <div class="form-group" style="margin-bottom:16px;">
                 <label class="form-label">Inspection Notes</label>
-                <textarea class="form-control" id="notes" placeholder="Describe any defects..." style="height:100px;"></textarea>
+                <textarea class="form-control" id="notes" placeholder="Describe any defects or concerns..." style="height:80px;"></textarea>
               </div>
-              <button type="submit" class="btn btn-navy btn-full" id="submit-btn" disabled style="margin-top:20px;padding:15px;">
+
+              <!-- Submit -->
+              <button type="submit" class="btn btn-navy btn-full" id="submit-btn" disabled style="margin-top:8px;padding:15px;">
                 <i class="bi bi-lock-fill"></i> Secure Unit
               </button>
+              <div id="submit-hint" style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;font-weight:600;">
+                Complete all checks and fuel photo to unlock
+              </div>
             </div>
           </div>
         </div>
@@ -188,6 +240,7 @@
   // ── 2. Checklist logic ─────────────────────────────────────────────────
   const TOTAL = 7;
   let checkedCount = 0;
+  let photoBeforeUrl = null;
 
   window.toggleCheck = function(el) {
     const wasChecked = el.classList.contains('checked');
@@ -203,76 +256,144 @@
     document.getElementById('progress-ring').style.background =
       `conic-gradient(var(--green) ${pct * 3.6}deg, var(--border) 0deg)`;
 
-    const btn = document.getElementById('submit-btn');
-    if (checkedCount === TOTAL) {
+    const allDone  = checkedCount === TOTAL && photoBeforeUrl;
+    const btn      = document.getElementById('submit-btn');
+    const hint     = document.getElementById('submit-hint');
+
+    if (allDone) {
       btn.disabled = false;
       btn.classList.replace('btn-navy', 'btn-yellow');
       btn.innerHTML = '<i class="bi bi-check-all"></i> Submit Inspection';
+      hint.style.display = 'none';
     } else {
       btn.disabled = true;
       btn.classList.replace('btn-yellow', 'btn-navy');
-      btn.innerHTML = `<i class="bi bi-lock-fill"></i> Locked (${checkedCount}/${TOTAL})`;
+      if (checkedCount < TOTAL) {
+        btn.innerHTML = `<i class="bi bi-lock-fill"></i> Locked (${checkedCount}/${TOTAL} checks)`;
+        hint.textContent = `${TOTAL - checkedCount} checks remaining + fuel photo required`;
+      } else {
+        btn.innerHTML = '<i class="bi bi-camera-fill"></i> Add Fuel Photo to Unlock';
+        hint.textContent = 'Snap the fuel dashboard photo to proceed';
+      }
+      hint.style.display = 'block';
     }
   }
 
-  // ── 3. Submit — scoped to org ──────────────────────────────────────────
+  // ── Photo upload handler ───────────────────────────────────────────────
+  window.handlePhotoUpload = async (input, type) => {
+    const file = input.files[0]; if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { showToast('Photo must be under 5MB.', 'error'); return; }
+
+    const preview     = document.getElementById(`photo-${type}-preview`);
+    const placeholder = document.getElementById(`photo-${type}-placeholder`);
+    const img         = document.getElementById(`photo-${type}-img`);
+    const check       = document.getElementById(`photo-${type}-check`);
+
+    // Show local preview immediately
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      img.src = e.target.result;
+      img.style.display = 'block';
+      placeholder.style.display = 'none';
+      preview.style.border = '2px solid var(--green)';
+    };
+    reader.readAsDataURL(file);
+
+    try {
+      const ext  = file.name.split('.').pop().toLowerCase();
+      const path = `${USER_ID}/${Date.now()}_${type}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('fuel-photos').upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from('fuel-photos').getPublicUrl(path);
+
+      if (type === 'before') {
+        photoBeforeUrl = publicUrl;
+        if (check) { check.style.display = 'flex'; }
+        showToast('Fuel photo saved.', 'success');
+        updateProgressUI();
+      }
+    } catch (err) {
+      showToast('Photo upload failed: ' + err.message, 'error');
+    }
+  };
+
+  // ── 3. Submit ──────────────────────────────────────────────────────────
   document.getElementById('checklist-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn      = document.getElementById('submit-btn');
     const odometer = document.getElementById('odometer').value;
     const notes    = document.getElementById('notes').value || '';
 
-    if (!odometer) { alert('Please enter the odometer reading.'); return; }
-    if (!busId)    { alert('No bus assigned to your profile. Contact your manager.'); return; }
+    if (!odometer)      { showToast('Please enter the odometer reading.', 'error'); return; }
+    if (!busId)         { showToast('No bus assigned. Contact your manager.', 'error'); return; }
+    if (!photoBeforeUrl){ showToast('Fuel dashboard photo is required.', 'error'); return; }
 
     btn.disabled  = true;
     btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Logging...';
 
     try {
-      const timestamp = new Date().toISOString();
+      const timestamp       = new Date().toISOString();
+      const fuelLevelBefore = parseInt(document.getElementById('fuel-level-before').value);
+      const fuelAdded       = parseFloat(document.getElementById('fuel-added').value) || 0;
+      const fuelCost        = parseFloat(document.getElementById('fuel-cost').value) || 0;
 
-      // Write to inspections table — scoped to org, includes bus_id
+      // ── Write inspection record ─────────────────────────────────────
       const { error: inspErr } = await supabase.from('inspections').insert([{
         driver_id:        USER_ID,
         bus_id:           busId,
         odometer_reading: parseInt(odometer),
-        notes:            notes,
+        notes,
         status:           'completed',
         organization_id:  ORG_ID,
-        timestamp:        timestamp
+        timestamp
       }]);
+      if (inspErr) throw new Error(inspErr.message);
 
-      if (inspErr) {
-        console.error('Inspection insert error:', inspErr);
-        throw new Error(inspErr.message);
-      }
+      // ── Write fuel log record ────────────────────────────────────────
+      const { error: fuelErr } = await supabase.from('fuel_logs').insert([{
+        bus_id:             busId,
+        driver_id:          USER_ID,
+        organization_id:    ORG_ID,
+        trip_date:          new Date().toISOString().split('T')[0],
+        fuel_level_before:  fuelLevelBefore,
+        fuel_added_litres:  fuelAdded || null,
+        fuel_cost:          fuelCost || null,
+        odometer_before:    parseInt(odometer),
+        photo_before_url:   photoBeforeUrl,
+        status:             'pre_trip'
+      }]);
+      if (fuelErr) console.warn('Fuel log warning:', fuelErr.message);
 
-      // Log to notifications — scoped to org
+      // ── Notification ─────────────────────────────────────────────────
       await supabase.from('notifications').insert([{
         user_id:         USER_ID,
-        title:           '✅ DAILY INSPECTION PASSED',
-        message:         `Pre-trip safety check cleared for Bus ${busId}. Odometer: ${parseInt(odometer)} km.`,
+        title:           'DAILY INSPECTION PASSED',
+        message:         `Pre-trip check cleared for Bus ${busId}. Odometer: ${parseInt(odometer)} km. Fuel: ${fuelLevelBefore}%.`,
         type:            'info',
         status:          'logged',
         organization_id: ORG_ID,
         created_at:      timestamp
       }]);
 
+      // Save fuel_log_id to localStorage so end-trip can update it
       localStorage.setItem('checklist_completed_today', new Date().toDateString());
+      localStorage.setItem('fuel_level_before', fuelLevelBefore.toString());
+      localStorage.setItem('odometer_before', odometer);
       window.location.href = 'dashboard.html';
 
     } catch (err) {
-      console.error('Checklist submission failed:', err.message);
+      console.error('Submission failed:', err.message);
       btn.disabled  = false;
       btn.innerHTML = '<i class="bi bi-check-all"></i> Submit Inspection';
-      // Show detailed error
-      const toast = document.createElement('div');
-      toast.className = 'toast error active';
-      toast.textContent = 'Submission failed: ' + err.message;
-      document.getElementById('toast-container').appendChild(toast);
-      setTimeout(() => toast.remove(), 6000);
+      showToast('Submission failed: ' + err.message, 'error');
     }
   });
+
+  function showToast(m, t='info') {
+    const c = document.getElementById('toast-container');
+    const d = document.createElement('div'); d.className = `toast ${t} active`; d.textContent = m; c.appendChild(d);
+    setTimeout(() => d.remove(), 5000);
+  }
 </script>
 </body>
 </html>

@@ -15,6 +15,8 @@
     .sos-btn.holding { background: #8b0000 !important; transform: scale(0.96); }
     .sos-btn.sent { background: var(--green) !important; }
     .sos-zone { position: relative; overflow: hidden; border-radius: var(--r-lg); }
+    #health-sos-btn { background: #7c3aed; }
+    #health-sos-btn.holding { background: #4c1d95 !important; transform: scale(0.96); }
     .hold-progress { position: absolute; bottom: 0; left: 0; height: 100%; width: 0%; background: rgba(255,255,255,0.2); transition: width 0.1s linear; pointer-events: none; }
     #broadcast-toast { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: var(--navy); color: white; padding: 16px 20px; border-radius: var(--r-lg); box-shadow: var(--shadow-lg); z-index: 9999; display: flex; align-items: center; gap: 15px; transition: top 0.5s cubic-bezier(0.175,0.885,0.32,1.275); border-left: 5px solid var(--yellow); }
     #broadcast-toast.active { top: 20px; }
@@ -120,11 +122,20 @@
               <div class="table-title">Trip Controls</div>
             </div>
             <div style="display:flex;flex-direction:column;gap:16px;">
+              <!-- Standard SOS -->
               <div class="sos-zone">
-                <button class="sos-btn" id="sos-btn">
+                <button class="sos-btn" id="sos-btn" style="background:var(--red);">
                   <div class="hold-progress" id="sos-progress"></div>
                   <i class="bi bi-exclamation-octagon-fill"></i>
-                  <span id="sos-label">HOLD 5s FOR SOS</span>
+                  <span id="sos-label">HOLD 5s · ROAD SOS</span>
+                </button>
+              </div>
+              <!-- Health Emergency SOS -->
+              <div class="sos-zone">
+                <button class="sos-btn" id="health-sos-btn" style="background:#7c3aed;">
+                  <div class="hold-progress" id="health-sos-progress"></div>
+                  <i class="bi bi-heart-pulse-fill"></i>
+                  <span id="health-sos-label">HOLD 5s · HEALTH SOS</span>
                 </button>
               </div>
               <button class="btn-start-trip" id="start-trip-btn" disabled>
@@ -169,7 +180,88 @@
   <a href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
 </nav>
 
-<div id="toast-container"></div>
+<!-- Post-Trip Fuel Modal -->
+<div id="fuel-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:3000;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+  <div style="background:white;width:95%;max-width:440px;border-radius:20px;padding:28px;box-shadow:0 25px 50px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="font-weight:900;font-size:16px;color:var(--navy);margin:0;">⛽ Post-Trip Fuel Log</h3>
+      <span class="badge badge-yellow" style="font-size:11px;">Required</span>
+    </div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;">Snap the fuel dashboard and log the final reading before ending the trip.</p>
+
+    <!-- Photo after trip -->
+    <div style="margin-bottom:16px;">
+      <label style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:8px;">
+        <i class="bi bi-camera-fill" style="color:var(--yellow);"></i> Fuel Dashboard Photo (After Trip) <span style="color:var(--red);">*</span>
+      </label>
+      <div id="fuel-photo-preview" onclick="document.getElementById('fuel-photo-input').click()"
+        style="width:100%;height:130px;background:var(--bg);border:2px dashed var(--border);border-radius:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative;">
+        <div id="fuel-photo-placeholder" style="text-align:center;color:var(--text-muted);">
+          <i class="bi bi-camera" style="font-size:32px;display:block;margin-bottom:8px;"></i>
+          <div style="font-size:12px;font-weight:700;">Tap to snap fuel gauge</div>
+        </div>
+        <img id="fuel-photo-img" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;">
+      </div>
+      <input type="file" id="fuel-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="handleFuelPhoto(this)">
+    </div>
+
+    <!-- Final fuel level -->
+    <div style="margin-bottom:16px;">
+      <label style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:8px;">
+        Final Fuel Level (%) <span style="color:var(--red);">*</span>
+      </label>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <input type="range" id="fuel-level-after" min="0" max="100" value="40"
+          style="flex:1;accent-color:var(--yellow);"
+          oninput="document.getElementById('fuel-after-val').textContent=this.value+'%'">
+        <span id="fuel-after-val" style="font-size:20px;font-weight:900;color:var(--navy);min-width:50px;text-align:right;">40%</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);font-weight:700;margin-top:4px;">
+        <span>Empty</span><span>Half</span><span>Full</span>
+      </div>
+    </div>
+
+    <!-- Odometer after -->
+    <div style="margin-bottom:20px;">
+      <label style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:6px;">
+        Odometer Reading (KM) <span style="color:var(--red);">*</span>
+      </label>
+      <input type="number" id="odometer-after" placeholder="e.g. 45480"
+        style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;color:var(--navy);outline:none;box-sizing:border-box;"
+        onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+
+    <!-- Fuel consumption summary -->
+    <div id="fuel-summary" style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:20px;display:none;">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">Trip Fuel Summary</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="text-align:center;">
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Before</div>
+          <div style="font-size:20px;font-weight:900;color:var(--navy);" id="summary-before">--</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">After</div>
+          <div style="font-size:20px;font-weight:900;color:var(--navy);" id="summary-after">--</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Distance</div>
+          <div style="font-size:20px;font-weight:900;color:var(--navy);" id="summary-distance">-- km</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Fuel Used</div>
+          <div style="font-size:20px;font-weight:900;color:#dc2626;" id="summary-used">--%</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;">
+      <button class="btn btn-yellow btn-full" style="font-weight:800;" id="btn-confirm-end" onclick="confirmEndTrip()">
+        <i class="bi bi-flag-fill"></i> End Trip
+      </button>
+      <button class="btn btn-ghost" onclick="document.getElementById('fuel-modal').style.display='none'">Cancel</button>
+    </div>
+  </div>
+</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -303,29 +395,85 @@
     .on('broadcast', { event: 'fleet-directive' }, ({ payload }) => { if (!payload.org_id || payload.org_id === ORG_ID) { showBroadcastModal(payload.message, '📢 Manager Directive'); addToFeed(payload, '📢 MANAGER'); } })
     .subscribe();
 
-  // SOS
-  const sosBtn = document.getElementById('sos-btn');
-  const sosProgress = document.getElementById('sos-progress');
-  const sosLabel = document.getElementById('sos-label');
-  let sosHoldTimer = null, sosStartTime = 0;
+  // ── SOS — Standard + Health Emergency ────────────────────────────────
+  const SUPABASE_FUNC_URL = 'https://bxhzckjmyhachqotgulg.supabase.co/functions/v1';
 
-  const startSosHold = (e) => { e.preventDefault(); sosStartTime = Date.now(); sosBtn.classList.add('holding'); sosHoldTimer = setInterval(() => { const elapsed = Date.now() - sosStartTime; sosProgress.style.width = Math.min((elapsed/5000)*100,100)+'%'; if (elapsed >= 5000) { triggerSOS(); clearSosHold(); } }, 100); };
-  const clearSosHold = () => { clearInterval(sosHoldTimer); sosBtn.classList.remove('holding'); sosProgress.style.width = '0%'; };
+  function setupSosButton(btnId, progressId, labelId, sosType) {
+    const btn      = document.getElementById(btnId);
+    const progress = document.getElementById(progressId);
+    const label    = document.getElementById(labelId);
+    if (!btn) return;
+    let holdTimer = null, startTime = 0;
 
-  async function triggerSOS() {
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      const { latitude, longitude } = pos.coords;
-      await supabase.from('emergency_alerts').insert([{ driver_id: USER_ID, lat: latitude, lng: longitude, status: 'active', organization_id: ORG_ID }]);
-      await supabase.from('notifications').insert([{ user_id: USER_ID, title: '🚨 EMERGENCY SOS SIGNAL', message: `CRITICAL: Driver ${driverName} needs help. Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`, type: 'emergency', status: 'active', organization_id: ORG_ID }]);
-      sosBtn.classList.add('sent'); sosLabel.textContent = 'SIGNAL SENT';
-      setTimeout(() => { sosBtn.classList.remove('sent'); sosLabel.textContent = 'HOLD 5s FOR SOS'; }, 3000);
-    }, () => alert('GPS access required for SOS.'), { enableHighAccuracy: true });
+    const startHold = (e) => {
+      e.preventDefault();
+      startTime = Date.now();
+      btn.classList.add('holding');
+      holdTimer = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        progress.style.width = Math.min((elapsed / 5000) * 100, 100) + '%';
+        if (elapsed >= 5000) { fireSOS(); clearHold(); }
+      }, 100);
+    };
+    const clearHold = () => { clearInterval(holdTimer); btn.classList.remove('holding'); progress.style.width = '0%'; };
+
+    btn.addEventListener('mousedown',  startHold);
+    btn.addEventListener('touchstart', startHold, { passive: false });
+    btn.addEventListener('mouseup',    clearHold);
+    btn.addEventListener('mouseleave', clearHold);
+    btn.addEventListener('touchend',   clearHold);
+    window.addEventListener('mouseup', clearHold);
+
+    async function fireSOS() {
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const mapsLink = `https://maps.google.com/?q=${latitude},${longitude}`;
+        const isHealth = sosType === 'health';
+        const title    = isHealth ? '🚑 HEALTH EMERGENCY SOS' : '🚨 ROAD EMERGENCY SOS';
+        const message  = isHealth
+          ? `MEDICAL EMERGENCY: Driver ${driverName} on Bus ${busId} needs immediate medical assistance. GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)} — ${mapsLink}`
+          : `ROAD EMERGENCY: Driver ${driverName} on Bus ${busId} needs immediate help. GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)} — ${mapsLink}`;
+
+        // In-app alert
+        await supabase.from('emergency_alerts').insert([{
+          driver_id: USER_ID, lat: latitude, lng: longitude,
+          status: 'active', organization_id: ORG_ID, type: sosType
+        }]);
+
+        // In-app notification
+        await supabase.from('notifications').insert([{
+          user_id: USER_ID, title, message,
+          type: 'emergency', status: 'active', organization_id: ORG_ID
+        }]);
+
+        // Email via edge function
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          await fetch(`${SUPABASE_FUNC_URL}/send-transit-alert`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+            body: JSON.stringify({
+              type:            'emergency',
+              sos_type:        sosType,
+              user_id:         USER_ID,
+              bus_id:          busId,
+              organization_id: ORG_ID,
+              message:         message
+            })
+          });
+        } catch (err) { console.warn('SOS email dispatch failed:', err); }
+
+        btn.classList.add('sent');
+        label.textContent = isHealth ? '🚑 SIGNAL SENT' : '🚨 SIGNAL SENT';
+        showToast(isHealth ? 'Health emergency alert dispatched.' : 'Road SOS signal dispatched.', 'success');
+        setTimeout(() => { btn.classList.remove('sent'); label.textContent = isHealth ? 'HOLD 5s · HEALTH SOS' : 'HOLD 5s · ROAD SOS'; }, 4000);
+
+      }, () => showToast('GPS access required for SOS.', 'error'), { enableHighAccuracy: true });
+    }
   }
 
-  sosBtn.addEventListener('mousedown', startSosHold);
-  sosBtn.addEventListener('touchstart', startSosHold);
-  window.addEventListener('mouseup', clearSosHold);
-  window.addEventListener('touchend', clearSosHold);
+  setupSosButton('sos-btn',        'sos-progress',        'sos-label',        'standard');
+  setupSosButton('health-sos-btn', 'health-sos-progress', 'health-sos-label', 'health');
 
   // ── Trip controls — watchPosition does the real-time tracking ─────────
   document.getElementById('start-trip-btn').onclick = async () => {
@@ -382,16 +530,134 @@
     );
   };
 
-  document.getElementById('end-trip-btn').onclick = async () => {
-    tripActive = false;
-    clearInterval(tripTimer);
-    if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-    document.getElementById('start-trip-btn').disabled = false;
-    document.getElementById('end-trip-btn').disabled   = true;
-    document.getElementById('gps-status').textContent  = 'OFFLINE';
-    document.getElementById('gps-status').style.color  = '';
-    if (busId) await supabase.from('buses').update({ status: 'offline', speed: 0, last_seen: new Date().toISOString() }).eq('id', busId).eq('organization_id', ORG_ID);
-    showToast('Trip ended. Bus marked offline.', 'success');
+  // ── Post-trip fuel modal ──────────────────────────────────────────────
+  let fuelPhotoAfterUrl = null;
+
+  document.getElementById('end-trip-btn').onclick = () => {
+    // Show fuel modal before ending trip
+    fuelPhotoAfterUrl = null;
+    document.getElementById('fuel-photo-img').style.display = 'none';
+    document.getElementById('fuel-photo-placeholder').style.display = 'block';
+    document.getElementById('fuel-photo-preview').style.border = '2px dashed var(--border)';
+    document.getElementById('fuel-level-after').value = '40';
+    document.getElementById('fuel-after-val').textContent = '40%';
+    document.getElementById('odometer-after').value = '';
+    document.getElementById('fuel-summary').style.display = 'none';
+
+    // Show before fuel level from pre-trip if available
+    const beforeLevel = localStorage.getItem('fuel_level_before');
+    if (beforeLevel) {
+      document.getElementById('summary-before').textContent = beforeLevel + '%';
+    }
+
+    document.getElementById('fuel-modal').style.display = 'flex';
+  };
+
+  window.handleFuelPhoto = async (input) => {
+    const file = input.files[0]; if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { showToast('Photo must be under 5MB.', 'error'); return; }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      document.getElementById('fuel-photo-img').src = e.target.result;
+      document.getElementById('fuel-photo-img').style.display = 'block';
+      document.getElementById('fuel-photo-placeholder').style.display = 'none';
+      document.getElementById('fuel-photo-preview').style.border = '2px solid var(--green)';
+    };
+    reader.readAsDataURL(file);
+
+    try {
+      const ext  = file.name.split('.').pop().toLowerCase();
+      const path = `${USER_ID}/${Date.now()}_after.${ext}`;
+      const { error: upErr } = await supabase.storage.from('fuel-photos').upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from('fuel-photos').getPublicUrl(path);
+      fuelPhotoAfterUrl = publicUrl;
+      showToast('Photo saved.', 'success');
+    } catch (err) {
+      showToast('Photo upload failed: ' + err.message, 'error');
+    }
+  };
+
+  // Update fuel summary when after level or odometer changes
+  document.getElementById('fuel-level-after').oninput = updateFuelSummary;
+  document.getElementById('odometer-after').oninput   = updateFuelSummary;
+
+  function updateFuelSummary() {
+    const beforeLevel = parseInt(localStorage.getItem('fuel_level_before') || '0');
+    const afterLevel  = parseInt(document.getElementById('fuel-level-after').value);
+    const odomBefore  = parseInt(localStorage.getItem('odometer_before') || '0');
+    const odomAfter   = parseInt(document.getElementById('odometer-after').value || '0');
+    const distance    = odomAfter > odomBefore ? odomAfter - odomBefore : 0;
+    const fuelUsed    = beforeLevel - afterLevel;
+
+    document.getElementById('summary-before').textContent   = beforeLevel + '%';
+    document.getElementById('summary-after').textContent    = afterLevel + '%';
+    document.getElementById('summary-distance').textContent = distance > 0 ? distance + ' km' : '-- km';
+    document.getElementById('summary-used').textContent     = fuelUsed > 0 ? fuelUsed + '%' : '--';
+    document.getElementById('fuel-summary').style.display   = 'block';
+  }
+
+  window.confirmEndTrip = async () => {
+    if (!fuelPhotoAfterUrl) { showToast('Fuel dashboard photo is required.', 'error'); return; }
+    const odomAfter = document.getElementById('odometer-after').value;
+    if (!odomAfter)         { showToast('Please enter the final odometer reading.', 'error'); return; }
+
+    const btn = document.getElementById('btn-confirm-end');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Ending trip...';
+
+    try {
+      const afterLevel  = parseInt(document.getElementById('fuel-level-after').value);
+      const odomBefore  = parseInt(localStorage.getItem('odometer_before') || '0');
+
+      // Update fuel log with post-trip data
+      if (busId) {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: existingLog } = await supabase.from('fuel_logs')
+          .select('id').eq('bus_id', busId).eq('driver_id', USER_ID)
+          .eq('trip_date', today).eq('status', 'pre_trip').single();
+
+        if (existingLog) {
+          await supabase.from('fuel_logs').update({
+            fuel_level_after: afterLevel,
+            odometer_after:   parseInt(odomAfter),
+            photo_after_url:  fuelPhotoAfterUrl,
+            status:           'completed'
+          }).eq('id', existingLog.id);
+        }
+
+        // End the trip — update bus status
+        await supabase.from('buses').update({
+          status:    'offline',
+          speed:     0,
+          last_seen: new Date().toISOString()
+        }).eq('id', busId).eq('organization_id', ORG_ID);
+      }
+
+      // Stop GPS
+      tripActive = false;
+      clearInterval(tripTimer);
+      if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+
+      document.getElementById('start-trip-btn').disabled = false;
+      document.getElementById('end-trip-btn').disabled   = true;
+      document.getElementById('gps-status').textContent  = 'OFFLINE';
+      document.getElementById('gps-status').style.color  = '';
+
+      // Clear fuel localStorage
+      localStorage.removeItem('fuel_level_before');
+      localStorage.removeItem('odometer_before');
+      localStorage.removeItem('checklist_completed_today');
+
+      document.getElementById('fuel-modal').style.display = 'none';
+      showToast('Trip ended. Fuel log saved.', 'success');
+
+    } catch (err) {
+      showToast('Failed to end trip: ' + err.message, 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-flag-fill"></i> End Trip';
+    }
   };
 
   function showToast(m, t='info') {

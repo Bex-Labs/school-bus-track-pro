@@ -1,11 +1,6 @@
 /**
  * AUTH.JS — Authentication & Role-Based Multi-Tenant Routing
- * Tenant model: organizations table, organization_id on profiles
- * Roles: super_admin | school_manager | driver | parent
- *
- * FIX: Role routing is ALWAYS based on profiles.role from DB.
- * The role pill on the login page only affects signup form fields.
- * It NEVER affects which dashboard a user is routed to after login.
+ * Roles: super_admin | school_manager | driver | bus_attendant | parent
  */
 
 import { supabase, getUserRole } from './config.js';
@@ -14,17 +9,24 @@ const ROLE_REDIRECTS = {
   super_admin:    '/admin/bex-dashboard.html',
   school_manager: '/manager/fleet.html',
   driver:         '/driver/dashboard.html',
+  bus_attendant:  '/attendant/dashboard.html',
   parent:         '/parent/map.html',
 };
 
-// ─── Path resolver (works from any folder depth) ──────────────────────────
+const ROLE_NAMES = {
+  driver:         'Driver',
+  parent:         'Parent',
+  school_manager: 'School Manager',
+  bus_attendant:  'Bus Attendant',
+  super_admin:    'Bex Admin'
+};
+
 function rootPath(path) {
   const depth = window.location.pathname.split('/').length - 2;
   const prefix = depth > 0 ? '../'.repeat(depth) : './';
   return prefix + path.replace(/^\//, '');
 }
 
-// ─── Generate a URL-safe subdomain slug from a school name ────────────────
 function slugify(name) {
   return name.toLowerCase().trim()
     .replace(/[^a-z0-9\s-]/g, '')
@@ -32,26 +34,20 @@ function slugify(name) {
     .replace(/-+/g, '-');
 }
 
-// ─── 0. RESOLVE ACTIVE TENANT FROM SUBDOMAIN ─────────────────────────────
 async function resolveActiveTenant() {
   window.activeTenantId = null;
   const host = window.location.hostname;
-
   if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')) return;
-
   const isHostingPlatform = (
     host.endsWith('.vercel.app') || host.endsWith('.netlify.app') ||
     host.endsWith('.pages.dev')  || host.endsWith('.github.io') ||
     host.endsWith('.onrender.com') || host.endsWith('.railway.app') || host.endsWith('.fly.dev')
   );
   if (isHostingPlatform) return;
-
   const parts = host.split('.');
   if (parts.length <= 2 || ['www', 'admin', 'app'].includes(parts[0])) return;
-
   const subToken = parts[0].toLowerCase().trim();
   const { data: org, error } = await supabase.from('organizations').select('id, name').eq('subdomain', subToken).single();
-
   if (!error && org) {
     window.activeTenantId = org.id;
     const brandHeader = document.getElementById('login-school-title');
@@ -63,7 +59,6 @@ async function resolveActiveTenant() {
   }
 }
 
-// ─── Boot: resolve tenant then watch auth state ───────────────────────────
 if (supabase) {
   await resolveActiveTenant();
 
@@ -77,30 +72,19 @@ if (supabase) {
       window.location.pathname.includes('confirm.html')
     ) return;
 
-    if (event === 'SIGNED_IN' && session && isAuthPage) {
-      redirectByRole();
-    }
-
+    if (event === 'SIGNED_IN' && session && isAuthPage) redirectByRole();
     if (event === 'SIGNED_OUT') {
       const onProtectedPage = !['index.html', 'forgot-password.html', 'reset-password.html', 'confirm.html']
         .some(p => window.location.pathname.includes(p));
       if (onProtectedPage) window.location.href = rootPath('index.html');
     }
-
-    if (event === 'PASSWORD_RECOVERY') {
-      window.location.href = rootPath('reset-password.html');
-    }
+    if (event === 'PASSWORD_RECOVERY') window.location.href = rootPath('reset-password.html');
   });
 }
 
-// ─── Redirect user to their role dashboard ────────────────────────────────
-// ALWAYS reads role from DB — never from UI selection
 async function redirectByRole() {
   const role = await getUserRole();
-  if (!role) {
-    showToast('Could not determine account role. Please contact support.', 'error');
-    return;
-  }
+  if (!role) { showToast('Could not determine account role. Please contact support.', 'error'); return; }
   const path = ROLE_REDIRECTS[role] || ROLE_REDIRECTS.parent;
   const targetFolder = path.split('/')[1];
   if (window.location.pathname.includes(`/${targetFolder}/`)) return;
@@ -128,7 +112,7 @@ if (loginForm && supabase) {
       return;
     }
 
-    // ── Fetch profile to get actual DB role ───────────────────────────
+    // ── Fetch actual DB role ──────────────────────────────────────────
     const { data: profileData } = await supabase
       .from('profiles').select('role, organization_id').eq('id', data.user.id).single();
 
@@ -136,28 +120,19 @@ if (loginForm && supabase) {
     const selectedRole = window.selectedRole || 'parent';
 
     // ── Strict role tab enforcement ───────────────────────────────────
-    // If selected tab doesn't match DB role, block login
     if (actualRole && actualRole !== selectedRole) {
       await supabase.auth.signOut();
-      const roleNames = {
-        driver:         'Driver',
-        parent:         'Parent',
-        school_manager: 'School Manager',
-        super_admin:    'Bex Admin'
-      };
-      const actualName   = roleNames[actualRole]   || actualRole;
-      const selectedName = roleNames[selectedRole] || selectedRole;
+      const actualName = ROLE_NAMES[actualRole] || actualRole;
       showToast(`This account is registered as "${actualName}". Please select the ${actualName} tab and try again.`, 'error');
       btn.disabled = false;
       btn.innerHTML = 'Login <i class="bi bi-arrow-right-short" style="font-size:22px;"></i>';
       return;
     }
 
-    // Tenant isolation check — only on school subdomains
+    // ── Tenant isolation check ────────────────────────────────────────
     if (window.activeTenantId) {
       const { data: profile } = await supabase
         .from('profiles').select('organization_id, role').eq('id', data.user.id).single();
-
       if (profile && profile.role !== 'super_admin') {
         if (profile.organization_id !== window.activeTenantId) {
           await supabase.auth.signOut();
@@ -169,15 +144,10 @@ if (loginForm && supabase) {
       }
     }
 
-    if (document.getElementById('remember')?.checked) {
-      localStorage.setItem('sbtp_remember', email);
-    }
-
-    // ── Route by DB role — ignore role pill completely ────────────────────
+    if (document.getElementById('remember')?.checked) localStorage.setItem('sbtp_remember', email);
     await redirectByRole();
   });
 
-  // Restore remembered email
   const remembered = localStorage.getItem('sbtp_remember');
   if (remembered) {
     const emailInput = document.getElementById('email');
@@ -192,52 +162,34 @@ const signupForm = document.getElementById('signup-form');
 if (signupForm && supabase) {
   signupForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-
     const email    = document.getElementById('signup-email').value.trim();
     const password = document.getElementById('signup-password').value;
     const name     = document.getElementById('signup-name').value.trim();
     const role     = window.selectedRole || 'parent';
     const btn      = document.getElementById('signup-btn');
 
-    // ── Block super_admin self-registration ───────────────────────────────
-    // Super admins are created only by the Bex team directly in the DB
-    if (role === 'super_admin') {
-      showToast('Super admin accounts cannot be self-registered.', 'error');
-      return;
-    }
+    if (role === 'super_admin') { showToast('Super admin accounts cannot be self-registered.', 'error'); return; }
 
     let targetOrgId = null;
 
-    // ── SCHOOL MANAGER: create a new organization ─────────────────────────
     if (role === 'school_manager') {
       const schoolNameInput = document.getElementById('signup-school-name');
       const schoolName = schoolNameInput ? schoolNameInput.value.trim() : '';
       if (!schoolName) { showToast('Please enter your school name.', 'error'); return; }
-
       const subdomain = slugify(schoolName);
       const { data: existing } = await supabase.from('organizations').select('id').eq('subdomain', subdomain).single();
       if (existing) { showToast('A school with that name already exists. Try a more specific name.', 'error'); return; }
-
       const { data: newOrg, error: orgError } = await supabase
-        .from('organizations')
-        .insert({ name: schoolName, subdomain, account_status: 'active' })
-        .select('id').single();
-
+        .from('organizations').insert({ name: schoolName, subdomain, account_status: 'active' }).select('id').single();
       if (orgError || !newOrg) { showToast('Failed to create school. Please try again.', 'error'); return; }
       targetOrgId = newOrg.id;
-
-    // ── DRIVER / PARENT: join via school code ─────────────────────────────
     } else {
       targetOrgId = window.activeTenantId;
-
       if (!targetOrgId) {
         const codeInput = document.getElementById('signup-tenant-code');
         const code = codeInput ? codeInput.value.toLowerCase().trim().replace(/\s+/g, '-') : '';
         if (!code) { showToast('Please enter your School ID / Code.', 'error'); return; }
-
-        const { data: org, error: orgError } = await supabase
-          .from('organizations').select('id').eq('subdomain', code).single();
-
+        const { data: org, error: orgError } = await supabase.from('organizations').select('id').eq('subdomain', code).single();
         if (orgError || !org) { showToast('School not found. Check the code and try again.', 'error'); return; }
         targetOrgId = org.id;
       }
@@ -262,18 +214,10 @@ if (signupForm && supabase) {
     }
 
     if (data.user) {
-      // Write profile — role comes from the form selection, not user_metadata
       const { error: profileError } = await supabase.from('profiles').upsert({
-        id:              data.user.id,
-        full_name:       name,
-        role:            role,
-        organization_id: targetOrgId,
-        email:           email,
+        id: data.user.id, full_name: name, role, organization_id: targetOrgId, email,
       }, { onConflict: 'id' });
-
-      if (profileError) {
-        console.warn('Profile upsert deferred — awaiting email confirmation.', profileError.message);
-      }
+      if (profileError) console.warn('Profile upsert deferred.', profileError.message);
 
       if (role === 'school_manager' && targetOrgId) {
         const subdomain = slugify(document.getElementById('signup-school-name').value.trim());
@@ -281,7 +225,6 @@ if (signupForm && supabase) {
       } else {
         showToast('Registration complete. Check your inbox to verify your email.', 'success');
       }
-
       if (typeof toggleAuthMode === 'function') toggleAuthMode('login');
     }
 
@@ -299,21 +242,15 @@ if (forgotForm && supabase) {
     const btn   = document.getElementById('send-btn');
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Sending...';
-
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const BASE_URL = isLocalhost ? 'http://localhost:3000' : 'https://bustrack-alpha.vercel.app';
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${BASE_URL}/reset-password.html`
-    });
-
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${BASE_URL}/reset-password.html` });
     if (error) {
       showToast(error.message, 'error');
       btn.disabled = false;
       btn.innerHTML = '<i class="bi bi-send-fill"></i> Send Recovery Link';
       return;
     }
-
     document.getElementById('step-request').style.display = 'none';
     document.getElementById('step-sent').style.display    = 'block';
     document.getElementById('sent-to').textContent = email;
@@ -328,29 +265,23 @@ if (resetForm && supabase) {
     const pw  = document.getElementById('new-password').value;
     const cpw = document.getElementById('confirm-password').value;
     const btn = document.getElementById('reset-btn');
-
     if (pw !== cpw)    { showToast('Passwords do not match.', 'error'); return; }
     if (pw.length < 8) { showToast('Password must be at least 8 characters.', 'error'); return; }
-
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Updating...';
-
     const { error } = await supabase.auth.updateUser({ password: pw });
-
     if (error) {
       showToast(error.message, 'error');
       btn.disabled = false;
       btn.innerHTML = '<i class="bi bi-shield-check"></i> Update Password';
       return;
     }
-
     await supabase.auth.signOut();
     document.getElementById('step-reset').style.display = 'none';
     document.getElementById('step-done').style.display  = 'block';
   });
 }
 
-// ─── EXPORTS ──────────────────────────────────────────────────────────────
 export async function signOut() {
   if (supabase) await supabase.auth.signOut();
   window.location.href = rootPath('index.html');
@@ -363,7 +294,6 @@ export async function requireAuth() {
   return session;
 }
 
-// ─── TOAST ────────────────────────────────────────────────────────────────
 function showToast(msg, type = 'info', duration = 4000) {
   let container = document.getElementById('toast-container');
   if (!container) {

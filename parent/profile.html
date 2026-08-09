@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="../assets/css/main.css">
   <link rel="stylesheet" href="../assets/css/admin.css">
   <link rel="stylesheet" href="../assets/css/parent.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     .bento-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; width: 100%; align-items: start; }
     .tile-12 { grid-column: span 12; }
@@ -183,6 +184,23 @@
         <label class="form-label">Medical Info (Optional)</label>
         <textarea id="child-medical" class="form-input" style="height:60px;resize:none;"></textarea>
       </div>
+
+      <div class="form-group full-width" style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px;">
+        <label class="form-label" style="color:var(--red);font-size:11px;text-transform:uppercase;letter-spacing:0.3px;">
+          <i class="bi bi-exclamation-triangle-fill"></i> Emergency Contact
+        </label>
+        <small style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:10px;">This person will be emailed immediately if an SOS alert is triggered on the bus.</small>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Emergency Contact Name</label>
+          <input type="text" id="child-emergency-name" class="form-input" placeholder="e.g. Uncle John">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Emergency Contact Email</label>
+          <input type="email" id="child-emergency-email" class="form-input" placeholder="john@email.com">
+        </div>
+      </div>
     </div>
 
     <!-- Bus Assignment -->
@@ -310,18 +328,63 @@
       return;
     }
     container.innerHTML = children.map(c => `
-      <div style="border:1px solid var(--border);padding:14px;margin-bottom:8px;border-radius:var(--r-lg);display:flex;align-items:center;gap:12px;background:white;">
-        <div style="background:var(--yellow);width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--navy);flex-shrink:0;font-size:18px;">${c.full_name.charAt(0).toUpperCase()}</div>
-        <div style="flex:1;">
-          <div style="font-weight:800;color:var(--navy);font-size:14px;">${c.full_name}</div>
-          <div style="font-size:11px;color:var(--text-secondary);font-weight:600;margin-top:2px;">Age: ${c.age || '--'} · ID: ${c.student_reg_id || '--'}</div>
-          ${c.bus_id ? `<div style="font-size:11px;color:var(--green);font-weight:700;margin-top:3px;"><i class="bi bi-bus-front-fill"></i> Bus ${c.bus_id}</div>` : `<div style="font-size:11px;color:#f59e0b;font-weight:700;margin-top:3px;"><i class="bi bi-exclamation-triangle-fill"></i> No bus assigned</div>`}
+      <div style="border:1px solid var(--border);padding:14px;margin-bottom:8px;border-radius:var(--r-lg);background:white;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          <div style="background:var(--yellow);width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--navy);flex-shrink:0;font-size:18px;">${c.full_name.charAt(0).toUpperCase()}</div>
+          <div style="flex:1;">
+            <div style="font-weight:800;color:var(--navy);font-size:14px;">${c.full_name}</div>
+            <div style="font-size:11px;color:var(--text-secondary);font-weight:600;margin-top:2px;">Age: ${c.age || '--'} · ID: ${c.student_reg_id || '--'}</div>
+            ${c.bus_id ? `<div style="font-size:11px;color:var(--green);font-weight:700;margin-top:3px;"><i class="bi bi-bus-front-fill"></i> Bus ${c.bus_id}</div>` : `<div style="font-size:11px;color:#f59e0b;font-weight:700;margin-top:3px;"><i class="bi bi-exclamation-triangle-fill"></i> No bus assigned</div>`}
+          </div>
+          <button class="btn btn-ghost btn-sm text-red" onclick="removeChild('${c.id}')" title="Remove"><i class="bi bi-trash"></i></button>
         </div>
-        <button class="btn btn-ghost btn-sm text-red" onclick="removeChild('${c.id}')" title="Remove"><i class="bi bi-trash"></i></button>
+        ${c.qr_code ? `
+        <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;align-items:center;gap:12px;">
+          <canvas id="child-qr-${c.id}" style="width:64px;height:64px;"></canvas>
+          <div>
+            <div style="font-size:11px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px;">QR Code</div>
+            <div style="font-size:10px;color:var(--text-muted);font-family:monospace;">${c.qr_code}</div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:11px;" onclick="downloadChildQR('${c.id}','${c.full_name}')">
+              <i class="bi bi-download"></i> Download
+            </button>
+          </div>
+        </div>` : `
+        <div style="border-top:1px solid var(--border);padding-top:10px;font-size:12px;color:var(--text-muted);">
+          <i class="bi bi-qr-code"></i> QR code will be generated by your school manager.
+        </div>`}
       </div>`).join('');
+
+    // Render QR canvases after DOM update
+    setTimeout(() => renderChildQRCodes(children), 100);
   }
 
   loadChildren();
+
+  // Render QR codes on child cards after DOM updates
+  async function renderChildQRCodes(children) {
+    for (const c of children) {
+      if (!c.qr_code) continue;
+      const canvas = document.getElementById(`child-qr-${c.id}`);
+      if (!canvas) continue;
+      try {
+        await QRCode.toCanvas(canvas, c.qr_code, {
+          width: 64, margin: 1,
+          color: { dark: '#0F172A', light: '#FFFFFF' }
+        });
+      } catch (e) { console.warn('QR render failed:', e); }
+    }
+  }
+
+  window.downloadChildQR = async (childId, name) => {
+    const child = (await supabase.from('students').select('qr_code').eq('id', childId).single()).data;
+    if (!child?.qr_code) return;
+    const canvas = document.createElement('canvas');
+    await QRCode.toCanvas(canvas, child.qr_code, { width: 300, margin: 2, color: { dark: '#0F172A', light: '#FFFFFF' } });
+    const link = document.createElement('a');
+    link.download = `QR-${name.replace(/\s+/g,'-')}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
 
   // ── Bus picker ────────────────────────────────────────────────────────
   let allBuses = [];
@@ -411,14 +474,16 @@
     if (!busId) { showToast('Please select a bus for this child.', 'error'); return; }
 
     const { error } = await supabase.from('students').insert([{
-      parent_id:       USER_ID,
-      full_name:       name,
-      age:             parseInt(document.getElementById('child-age').value) || null,
-      gender:          document.getElementById('child-gender').value,
-      student_reg_id:  regId,
-      medical_info:    document.getElementById('child-medical').value.trim(),
-      organization_id: ORG_ID,
-      bus_id:          busId
+      parent_id:               USER_ID,
+      full_name:               name,
+      age:                     parseInt(document.getElementById('child-age').value) || null,
+      gender:                  document.getElementById('child-gender').value,
+      student_reg_id:          regId,
+      medical_info:            document.getElementById('child-medical').value.trim(),
+      emergency_contact_name:  document.getElementById('child-emergency-name').value.trim() || null,
+      emergency_contact_email: document.getElementById('child-emergency-email').value.trim() || null,
+      organization_id:         ORG_ID,
+      bus_id:                  busId
     }]);
 
     if (!error) { showToast('Child registered.', 'success'); closeModal('addChildModal'); loadChildren(); }

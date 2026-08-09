@@ -9,17 +9,17 @@
   <link rel="stylesheet" href="assets/css/main.css">
   <link rel="stylesheet" href="assets/css/auth.css">
   <style>
-    .role-selector { display:flex !important; flex-direction:row !important; flex-wrap:nowrap !important; gap:8px !important; margin-bottom:24px !important; width:100% !important; }
-    .role-pill { flex:1 !important; display:flex !important; flex-direction:column !important; align-items:center !important; justify-content:center !important; padding:10px 4px !important; font-size:11px !important; font-weight:600 !important; line-height:1.2 !important; text-align:center !important; white-space:nowrap !important; gap:4px !important; }
-    .role-pill i { font-size:16px !important; }
+    .role-selector { display:flex !important; flex-direction:row !important; flex-wrap:nowrap !important; gap:6px !important; margin-bottom:24px !important; width:100% !important; }
+    .role-pill { flex:1 !important; display:flex !important; flex-direction:column !important; align-items:center !important; justify-content:center !important; padding:10px 4px !important; font-size:10px !important; font-weight:600 !important; line-height:1.2 !important; text-align:center !important; white-space:nowrap !important; gap:4px !important; }
+    .role-pill i { font-size:15px !important; }
     @media (max-width:768px) {
       .auth-form-panel { padding:20px !important; }
       .auth-card { width:100% !important; max-width:100% !important; }
       .auth-heading { font-size:24px !important; line-height:1.3 !important; margin-bottom:6px !important; }
       .auth-subtext { font-size:13px !important; line-height:1.4 !important; margin-bottom:20px !important; }
-      .role-selector { gap:4px !important; margin-bottom:16px !important; }
-      .role-pill { padding:8px 2px !important; font-size:10px !important; }
-      .role-pill i { font-size:14px !important; }
+      .role-selector { gap:3px !important; margin-bottom:16px !important; }
+      .role-pill { padding:7px 2px !important; font-size:9px !important; }
+      .role-pill i { font-size:13px !important; }
     }
   </style>
 </head>
@@ -46,12 +46,15 @@
         </div>
 
         <h1 class="auth-heading" id="auth-title">Welcome back</h1>
-        <p class="auth-subtext" id="auth-subtext">Sign in to your portal — Driver, Parent, or Tenant Manager.</p>
+        <p class="auth-subtext" id="auth-subtext">Sign in to your portal.</p>
 
-        <!-- Role Selector — public roles only -->
+        <!-- Role Selector -->
         <div class="role-selector" id="role-selector">
           <button class="role-pill" data-role="driver" onclick="selectRole('driver')">
             <i class="bi bi-truck-front-fill"></i>Driver
+          </button>
+          <button class="role-pill" data-role="bus_attendant" onclick="selectRole('bus_attendant')">
+            <i class="bi bi-person-badge-fill"></i>Attendant
           </button>
           <button class="role-pill active" data-role="parent" onclick="selectRole('parent')">
             <i class="bi bi-person-heart"></i>Parent
@@ -92,10 +95,8 @@
           </button>
         </form>
 
-        <!-- SIGN UP FORM — super_admin tab never shows signup fields -->
+        <!-- SIGN UP FORM -->
         <form id="signup-form" style="display:none;">
-
-          <!-- School Name — school_manager only -->
           <div class="form-group" id="school-name-group" style="display:none;">
             <label class="form-label">School Name</label>
             <div class="input-wrap">
@@ -105,7 +106,6 @@
             <small style="color:var(--text-secondary);font-size:11px;margin-top:4px;display:block;">This becomes your school's unique ID code.</small>
           </div>
 
-          <!-- School Code — driver/parent only -->
           <div class="form-group" id="tenant-code-group" style="display:none;">
             <label class="form-label">School ID / Code</label>
             <div class="input-wrap">
@@ -115,11 +115,10 @@
             <small style="color:var(--text-secondary);font-size:11px;margin-top:4px;display:block;">Get this code from your School Manager.</small>
           </div>
 
-          <!-- Blocked message for super_admin signup -->
           <div id="admin-signup-blocked" style="display:none;background:#fef2f2;border:1px solid #fca5a5;border-radius:var(--r-lg);padding:16px;text-align:center;">
             <i class="bi bi-shield-lock-fill" style="font-size:28px;color:#dc2626;display:block;margin-bottom:8px;"></i>
-            <div style="font-weight:800;color:#991b1b;margin-bottom:4px;">Super Admin Registration</div>
-            <div style="font-size:13px;color:#7f1d1d;">Bex Admin accounts are provisioned internally. Contact the Bex team to get access.</div>
+            <div style="font-weight:800;color:#991b1b;margin-bottom:4px;">Restricted Registration</div>
+            <div style="font-size:13px;color:#7f1d1d;">This account type is provisioned by the school manager. Contact your school to get access.</div>
           </div>
 
           <div id="signup-fields">
@@ -157,25 +156,15 @@
             <a href="javascript:void(0)" onclick="toggleAuthMode('signup')">Register here</a>
           </p>
         </div>
-
       </div>
     </div>
   </div>
 
   <div id="toast-container"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <script>
     window.selectedRole = 'parent';
     window.authMode     = 'login';
-
-    // Role display names for error messages
-    const ROLE_NAMES = {
-      driver:       'Driver',
-      parent:       'Parent',
-      school_manager: 'School Manager',
-      super_admin:  'Bex Admin'
-    };
 
     function updateSignupFields() {
       const role            = window.selectedRole;
@@ -183,28 +172,19 @@
       const tenantCodeGroup = document.getElementById('tenant-code-group');
       const blockedMsg      = document.getElementById('admin-signup-blocked');
       const signupFields    = document.getElementById('signup-fields');
-
       if (!schoolNameGroup || !tenantCodeGroup) return;
-
-      // Hide all by default
       schoolNameGroup.style.display = 'none';
       tenantCodeGroup.style.display = 'none';
       blockedMsg.style.display      = 'none';
       signupFields.style.display    = 'block';
-
       if (window.authMode !== 'signup') return;
-
-      if (role === 'super_admin') {
-        // Block signup — show message, hide form fields
+      if (role === 'super_admin' || role === 'bus_attendant') {
         blockedMsg.style.display   = 'block';
         signupFields.style.display = 'none';
       } else if (role === 'school_manager') {
         schoolNameGroup.style.display = 'block';
       } else {
-        // driver / parent
-        if (!window.activeTenantId) {
-          tenantCodeGroup.style.display = 'block';
-        }
+        if (!window.activeTenantId) tenantCodeGroup.style.display = 'block';
       }
     }
 
@@ -224,67 +204,42 @@
       const sub     = document.getElementById('auth-subtext');
       const tText   = document.getElementById('toggle-text');
       const divider = document.getElementById('divider-text');
-
       if (mode === 'signup') {
-        lForm.style.display = 'none';
-        sForm.style.display = 'block';
-        title.textContent   = 'Join the Fleet';
-        sub.textContent     = 'Create your account to get started.';
+        lForm.style.display = 'none'; sForm.style.display = 'block';
+        title.textContent = 'Join the Fleet'; sub.textContent = 'Create your account to get started.';
         if (divider) divider.textContent = 'or sign up with email';
         tText.innerHTML = 'Already registered? <a href="javascript:void(0)" onclick="toggleAuthMode(\'login\')">Sign in here</a>';
         updateSignupFields();
       } else {
-        lForm.style.display = 'block';
-        sForm.style.display = 'none';
-        title.textContent   = 'Welcome back';
-        sub.textContent     = 'Sign in to your portal — Driver, Parent, or Tenant Manager.';
+        lForm.style.display = 'block'; sForm.style.display = 'none';
+        title.textContent = 'Welcome back'; sub.textContent = 'Sign in to your portal.';
         if (divider) divider.textContent = 'or sign in with email';
         tText.innerHTML = 'Don\'t have an account? <a href="javascript:void(0)" onclick="toggleAuthMode(\'signup\')">Register here</a>';
       }
     }
 
     function togglePassword(inputId, iconId) {
-      const pw   = document.getElementById(inputId);
-      const icon = document.getElementById(iconId);
+      const pw = document.getElementById(inputId); const icon = document.getElementById(iconId);
       pw.type = pw.type === 'password' ? 'text' : 'password';
       icon.className = pw.type === 'password' ? 'bi bi-eye eye-toggle' : 'bi bi-eye-slash eye-toggle';
     }
 
-    // ── URL PARAM HANDLER ────────────────────────────────────────────────
     (function handleURLParams() {
       const params = new URLSearchParams(window.location.search);
-      const mode   = params.get('mode');
-      const role   = params.get('role');
-      const code   = params.get('code');
-      const email  = params.get('email');
-
+      const mode = params.get('mode'), role = params.get('role'), code = params.get('code'), email = params.get('email');
       if (role) selectRole(role);
       if (mode === 'signup' || code) toggleAuthMode('signup');
       else if (mode === 'login') toggleAuthMode('login');
-
       if (code) {
         const codeInput = document.getElementById('signup-tenant-code');
-        if (codeInput) {
-          codeInput.value = code; codeInput.readOnly = true;
-          codeInput.style.background = '#f8fafc';
-          codeInput.style.fontWeight = '800';
-          codeInput.style.color = 'var(--navy)';
-        }
+        if (codeInput) { codeInput.value = code; codeInput.readOnly = true; codeInput.style.background = '#f8fafc'; codeInput.style.fontWeight = '800'; codeInput.style.color = 'var(--navy)'; }
         const tenantGroup = document.getElementById('tenant-code-group');
         if (tenantGroup) tenantGroup.style.display = 'block';
       }
-
-      if (email && mode !== 'signup') {
-        const emailInput = document.getElementById('email');
-        if (emailInput) emailInput.value = decodeURIComponent(email);
-      }
-      if (email && (mode === 'signup' || code)) {
-        const signupEmail = document.getElementById('signup-email');
-        if (signupEmail) signupEmail.value = decodeURIComponent(email);
-      }
+      if (email && mode !== 'signup') { const el = document.getElementById('email'); if (el) el.value = decodeURIComponent(email); }
+      if (email && (mode === 'signup' || code)) { const el = document.getElementById('signup-email'); if (el) el.value = decodeURIComponent(email); }
     })();
   </script>
-
   <script src="js/config.js" type="module"></script>
   <script src="js/auth.js" type="module"></script>
 </body>

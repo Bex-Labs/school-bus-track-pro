@@ -50,6 +50,16 @@
 </head>
 <body>
 
+<!-- Photo Lightbox Modal -->
+<div id="photo-lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;align-items:center;justify-content:center;flex-direction:column;">
+  <div style="position:relative;max-width:90vw;max-height:90vh;">
+    <img id="lightbox-img" src="" alt="" style="max-width:90vw;max-height:80vh;border-radius:12px;object-fit:contain;">
+    <button onclick="document.getElementById('photo-lightbox').style.display='none'"
+      style="position:absolute;top:-16px;right:-16px;background:white;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;">✕</button>
+  </div>
+  <p id="lightbox-label" style="color:rgba(255,255,255,0.6);font-size:13px;font-weight:700;margin-top:12px;text-transform:uppercase;letter-spacing:0.5px;"></p>
+</div>
+
 <div id="driver-inspector-modal" class="inspector-overlay">
   <div class="inspector-card">
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:15px;">
@@ -130,6 +140,76 @@
         <div class="chart-container"><div class="chart-title">Fuel Consumption Proxy (L)</div><div style="height:200px;"><canvas id="fuel-trend-chart"></canvas></div></div>
         <div class="chart-container"><div class="chart-title">Critical Incident Volume</div><div style="height:200px;"><canvas id="trips-chart"></canvas></div></div>
       </div>
+      <!-- Student Attendance Section -->
+      <div class="data-table-wrap" style="margin-bottom:24px;">
+        <div class="table-header">
+          <div class="table-title">🎒 Student Attendance — Today</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="date" id="attendance-date" class="form-control" style="width:auto;font-size:12px;font-weight:700;" onchange="loadAttendance()">
+            <select id="attendance-bus-filter" class="form-control" style="width:auto;font-size:12px;font-weight:700;" onchange="loadAttendance()">
+              <option value="ALL">All Buses</option>
+            </select>
+            <span id="attendance-badge" class="badge badge-navy" style="font-size:11px;">Loading...</span>
+          </div>
+        </div>
+
+        <!-- Attendance KPIs -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 0 4px;">
+          <div class="kpi-card"><div class="kpi-label">Expected</div><div class="kpi-value" id="att-expected">0</div></div>
+          <div class="kpi-card" style="border-left:4px solid var(--green);"><div class="kpi-label">Boarded</div><div class="kpi-value" style="color:var(--green);" id="att-boarded">0</div></div>
+          <div class="kpi-card" style="border-left:4px solid #f59e0b;"><div class="kpi-label">Absent</div><div class="kpi-value" style="color:#f59e0b;" id="att-absent">0</div></div>
+          <div class="kpi-card" style="border-left:4px solid var(--navy);"><div class="kpi-label">Attendance Rate</div><div class="kpi-value" id="att-rate">0%</div></div>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Reg ID</th>
+                <th>Bus</th>
+                <th>Status</th>
+                <th>Boarded At</th>
+                <th>Alighted At</th>
+                <th>Logged By</th>
+              </tr>
+            </thead>
+            <tbody id="attendance-body">
+              <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">Loading attendance...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Fuel Report Section -->
+      <div class="data-table-wrap" style="margin-bottom:24px;">
+        <div class="table-header">
+          <div class="table-title">⛽ Fuel Consumption Report</div>
+          <span id="fuel-report-badge" class="badge badge-navy" style="font-size:11px;">Loading...</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Bus</th>
+                <th>Driver</th>
+                <th>Before</th>
+                <th>After</th>
+                <th>Used</th>
+                <th>Added (L)</th>
+                <th>Cost (₦)</th>
+                <th>Distance</th>
+                <th>Photos</th>
+              </tr>
+            </thead>
+            <tbody id="fuel-report-body">
+              <tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-muted);">Loading fuel logs...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="data-table-wrap">
         <div class="table-header"><div class="table-title">Driver Performance Ranking</div></div>
         <table>
@@ -188,6 +268,176 @@
       safetyEl.style.color = safety > 75 ? 'var(--green)' : safety > 40 ? 'var(--yellow-dark)' : 'var(--red)';
     } catch (err) { document.getElementById('inspector-name').textContent = err.message; }
   };
+  // ── Student Attendance ────────────────────────────────────────────────
+  // Set default date to today
+  const todayStr = new Date().toISOString().split('T')[0];
+  document.getElementById('attendance-date').value = todayStr;
+
+  // Load buses for filter
+  async function loadAttendanceBusFilter() {
+    const { data: buses } = await supabase.from('buses')
+      .select('id').eq('organization_id', ORG_ID).order('id');
+    const sel = document.getElementById('attendance-bus-filter');
+    if (buses) {
+      sel.innerHTML = '<option value="ALL">All Buses</option>' +
+        buses.map(b => `<option value="${b.id}">Bus ${b.id}</option>`).join('');
+    }
+  }
+
+  window.loadAttendance = async () => {
+    const date   = document.getElementById('attendance-date').value || todayStr;
+    const busF   = document.getElementById('attendance-bus-filter').value;
+    const body   = document.getElementById('attendance-body');
+    const badge  = document.getElementById('attendance-badge');
+
+    body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);"><i class="bi bi-arrow-clockwise spin"></i> Loading...</td></tr>`;
+
+    // Get all students in org (filtered by bus)
+    let studentsQuery = supabase.from('students').select('id, full_name, student_reg_id, bus_id').eq('organization_id', ORG_ID);
+    if (busF !== 'ALL') studentsQuery = studentsQuery.eq('bus_id', busF);
+    const { data: students } = await studentsQuery.order('full_name');
+
+    // Get today's attendance logs
+    let logsQuery = supabase.from('attendance_logs')
+      .select('*, profiles(full_name)')
+      .eq('organization_id', ORG_ID)
+      .gte('scanned_at', date + 'T00:00:00Z')
+      .lte('scanned_at', date + 'T23:59:59Z');
+    if (busF !== 'ALL') logsQuery = logsQuery.eq('bus_id', busF);
+    const { data: logs } = await logsQuery;
+
+    const allStudents = students || [];
+    const allLogs     = logs || [];
+
+    // Build student attendance map
+    const boardedMap  = {};
+    const alightedMap = {};
+    const loggedByMap = {};
+
+    allLogs.forEach(l => {
+      if (l.direction === 'boarding')  { boardedMap[l.student_id]  = l.scanned_at; loggedByMap[l.student_id] = l.profiles?.full_name || 'Attendant'; }
+      if (l.direction === 'alighting') { alightedMap[l.student_id] = l.scanned_at; }
+    });
+
+    const boarded  = allStudents.filter(s => boardedMap[s.id]).length;
+    const absent   = allStudents.length - boarded;
+    const rate     = allStudents.length > 0 ? Math.round((boarded / allStudents.length) * 100) : 0;
+
+    document.getElementById('att-expected').textContent = allStudents.length;
+    document.getElementById('att-boarded').textContent  = boarded;
+    document.getElementById('att-absent').textContent   = absent;
+    document.getElementById('att-rate').textContent     = rate + '%';
+    badge.textContent = `${allStudents.length} students`;
+
+    if (!allStudents.length) {
+      body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">No students registered${busF !== 'ALL' ? ' on this bus' : ''}.</td></tr>`;
+      return;
+    }
+
+    const fmt = (ts) => ts ? new Date(ts).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' }) : '--';
+
+    body.innerHTML = allStudents.map(s => {
+      const isBoarded  = !!boardedMap[s.id];
+      const isAlighted = !!alightedMap[s.id];
+      const statusHTML = isBoarded
+        ? `<span class="badge badge-green" style="font-size:10px;">✅ BOARDED</span>${isAlighted ? ' <span class="badge" style="background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;font-size:10px;">🚪 ALIGHTED</span>' : ''}`
+        : `<span class="badge" style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;font-size:10px;">❌ ABSENT</span>`;
+
+      return `<tr style="${!isBoarded ? 'opacity:0.65;' : ''}">
+        <td><strong>${s.full_name}</strong></td>
+        <td><code style="font-size:11px;">${s.student_reg_id || '---'}</code></td>
+        <td>${s.bus_id ? `<span class="badge badge-navy" style="font-size:10px;">Bus ${s.bus_id}</span>` : '<span style="color:var(--text-muted);">--</span>'}</td>
+        <td>${statusHTML}</td>
+        <td style="font-size:12px;font-weight:700;color:var(--green);">${fmt(boardedMap[s.id])}</td>
+        <td style="font-size:12px;font-weight:700;color:var(--text-muted);">${fmt(alightedMap[s.id])}</td>
+        <td style="font-size:12px;color:var(--text-secondary);">${loggedByMap[s.id] || '--'}</td>
+      </tr>`;
+    }).join('');
+  };
+
+  await loadAttendanceBusFilter();
+  loadAttendance();
+
+  // ── Fuel Report ───────────────────────────────────────────────────────
+  async function loadFuelReport() {
+    const days  = parseInt(document.getElementById('time-filter').value) || 30;
+    const since = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
+
+    const { data: logs, error } = await supabase
+      .from('fuel_logs')
+      .select('*, profiles(full_name)')
+      .eq('organization_id', ORG_ID)
+      .eq('status', 'completed')
+      .gte('trip_date', since)
+      .order('trip_date', { ascending: false });
+
+    const body  = document.getElementById('fuel-report-body');
+    const badge = document.getElementById('fuel-report-badge');
+
+    if (error || !logs || !logs.length) {
+      body.innerHTML  = `<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-muted);">No fuel logs in the selected period.</td></tr>`;
+      badge.textContent = '0 records';
+      return;
+    }
+
+    badge.textContent = `${logs.length} records`;
+
+    // Update fuel KPI with real data
+    const totalLitres = logs.reduce((sum, l) => sum + (parseFloat(l.fuel_added_litres) || 0), 0);
+    const fuelKpi = document.getElementById('fuel-kpi');
+    if (fuelKpi) fuelKpi.textContent = totalLitres.toFixed(1) + 'L';
+
+    body.innerHTML = logs.map(l => {
+      const fuelUsed   = (l.fuel_level_before != null && l.fuel_level_after != null)
+        ? (l.fuel_level_before - l.fuel_level_after) + '%' : '--';
+      const distance   = (l.odometer_before && l.odometer_after)
+        ? (l.odometer_after - l.odometer_before) + ' km' : '--';
+      const driverName = l.profiles?.full_name || '--';
+      const date       = new Date(l.trip_date).toLocaleDateString('en-NG', { day:'numeric', month:'short', year:'numeric' });
+
+      const photosBefore = l.photo_before_url
+        ? `<img src="${l.photo_before_url}" onclick="openLightbox('${l.photo_before_url}','Before Trip')"
+             style="width:36px;height:36px;border-radius:6px;object-fit:cover;cursor:pointer;border:2px solid var(--border);"
+             title="Before trip photo">`
+        : '<span style="font-size:11px;color:var(--text-muted);">--</span>';
+
+      const photosAfter = l.photo_after_url
+        ? `<img src="${l.photo_after_url}" onclick="openLightbox('${l.photo_after_url}','After Trip')"
+             style="width:36px;height:36px;border-radius:6px;object-fit:cover;cursor:pointer;border:2px solid var(--border);"
+             title="After trip photo">`
+        : '<span style="font-size:11px;color:var(--text-muted);">--</span>';
+
+      return `<tr>
+        <td style="font-size:12px;">${date}</td>
+        <td><code style="font-weight:800;color:var(--navy);">${l.bus_id || '--'}</code></td>
+        <td style="font-size:13px;">${driverName}</td>
+        <td><span class="badge badge-navy" style="font-size:11px;">${l.fuel_level_before != null ? l.fuel_level_before + '%' : '--'}</span></td>
+        <td><span class="badge badge-green" style="font-size:11px;">${l.fuel_level_after != null ? l.fuel_level_after + '%' : '--'}</span></td>
+        <td style="font-weight:700;color:#dc2626;">${fuelUsed}</td>
+        <td>${l.fuel_added_litres ? l.fuel_added_litres + 'L' : '--'}</td>
+        <td>${l.fuel_cost ? '₦' + Number(l.fuel_cost).toLocaleString() : '--'}</td>
+        <td style="font-weight:700;">${distance}</td>
+        <td><div style="display:flex;gap:4px;align-items:center;">${photosBefore}${photosAfter}</div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  window.openLightbox = (url, label) => {
+    document.getElementById('lightbox-img').src    = url;
+    document.getElementById('lightbox-label').textContent = label;
+    document.getElementById('photo-lightbox').style.display = 'flex';
+  };
+
+  // Close lightbox on background click
+  document.getElementById('photo-lightbox').onclick = (e) => {
+    if (e.target === document.getElementById('photo-lightbox')) {
+      document.getElementById('photo-lightbox').style.display = 'none';
+    }
+  };
+
+  document.getElementById('time-filter').onchange = () => loadFuelReport();
+  loadFuelReport();
+
   function showToast(msg, type = 'info') { let c = document.getElementById('toast-container'); const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg; c.appendChild(t); setTimeout(() => t.remove(), 4000); }
 </script>
 <script type="module" src="../js/analytics.js"></script>

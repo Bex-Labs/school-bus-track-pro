@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="../assets/css/main.css">
   <link rel="stylesheet" href="../assets/css/admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     html, body { height: 100%; margin: 0; }
     .admin-layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
@@ -71,6 +72,7 @@
       <select id="new-role" class="form-input" style="height:40px;">
         <option value="school_manager">School Manager</option>
         <option value="driver">Driver</option>
+        <option value="bus_attendant">Bus Attendant</option>
         <option value="parent">Parent</option>
       </select>
       <button class="btn btn-yellow btn-full" style="font-weight:800;margin-top:8px;" id="btn-create-account" onclick="createAccount()">
@@ -86,6 +88,7 @@
       <select id="invite-role" class="form-input" style="height:40px;">
         <option value="school_manager">School Manager</option>
         <option value="driver">Driver</option>
+        <option value="bus_attendant">Bus Attendant</option>
         <option value="parent">Parent</option>
       </select>
       <button class="btn btn-navy btn-full" style="font-weight:800;margin-top:8px;" id="btn-send-invite" onclick="sendInvite()">
@@ -155,7 +158,17 @@
         <h1 class="topbar-title">User Management</h1>
         <p style="font-size:13px;color:var(--text-secondary);">Manage all users in your school.</p>
       </div>
-      <button class="btn btn-yellow btn-sm" onclick="openModal('create-modal')"><i class="bi bi-person-plus-fill"></i> Add User</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div style="display:flex;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);padding:4px;">
+          <button id="tab-staff" class="tab-btn active" onclick="switchMainTab('staff')" style="font-size:12px;">
+            <i class="bi bi-people-fill"></i> Staff & Parents
+          </button>
+          <button id="tab-students" class="tab-btn" onclick="switchMainTab('students')" style="font-size:12px;">
+            <i class="bi bi-backpack-fill"></i> Students
+          </button>
+        </div>
+        <button class="btn btn-yellow btn-sm" id="btn-add-user" onclick="openModal('create-modal')"><i class="bi bi-person-plus-fill"></i> Add User</button>
+      </div>
     </header>
     <div class="admin-content">
       <div class="kpi-grid">
@@ -171,6 +184,7 @@
             <option value="ALL">All Roles</option>
             <option value="school_manager">Managers</option>
             <option value="driver">Drivers</option>
+            <option value="bus_attendant">Attendants</option>
             <option value="parent">Parents</option>
           </select>
         </div>
@@ -190,6 +204,44 @@
           </table>
         </div>
       </div>
+
+      <!-- Students Section (Hidden by default) -->
+      <div id="students-section" style="display:none;">
+        <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
+          <div class="kpi-node"><div class="kpi-label">Total Students</div><div class="kpi-value" id="s-count-total">0</div></div>
+          <div class="kpi-node"><div class="kpi-label">With QR Code</div><div class="kpi-value" style="color:var(--green);" id="s-count-qr">0</div></div>
+          <div class="kpi-node"><div class="kpi-label">Pending QR</div><div class="kpi-value" style="color:#f59e0b;" id="s-count-noqr">0</div></div>
+          <div class="kpi-node"><div class="kpi-label">Assigned Buses</div><div class="kpi-value" id="s-count-buses">0</div></div>
+        </div>
+        <div class="tile tile-12">
+          <div class="filter-deck" style="justify-content: space-between; align-items: center;">
+            <div style="display:flex; gap:10px; flex:1; max-width: 500px;">
+              <input type="text" id="student-search" class="search-input" placeholder="Search student name or ID...">
+              <select id="student-bus-filter" class="role-select">
+                <option value="ALL">All Buses</option>
+              </select>
+            </div>
+            <button class="btn btn-yellow btn-sm" onclick="generateAllQR()"><i class="bi bi-qr-code"></i> Generate Missing QRs</button>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student Name</th>
+                  <th>Registration ID</th>
+                  <th>Assigned Bus</th>
+                  <th>Age</th>
+                  <th>Medical Notes</th>
+                  <th>QR Status</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="students-body"><tr><td colspan="7" style="text-align:center;padding:40px;"><i class="bi bi-arrow-clockwise spin"></i> Loading students...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   </main>
 </div>
@@ -203,6 +255,32 @@
   <a href="analytics.html"><i class="bi bi-graph-up-arrow"></i></a>
   <a href="profile.html"><i class="bi bi-person-gear"></i></a>
 </nav>
+
+<!-- QR Code Modal -->
+<div class="modal-overlay" id="qr-modal">
+  <div class="modal-card" style="max-width:380px;text-align:center;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="font-weight:900;font-size:16px;color:var(--navy);">Student QR Code</h3>
+      <i class="bi bi-x-lg" style="cursor:pointer;" onclick="closeModal('qr-modal')"></i>
+    </div>
+    <div id="qr-student-info" style="background:var(--bg);border-radius:var(--r-lg);padding:14px;margin-bottom:20px;text-align:left;">
+      <div style="font-weight:800;font-size:15px;color:var(--navy);" id="qr-student-name">---</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">ID: <span id="qr-student-id">---</span> · Bus: <span id="qr-student-bus">---</span></div>
+    </div>
+    <div id="qr-canvas-wrap" style="display:flex;align-items:center;justify-content:center;padding:20px;background:white;border:1px solid var(--border);border-radius:var(--r-lg);margin-bottom:20px;">
+      <canvas id="qr-canvas"></canvas>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-yellow btn-full" style="font-weight:800;" onclick="downloadQR()">
+        <i class="bi bi-download"></i> Download PNG
+      </button>
+      <button class="btn btn-navy btn-full" style="font-weight:800;" onclick="printQR()">
+        <i class="bi bi-printer-fill"></i> Print
+      </button>
+    </div>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:12px;">Print and attach to student ID card or lanyard.</p>
+  </div>
+</div>
 
 <div id="toast-container"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -240,7 +318,7 @@
   async function loadUsers() {
     const { data, error } = await supabase.from('profiles').select('*')
       .eq('organization_id', ORG_ID)
-      .in('role', ['school_manager', 'driver', 'parent'])
+      .in('role', ['school_manager', 'driver', 'bus_attendant', 'parent'])
       .order('full_name');
     if (error) { showToast('Failed to load users: ' + error.message, 'error'); return; }
     allUsers = data || [];
@@ -251,7 +329,7 @@
   function updateKPIs(users) {
     document.getElementById('count-total').textContent    = users.length;
     document.getElementById('count-managers').textContent = users.filter(u => u.role === 'school_manager').length;
-    document.getElementById('count-drivers').textContent  = users.filter(u => u.role === 'driver').length;
+    document.getElementById('count-drivers').textContent  = users.filter(u => u.role === 'driver' || u.role === 'bus_attendant').length;
     document.getElementById('count-pending').textContent  = users.filter(u => !u.is_verified && u.account_status !== 'deactivated').length;
   }
 
@@ -276,7 +354,7 @@
       return;
     }
 
-    const roleColors = { school_manager: 'badge-yellow', driver: 'badge-green', parent: 'badge-navy' };
+    const roleColors = { school_manager: 'badge-yellow', driver: 'badge-green', parent: 'badge-navy', bus_attendant: 'badge-yellow' };
 
     body.innerHTML = filtered.map(u => {
       const status = getStatus(u);
@@ -376,8 +454,8 @@
 
   // ── Create account ────────────────────────────────────────────────────
   window.createAccount = async () => {
-    const btn       = document.getElementById('btn-create-account');
-    const email     = document.getElementById('new-email').value.trim();
+    const btn        = document.getElementById('btn-create-account');
+    const email      = document.getElementById('new-email').value.trim();
     const full_name = document.getElementById('new-full-name').value.trim();
     const role      = document.getElementById('new-role').value;
     if (!email || !full_name) { showToast('Name and email required.', 'error'); return; }
@@ -396,8 +474,8 @@
 
   // ── Send invite ───────────────────────────────────────────────────────
   window.sendInvite = async () => {
-    const btn       = document.getElementById('btn-send-invite');
-    const email     = document.getElementById('invite-email').value.trim();
+    const btn        = document.getElementById('btn-send-invite');
+    const email      = document.getElementById('invite-email').value.trim();
     const full_name = document.getElementById('invite-name').value.trim();
     const role      = document.getElementById('invite-role').value;
     if (!email) { showToast('Email required.', 'error'); return; }
@@ -414,6 +492,34 @@
     else showToast(result.error || 'Failed.', 'error');
   };
 
+  // ── Main tab switcher ─────────────────────────────────────────────────
+  window.switchMainTab = (tab) => {
+    const staffSection    = document.querySelector('.tile.tile-12');
+    const studentsSection = document.getElementById('students-section');
+    const kpiGrid         = document.querySelector('.kpi-grid');
+    const filterDeck      = document.querySelector('.filter-deck');
+    const addBtn          = document.getElementById('btn-add-user');
+
+    document.getElementById('tab-staff').classList.toggle('active',    tab === 'staff');
+    document.getElementById('tab-students').classList.toggle('active', tab === 'students');
+
+    if (tab === 'students') {
+      if (staffSection)    staffSection.style.display    = 'none';
+      if (kpiGrid)         kpiGrid.style.display        = 'none';
+      if (filterDeck)      filterDeck.style.display      = 'none';
+      if (studentsSection) studentsSection.style.display = 'block';
+      if (addBtn)          addBtn.style.display          = 'none';
+      loadStudents();
+    } else {
+      if (staffSection)    staffSection.style.display    = 'block';
+      if (kpiGrid)         kpiGrid.style.display        = 'grid';
+      if (filterDeck)      filterDeck.style.display      = 'flex';
+      if (studentsSection) studentsSection.style.display = 'none';
+      if (addBtn)          addBtn.style.display          = 'flex';
+    }
+  };
+
+  // ── Modal tab switcher (Create vs Invite) ─────────────────────────────
   window.switchTab = (tab) => {
     document.getElementById('tab-create').classList.toggle('active', tab === 'create');
     document.getElementById('tab-invite').classList.toggle('active', tab === 'invite');
@@ -426,6 +532,150 @@
 
   document.getElementById('search-bar').oninput   = () => renderTable(allUsers);
   document.getElementById('role-filter').onchange = () => renderTable(allUsers);
+
+  // ── Students ──────────────────────────────────────────────────────────
+  let allStudents = [];
+
+  async function loadStudents() {
+    const { data, error } = await supabase.from('students')
+      .select('*').eq('organization_id', ORG_ID).order('full_name');
+    if (error) { showToast('Failed to load students: ' + error.message, 'error'); return; }
+    allStudents = data || [];
+
+    const withQR  = allStudents.filter(s => s.qr_code).length;
+    const buses   = [...new Set(allStudents.map(s => s.bus_id).filter(Boolean))].length;
+    document.getElementById('s-count-total').textContent = allStudents.length;
+    document.getElementById('s-count-qr').textContent   = withQR;
+    document.getElementById('s-count-noqr').textContent = allStudents.length - withQR;
+    document.getElementById('s-count-buses').textContent = buses;
+
+    const busFilter = document.getElementById('student-bus-filter');
+    const busIds    = [...new Set(allStudents.map(s => s.bus_id).filter(Boolean))];
+    busFilter.innerHTML = '<option value="ALL">All Buses</option>' +
+      busIds.map(b => `<option value="${b}">Bus ${b}</option>`).join('');
+
+    renderStudentsTable();
+  }
+
+  function renderStudentsTable() {
+    const body   = document.getElementById('students-body');
+    const term   = document.getElementById('student-search').value.toLowerCase();
+    const busF   = document.getElementById('student-bus-filter').value;
+
+    const filtered = allStudents.filter(s => {
+      const matchSearch = s.full_name?.toLowerCase().includes(term) || s.student_reg_id?.toLowerCase().includes(term);
+      const matchBus    = busF === 'ALL' || s.bus_id === busF;
+      return matchSearch && matchBus;
+    });
+
+    if (!filtered.length) {
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;">No students found.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = filtered.map(s => `
+      <tr>
+        <td><strong>${s.full_name}</strong></td>
+        <td><code style="font-size:11px;">${s.student_reg_id || '---'}</code></td>
+        <td>${s.bus_id ? `<span class="badge badge-navy" style="font-size:10px;">Bus ${s.bus_id}</span>` : '<span style="color:var(--text-muted);font-size:12px;">Unassigned</span>'}</td>
+        <td style="font-size:13px;">${s.age || '--'}</td>
+        <td style="font-size:12px;">${s.medical_info ? `<span style="color:#dc2626;"><i class="bi bi-heart-pulse-fill"></i> ${s.medical_info}</span>` : '<span style="color:var(--text-muted);">None</span>'}</td>
+        <td>${s.qr_code
+          ? '<span class="badge badge-green" style="font-size:10px;"><i class="bi bi-qr-code"></i> Generated</span>'
+          : '<span class="badge" style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;font-size:10px;">Pending</span>'}</td>
+        <td style="text-align:right;">
+          <div style="display:inline-flex;gap:6px;">
+            <button class="btn btn-yellow btn-sm" onclick="viewQR('${s.id}')" title="View QR Code">
+              <i class="bi bi-qr-code"></i> QR
+            </button>
+            ${!s.qr_code ? `<button class="btn btn-ghost btn-sm" onclick="generateQR('${s.id}')" title="Generate QR">
+              <i class="bi bi-plus-circle"></i> Generate
+            </button>` : ''}
+          </div>
+        </td>
+      </tr>`).join('');
+  }
+
+  window.generateQR = async (studentId) => {
+    const student = allStudents.find(s => s.id === studentId);
+    if (!student) return;
+    const qrCode = 'STU-' + studentId.replace(/-/g, '').substring(0, 10).toUpperCase();
+    const { error } = await supabase.from('students').update({ qr_code: qrCode }).eq('id', studentId);
+    if (error) { showToast('Failed: ' + error.message, 'error'); return; }
+    showToast('QR code generated.', 'success');
+    await loadStudents();
+    viewQR(studentId);
+  };
+
+  window.generateAllQR = async () => {
+    const noQR = allStudents.filter(s => !s.qr_code);
+    if (!noQR.length) { showToast('All students already have QR codes.', 'success'); return; }
+    if (!confirm(`Generate QR codes for ${noQR.length} students?`)) return;
+    for (const s of noQR) {
+      const qrCode = 'STU-' + s.id.replace(/-/g, '').substring(0, 10).toUpperCase();
+      await supabase.from('students').update({ qr_code: qrCode }).eq('id', s.id);
+    }
+    showToast(`${noQR.length} QR codes generated.`, 'success');
+    loadStudents();
+  };
+
+  window.viewQR = async (studentId) => {
+    let student = allStudents.find(s => s.id === studentId);
+    if (!student) return;
+
+    if (!student.qr_code) { await generateQR(studentId); return; }
+
+    document.getElementById('qr-student-name').textContent = student.full_name;
+    document.getElementById('qr-student-id').textContent   = student.student_reg_id || '---';
+    document.getElementById('qr-student-bus').textContent  = student.bus_id ? `Bus ${student.bus_id}` : 'Unassigned';
+
+    const canvas = document.getElementById('qr-canvas');
+    await QRCode.toCanvas(canvas, student.qr_code, {
+      width: 220, margin: 2,
+      color: { dark: '#0F172A', light: '#FFFFFF' }
+    });
+
+    openModal('qr-modal');
+  };
+
+  window.downloadQR = () => {
+    const canvas = document.getElementById('qr-canvas');
+    const name   = document.getElementById('qr-student-name').textContent;
+    const link   = document.createElement('a');
+    link.download = `QR-${name.replace(/\s+/g,'-')}.png`;
+    link.href     = canvas.toDataURL('image/png');
+    link.click();
+  };
+
+  window.printQR = () => {
+    const canvas = document.getElementById('qr-canvas');
+    const name   = document.getElementById('qr-student-name').textContent;
+    const regId  = document.getElementById('qr-student-id').textContent;
+    const bus    = document.getElementById('qr-student-bus').textContent;
+    const imgSrc = canvas.toDataURL('image/png');
+    const win    = window.open('', '_blank');
+    win.document.write(`
+      <html><head><title>QR Code — ${name}</title>
+      <style>body{font-family:Arial,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f8fafc;}
+      .card{background:white;border:2px solid #0F172A;border-radius:16px;padding:24px;text-align:center;max-width:280px;box-shadow:0 4px 20px rgba(0,0,0,0.1);}
+      h2{font-size:16px;font-weight:900;color:#0F172A;margin:12px 0 4px;}
+      p{font-size:12px;color:#64748b;margin:2px 0;}
+      .badge{background:#0F172A;color:white;font-size:10px;font-weight:800;padding:4px 10px;border-radius:20px;margin-top:8px;display:inline-block;}
+      @media print{body{background:white;}}</style></head>
+      <body><div class="card">
+        <p style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">School Bus Track Pro</p>
+        <img src="${imgSrc}" style="width:200px;height:200px;">
+        <h2>${name}</h2>
+        <p>ID: ${regId}</p>
+        <div class="badge">${bus}</div>
+      </div>
+      <script>window.onload=()=>{window.print();}<\/script>
+      </body></html>`);
+    win.document.close();
+  };
+
+  document.getElementById('student-search').oninput     = () => renderStudentsTable();
+  document.getElementById('student-bus-filter').onchange = () => renderStudentsTable();
 
   supabase.channel('users-manager')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles',

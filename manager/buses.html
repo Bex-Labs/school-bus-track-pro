@@ -106,7 +106,7 @@
       <option value="">No driver assigned</option>
     </select>
 
-    <!-- Driver profile preview — appears when a driver is selected -->
+    <!-- Driver profile preview -->
     <div class="driver-profile-popup" id="driver-preview">
       <div class="driver-avatar-lg" id="preview-avatar">?</div>
       <div style="flex:1;min-width:0;">
@@ -119,6 +119,11 @@
         </div>
       </div>
     </div>
+
+    <label class="form-label" style="margin-top:8px;">Assign Bus Attendant (Optional)</label>
+    <select id="bus-attendant" class="form-input" style="height:40px;">
+      <option value="">No attendant assigned</option>
+    </select>
 
     <div style="display:flex;gap:12px;margin-top:8px;">
       <button class="btn btn-yellow btn-full" style="font-weight:800;" id="btn-save-bus" onclick="saveBus()">
@@ -276,10 +281,20 @@
   // ── Load drivers ────────────────────────────────────────────────────────
   async function loadDrivers() {
     const { data } = await supabase.from('profiles')
-      .select('id, full_name, bus_id, email, phone, avatar_url')
-      .eq('organization_id', ORG_ID).eq('role', 'driver').order('full_name');
-    allDrivers = data || [];
+      .select('id, full_name, bus_id, email, phone, avatar_url, role')
+      .eq('organization_id', ORG_ID)
+      .in('role', ['driver', 'bus_attendant'])
+      .order('full_name');
+    allDrivers = (data || []).filter(d => d.role === 'driver');
+    const attendants = (data || []).filter(d => d.role === 'bus_attendant');
     refreshDriverDropdown();
+
+    // Populate attendant dropdown
+    const attSel = document.getElementById('bus-attendant');
+    if (attSel) {
+      attSel.innerHTML = '<option value="">No attendant assigned</option>' +
+        attendants.map(a => `<option value="${a.id}">${a.full_name}</option>`).join('');
+    }
   }
 
   function refreshDriverDropdown(selectedDriverId = '') {
@@ -453,6 +468,8 @@
     document.getElementById('bus-capacity').value           = b.capacity || '';
     document.getElementById('bus-model').value              = b.model || '';
     refreshDriverDropdown(b.driver_id || '');
+    const attSel = document.getElementById('bus-attendant');
+    if (attSel) attSel.value = b.attendant_id || '';
     openModal('bus-modal');
   };
 
@@ -463,14 +480,15 @@
     const plate    = document.getElementById('bus-plate').value.trim().toUpperCase();
     const capacity = parseInt(document.getElementById('bus-capacity').value) || null;
     const model    = document.getElementById('bus-model').value.trim() || null;
-    const driverId = document.getElementById('bus-driver').value || null;
+    const driverId    = document.getElementById('bus-driver').value || null;
+    const attendantId = document.getElementById('bus-attendant')?.value || null;
 
     if (!busId) { showToast('Bus ID is required.', 'error'); return; }
     if (!plate) { showToast('Plate number is required.', 'error'); return; }
 
     btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Saving...';
 
-    const busData = { plate_number: plate, capacity, model, driver_id: driverId, organization_id: ORG_ID, status: 'offline' };
+    const busData = { plate_number: plate, capacity, model, driver_id: driverId, attendant_id: attendantId, organization_id: ORG_ID, status: 'offline' };
     let error;
 
     if (editId) {
