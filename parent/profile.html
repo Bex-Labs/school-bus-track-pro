@@ -189,16 +189,20 @@
         <label class="form-label" style="color:var(--red);font-size:11px;text-transform:uppercase;letter-spacing:0.3px;">
           <i class="bi bi-exclamation-triangle-fill"></i> Emergency Contact
         </label>
-        <small style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:10px;">This person will be emailed immediately if an SOS alert is triggered on the bus.</small>
+        <small style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:10px;">This person will be emailed and called immediately if an SOS alert is triggered on the bus.</small>
       </div>
       <div class="form-grid">
         <div class="form-group">
-          <label class="form-label">Emergency Contact Name</label>
+          <label class="form-label">Contact Name</label>
           <input type="text" id="child-emergency-name" class="form-input" placeholder="e.g. Uncle John">
         </div>
         <div class="form-group">
-          <label class="form-label">Emergency Contact Email</label>
+          <label class="form-label">Contact Email</label>
           <input type="email" id="child-emergency-email" class="form-input" placeholder="john@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contact Phone</label>
+          <input type="tel" id="child-emergency-phone" class="form-input" placeholder="+234...">
         </div>
       </div>
     </div>
@@ -482,6 +486,7 @@
       medical_info:            document.getElementById('child-medical').value.trim(),
       emergency_contact_name:  document.getElementById('child-emergency-name').value.trim() || null,
       emergency_contact_email: document.getElementById('child-emergency-email').value.trim() || null,
+      emergency_contact_phone: document.getElementById('child-emergency-phone').value.trim() || null,
       organization_id:         ORG_ID,
       bus_id:                  busId
     }]);

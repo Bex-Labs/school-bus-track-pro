@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="../assets/css/main.css">
   <link rel="stylesheet" href="../assets/css/admin.css">
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     html, body { height: 100%; margin: 0; }
     .admin-layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
@@ -204,45 +205,32 @@
           </table>
         </div>
       </div>
+    </div>
 
-      <!-- Students Section (Hidden by default) -->
+      <!-- Students Section -->
       <div id="students-section" style="display:none;">
-        <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
+        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);">
           <div class="kpi-node"><div class="kpi-label">Total Students</div><div class="kpi-value" id="s-count-total">0</div></div>
           <div class="kpi-node"><div class="kpi-label">With QR Code</div><div class="kpi-value" style="color:var(--green);" id="s-count-qr">0</div></div>
-          <div class="kpi-node"><div class="kpi-label">Pending QR</div><div class="kpi-value" style="color:#f59e0b;" id="s-count-noqr">0</div></div>
-          <div class="kpi-node"><div class="kpi-label">Assigned Buses</div><div class="kpi-value" id="s-count-buses">0</div></div>
+          <div class="kpi-node"><div class="kpi-label">No QR Yet</div><div class="kpi-value" style="color:#f59e0b;" id="s-count-noqr">0</div></div>
+          <div class="kpi-node"><div class="kpi-label">Buses</div><div class="kpi-value" id="s-count-buses">0</div></div>
         </div>
-        <div class="tile tile-12">
-          <div class="filter-deck" style="justify-content: space-between; align-items: center;">
-            <div style="display:flex; gap:10px; flex:1; max-width: 500px;">
-              <input type="text" id="student-search" class="search-input" placeholder="Search student name or ID...">
-              <select id="student-bus-filter" class="role-select">
-                <option value="ALL">All Buses</option>
-              </select>
-            </div>
-            <button class="btn btn-yellow btn-sm" onclick="generateAllQR()"><i class="bi bi-qr-code"></i> Generate Missing QRs</button>
+        <div style="background:white;border:1px solid var(--border);border-radius:var(--r-xl);overflow:hidden;">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border);background:#fafbfd;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <input type="text" id="student-search" class="search-input" placeholder="Search student name or ID..." style="flex:1;min-width:160px;">
+            <select id="student-bus-filter" class="role-select"><option value="ALL">All Buses</option></select>
+            <button class="btn btn-yellow btn-sm" onclick="openAddStudentModal()"><i class="bi bi-person-plus-fill"></i> Add Student</button>
+            <button class="btn btn-ghost btn-sm" onclick="openModal('bulk-import-modal')"><i class="bi bi-upload"></i> Bulk Import</button>
+            <button class="btn btn-ghost btn-sm" onclick="generateAllQR()"><i class="bi bi-qr-code"></i> Generate All QR</button>
           </div>
           <div style="overflow-x:auto;">
             <table>
-              <thead>
-                <tr>
-                  <th>Student Name</th>
-                  <th>Registration ID</th>
-                  <th>Assigned Bus</th>
-                  <th>Age</th>
-                  <th>Medical Notes</th>
-                  <th>QR Status</th>
-                  <th style="text-align:right;">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="students-body"><tr><td colspan="7" style="text-align:center;padding:40px;"><i class="bi bi-arrow-clockwise spin"></i> Loading students...</td></tr></tbody>
+              <thead><tr><th>Name</th><th>Reg ID</th><th>Bus</th><th>Parent</th><th>Age</th><th>Medical</th><th>QR Status</th><th style="text-align:right;">Actions</th></tr></thead>
+              <tbody id="students-body"><tr><td colspan="8" style="text-align:center;padding:40px;"><i class="bi bi-arrow-clockwise spin"></i> Loading...</td></tr></tbody>
             </table>
           </div>
         </div>
       </div>
-
-    </div>
   </main>
 </div>
 
@@ -279,6 +267,134 @@
       </button>
     </div>
     <p style="font-size:11px;color:var(--text-muted);margin-top:12px;">Print and attach to student ID card or lanyard.</p>
+  </div>
+</div>
+
+<!-- Add Student Modal -->
+<div class="modal-overlay" id="add-student-modal">
+  <div class="modal-card" style="max-width:560px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="font-weight:900;font-size:16px;color:var(--navy);">Add Student</h3>
+      <i class="bi bi-x-lg" style="cursor:pointer;" onclick="closeModal('add-student-modal')"></i>
+    </div>
+
+    <!-- Student Details -->
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px;margin-bottom:10px;">Student Details</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div>
+        <label class="form-label">Full Name <span style="color:var(--red);">*</span></label>
+        <input type="text" id="ns-name" class="form-input" placeholder="Student full name">
+      </div>
+      <div>
+        <label class="form-label">Reg ID <span style="color:var(--red);">*</span></label>
+        <input type="text" id="ns-reg-id" class="form-input" placeholder="e.g. STU-001">
+      </div>
+      <div>
+        <label class="form-label">Age</label>
+        <input type="number" id="ns-age" class="form-input" min="1" max="20">
+      </div>
+      <div>
+        <label class="form-label">Gender</label>
+        <select id="ns-gender" class="form-input" style="height:40px;">
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </div>
+      <div style="grid-column:1/-1;">
+        <label class="form-label">Assign Bus <span style="color:var(--red);">*</span></label>
+        <select id="ns-bus" class="form-input" style="height:40px;">
+          <option value="">Select bus...</option>
+        </select>
+      </div>
+      <div style="grid-column:1/-1;">
+        <label class="form-label">Medical Info (Optional)</label>
+        <input type="text" id="ns-medical" class="form-input" placeholder="e.g. Asthmatic">
+      </div>
+    </div>
+
+    <!-- Link to Parent -->
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px;margin:16px 0 10px;">Link to Parent</div>
+    <label class="form-label">Select Existing Parent</label>
+    <select id="ns-parent" class="form-input" style="height:40px;">
+      <option value="">Select parent account...</option>
+    </select>
+    <small style="font-size:11px;color:var(--text-secondary);display:block;margin-top:-10px;margin-bottom:14px;">Only parent accounts in your school are shown.</small>
+
+    <!-- Emergency Contact -->
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#dc2626;letter-spacing:0.5px;margin-bottom:10px;"><i class="bi bi-exclamation-triangle-fill"></i> Emergency Contact</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="grid-column:1/-1;">
+        <label class="form-label">Contact Name</label>
+        <input type="text" id="ns-ec-name" class="form-input" placeholder="e.g. Uncle John">
+      </div>
+      <div>
+        <label class="form-label">Contact Email</label>
+        <input type="email" id="ns-ec-email" class="form-input" placeholder="john@email.com">
+      </div>
+      <div>
+        <label class="form-label">Contact Phone</label>
+        <input type="tel" id="ns-ec-phone" class="form-input" placeholder="+234...">
+      </div>
+    </div>
+
+    <button class="btn btn-yellow btn-full" style="font-weight:800;margin-top:8px;" id="btn-add-student" onclick="submitAddStudent()">
+      <i class="bi bi-person-plus-fill"></i> Add Student
+    </button>
+  </div>
+</div>
+
+<!-- Bulk Import Modal -->
+<div class="modal-overlay" id="bulk-import-modal">
+  <div class="modal-card" style="max-width:540px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="font-weight:900;font-size:16px;color:var(--navy);">Bulk Import Students</h3>
+      <i class="bi bi-x-lg" style="cursor:pointer;" onclick="closeModal('bulk-import-modal')"></i>
+    </div>
+
+    <div style="background:#f0f4ff;border:1px solid #c7d2fe;border-radius:var(--r-lg);padding:16px;margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;"><i class="bi bi-info-circle-fill"></i> How it works</div>
+      <ul style="margin:0;padding-left:16px;font-size:12px;color:#374151;line-height:1.8;">
+        <li>Download the CSV template below</li>
+        <li>Fill in student details — one row per student</li>
+        <li>If a parent email already exists, student links to that account</li>
+        <li>If parent email is new, a parent account is created automatically</li>
+        <li>Upload your completed file (CSV or Excel)</li>
+      </ul>
+    </div>
+
+    <button class="btn btn-ghost btn-full" style="font-weight:700;margin-bottom:16px;" onclick="downloadCSVTemplate()">
+      <i class="bi bi-download"></i> Download CSV Template
+    </button>
+
+    <div id="import-drop-zone" style="border:2px dashed var(--border);border-radius:var(--r-xl);padding:40px;text-align:center;cursor:pointer;transition:0.2s;background:var(--bg);"
+      onclick="document.getElementById('bulk-file-input').click()"
+      ondragover="event.preventDefault();this.style.borderColor='var(--navy)'"
+      ondragleave="this.style.borderColor='var(--border)'"
+      ondrop="handleImportDrop(event)">
+      <i class="bi bi-cloud-upload-fill" style="font-size:36px;color:var(--navy);display:block;margin-bottom:10px;opacity:0.4;"></i>
+      <div style="font-weight:700;color:var(--navy);margin-bottom:4px;">Drop CSV or Excel file here</div>
+      <div style="font-size:12px;color:var(--text-muted);">or click to browse</div>
+    </div>
+    <input type="file" id="bulk-file-input" accept=".csv,.xlsx,.xls" style="display:none;" onchange="handleImportFile(this)">
+
+    <!-- Preview -->
+    <div id="import-preview" style="display:none;margin-top:16px;">
+      <div style="font-size:12px;font-weight:800;color:var(--navy);margin-bottom:8px;" id="import-preview-label"></div>
+      <div style="overflow-x:auto;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-md);">
+        <table style="width:100%;font-size:11px;">
+          <thead id="import-preview-head" style="background:var(--bg);position:sticky;top:0;"></thead>
+          <tbody id="import-preview-body"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-yellow btn-full" style="font-weight:800;margin-top:12px;" id="btn-confirm-import" onclick="confirmBulkImport()">
+        <i class="bi bi-upload"></i> Import Students
+      </button>
+    </div>
+
+    <div id="import-progress" style="display:none;margin-top:16px;text-align:center;padding:20px;">
+      <i class="bi bi-arrow-clockwise spin" style="font-size:28px;color:var(--yellow);display:block;margin-bottom:10px;"></i>
+      <div style="font-weight:700;color:var(--navy);" id="import-progress-label">Importing...</div>
+    </div>
   </div>
 </div>
 
@@ -454,8 +570,8 @@
 
   // ── Create account ────────────────────────────────────────────────────
   window.createAccount = async () => {
-    const btn        = document.getElementById('btn-create-account');
-    const email      = document.getElementById('new-email').value.trim();
+    const btn       = document.getElementById('btn-create-account');
+    const email     = document.getElementById('new-email').value.trim();
     const full_name = document.getElementById('new-full-name').value.trim();
     const role      = document.getElementById('new-role').value;
     if (!email || !full_name) { showToast('Name and email required.', 'error'); return; }
@@ -474,8 +590,8 @@
 
   // ── Send invite ───────────────────────────────────────────────────────
   window.sendInvite = async () => {
-    const btn        = document.getElementById('btn-send-invite');
-    const email      = document.getElementById('invite-email').value.trim();
+    const btn       = document.getElementById('btn-send-invite');
+    const email     = document.getElementById('invite-email').value.trim();
     const full_name = document.getElementById('invite-name').value.trim();
     const role      = document.getElementById('invite-role').value;
     if (!email) { showToast('Email required.', 'error'); return; }
@@ -505,43 +621,31 @@
 
     if (tab === 'students') {
       if (staffSection)    staffSection.style.display    = 'none';
-      if (kpiGrid)         kpiGrid.style.display        = 'none';
+      if (kpiGrid)         kpiGrid.style.display         = 'none';
       if (filterDeck)      filterDeck.style.display      = 'none';
       if (studentsSection) studentsSection.style.display = 'block';
       if (addBtn)          addBtn.style.display          = 'none';
       loadStudents();
     } else {
       if (staffSection)    staffSection.style.display    = 'block';
-      if (kpiGrid)         kpiGrid.style.display        = 'grid';
+      if (kpiGrid)         kpiGrid.style.display         = 'grid';
       if (filterDeck)      filterDeck.style.display      = 'flex';
       if (studentsSection) studentsSection.style.display = 'none';
       if (addBtn)          addBtn.style.display          = 'flex';
     }
   };
 
-  // ── Modal tab switcher (Create vs Invite) ─────────────────────────────
-  window.switchTab = (tab) => {
-    document.getElementById('tab-create').classList.toggle('active', tab === 'create');
-    document.getElementById('tab-invite').classList.toggle('active', tab === 'invite');
-    document.getElementById('panel-create').style.display = tab === 'create' ? 'block' : 'none';
-    document.getElementById('panel-invite').style.display = tab === 'invite' ? 'block' : 'none';
-  };
-
-  window.openModal  = (id) => document.getElementById(id).classList.add('active');
-  window.closeModal = (id) => document.getElementById(id).classList.remove('active');
-
-  document.getElementById('search-bar').oninput   = () => renderTable(allUsers);
-  document.getElementById('role-filter').onchange = () => renderTable(allUsers);
-
   // ── Students ──────────────────────────────────────────────────────────
   let allStudents = [];
 
   async function loadStudents() {
     const { data, error } = await supabase.from('students')
-      .select('*').eq('organization_id', ORG_ID).order('full_name');
+      .select('*, profiles(full_name, email)')
+      .eq('organization_id', ORG_ID).order('full_name');
     if (error) { showToast('Failed to load students: ' + error.message, 'error'); return; }
     allStudents = data || [];
 
+    // KPIs
     const withQR  = allStudents.filter(s => s.qr_code).length;
     const buses   = [...new Set(allStudents.map(s => s.bus_id).filter(Boolean))].length;
     document.getElementById('s-count-total').textContent = allStudents.length;
@@ -549,6 +653,7 @@
     document.getElementById('s-count-noqr').textContent = allStudents.length - withQR;
     document.getElementById('s-count-buses').textContent = buses;
 
+    // Bus filter
     const busFilter = document.getElementById('student-bus-filter');
     const busIds    = [...new Set(allStudents.map(s => s.bus_id).filter(Boolean))];
     busFilter.innerHTML = '<option value="ALL">All Buses</option>' +
@@ -578,6 +683,7 @@
         <td><strong>${s.full_name}</strong></td>
         <td><code style="font-size:11px;">${s.student_reg_id || '---'}</code></td>
         <td>${s.bus_id ? `<span class="badge badge-navy" style="font-size:10px;">Bus ${s.bus_id}</span>` : '<span style="color:var(--text-muted);font-size:12px;">Unassigned</span>'}</td>
+        <td style="font-size:12px;">${s.profiles?.full_name || '<span style="color:var(--text-muted);">No parent</span>'}</td>
         <td style="font-size:13px;">${s.age || '--'}</td>
         <td style="font-size:12px;">${s.medical_info ? `<span style="color:#dc2626;"><i class="bi bi-heart-pulse-fill"></i> ${s.medical_info}</span>` : '<span style="color:var(--text-muted);">None</span>'}</td>
         <td>${s.qr_code
@@ -596,6 +702,7 @@
       </tr>`).join('');
   }
 
+  // ── QR Code generation ────────────────────────────────────────────────
   window.generateQR = async (studentId) => {
     const student = allStudents.find(s => s.id === studentId);
     if (!student) return;
@@ -623,12 +730,14 @@
     let student = allStudents.find(s => s.id === studentId);
     if (!student) return;
 
+    // Generate QR if not exists
     if (!student.qr_code) { await generateQR(studentId); return; }
 
     document.getElementById('qr-student-name').textContent = student.full_name;
     document.getElementById('qr-student-id').textContent   = student.student_reg_id || '---';
     document.getElementById('qr-student-bus').textContent  = student.bus_id ? `Bus ${student.bus_id}` : 'Unassigned';
 
+    // Render QR code on canvas
     const canvas = document.getElementById('qr-canvas');
     await QRCode.toCanvas(canvas, student.qr_code, {
       width: 220, margin: 2,
@@ -676,6 +785,207 @@
 
   document.getElementById('student-search').oninput     = () => renderStudentsTable();
   document.getElementById('student-bus-filter').onchange = () => renderStudentsTable();
+
+  // ── Add Student ───────────────────────────────────────────────────────
+  window.openAddStudentModal = async () => {
+    // Reset fields
+    ['ns-name','ns-reg-id','ns-age','ns-medical','ns-ec-name','ns-ec-email','ns-ec-phone'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('ns-gender').value = 'male';
+
+    // Load buses
+    const busSel = document.getElementById('ns-bus');
+    busSel.innerHTML = '<option value="">Select bus...</option>';
+    const { data: buses } = await supabase.from('buses').select('id, plate_number').eq('organization_id', ORG_ID).order('id');
+    if (buses) buses.forEach(b => { busSel.innerHTML += `<option value="${b.id}">${b.id}${b.plate_number ? ' — ' + b.plate_number : ''}</option>`; });
+
+    // Load parents
+    const parentSel = document.getElementById('ns-parent');
+    parentSel.innerHTML = '<option value="">Select parent account...</option>';
+    const { data: parents } = await supabase.from('profiles').select('id, full_name, email').eq('organization_id', ORG_ID).eq('role', 'parent').order('full_name');
+    if (parents) parents.forEach(p => { parentSel.innerHTML += `<option value="${p.id}">${p.full_name} (${p.email})</option>`; });
+
+    openModal('add-student-modal');
+  };
+
+  window.submitAddStudent = async () => {
+    const name    = document.getElementById('ns-name').value.trim();
+    const regId   = document.getElementById('ns-reg-id').value.trim();
+    const busId   = document.getElementById('ns-bus').value;
+    const parentId = document.getElementById('ns-parent').value || null;
+    const btn     = document.getElementById('btn-add-student');
+
+    if (!name)  { showToast('Student name is required.', 'error'); return; }
+    if (!regId) { showToast('Registration ID is required.', 'error'); return; }
+    if (!busId) { showToast('Please assign a bus.', 'error'); return; }
+
+    btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Saving...';
+
+    const qrCode = 'STU-' + Math.random().toString(36).substring(2, 12).toUpperCase();
+
+    const { error } = await supabase.from('students').insert([{
+      full_name:               name,
+      student_reg_id:          regId,
+      age:                     parseInt(document.getElementById('ns-age').value) || null,
+      gender:                  document.getElementById('ns-gender').value,
+      bus_id:                  busId,
+      parent_id:               parentId,
+      medical_info:            document.getElementById('ns-medical').value.trim() || null,
+      emergency_contact_name:  document.getElementById('ns-ec-name').value.trim() || null,
+      emergency_contact_email: document.getElementById('ns-ec-email').value.trim() || null,
+      emergency_contact_phone: document.getElementById('ns-ec-phone').value.trim() || null,
+      organization_id:         ORG_ID,
+      qr_code:                 qrCode
+    }]);
+
+    btn.disabled = false; btn.innerHTML = '<i class="bi bi-person-plus-fill"></i> Add Student';
+
+    if (error) { showToast('Failed: ' + error.message, 'error'); return; }
+    showToast(`${name} added successfully.`, 'success');
+    closeModal('add-student-modal');
+    loadStudents();
+  };
+
+  // ── Bulk Import ───────────────────────────────────────────────────────
+  let importRows = [];
+
+  window.downloadCSVTemplate = () => {
+    const headers = ['student_name','student_reg_id','age','gender','bus_id','parent_name','parent_email','parent_phone','medical_info','emergency_contact_name','emergency_contact_email','emergency_contact_phone'];
+    const example = ['John Doe','STU-001','10','male','BUS-001','Jane Doe','jane@email.com','+2348001234567','','Uncle Bob','bob@email.com','+2348009876543'];
+    const csv = [headers.join(','), example.join(',')].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'students_import_template.csv'; a.click();
+  };
+
+  window.handleImportFile = (input) => { if (input.files[0]) processImportFile(input.files[0]); };
+  window.handleImportDrop = (e) => {
+    e.preventDefault();
+    document.getElementById('import-drop-zone').style.borderColor = 'var(--border)';
+    const file = e.dataTransfer.files[0]; if (file) processImportFile(file);
+  };
+
+  function processImportFile(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'csv') {
+      const reader = new FileReader();
+      reader.onload = (e) => parseCSV(e.target.result);
+      reader.readAsText(file);
+    } else if (['xlsx','xls'].includes(ext)) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const wb   = XLSX.read(e.target.result, { type: 'binary' });
+        const ws   = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_csv(ws);
+        parseCSV(data);
+      };
+      reader.readAsBinaryString(file);
+    } else { showToast('Only CSV or Excel files are supported.', 'error'); }
+  }
+
+  function parseCSV(text) {
+    const lines = text.trim().split('\n').filter(l => l.trim());
+    if (lines.length < 2) { showToast('File must have a header row and at least one data row.', 'error'); return; }
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g,''));
+    importRows    = lines.slice(1).map(line => {
+      const vals = line.split(',').map(v => v.trim().replace(/"/g,''));
+      const row  = {};
+      headers.forEach((h, i) => { row[h] = vals[i] || ''; });
+      return row;
+    }).filter(r => r.student_name || r['student_name']);
+
+    // Preview
+    const head = document.getElementById('import-preview-head');
+    const body = document.getElementById('import-preview-body');
+    head.innerHTML = `<tr>${headers.map(h => `<th style="padding:6px 10px;font-size:10px;text-transform:uppercase;color:var(--text-muted);">${h}</th>`).join('')}</tr>`;
+    body.innerHTML = importRows.slice(0, 5).map(r =>
+      `<tr>${headers.map(h => `<td style="padding:6px 10px;border-bottom:1px solid var(--border);">${r[h] || ''}</td>`).join('')}</tr>`
+    ).join('');
+    document.getElementById('import-preview-label').textContent = `${importRows.length} students ready to import${importRows.length > 5 ? ' (showing first 5)' : ''}`;
+    document.getElementById('import-preview').style.display = 'block';
+  }
+
+  window.confirmBulkImport = async () => {
+    if (!importRows.length) return;
+    document.getElementById('import-preview').style.display  = 'none';
+    document.getElementById('import-progress').style.display = 'block';
+
+    let success = 0, failed = 0;
+
+    for (const [i, row] of importRows.entries()) {
+      document.getElementById('import-progress-label').textContent = `Importing ${i+1} of ${importRows.length}...`;
+      const name    = row.student_name || row['student_name'] || '';
+      const regId   = row.student_reg_id || '';
+      const busId   = row.bus_id || null;
+      const parentEmail = row.parent_email || '';
+
+      if (!name || !regId) { failed++; continue; }
+
+      // Find or create parent
+      let parentId = null;
+      if (parentEmail) {
+        const { data: existing } = await supabase.from('profiles').select('id').eq('email', parentEmail).eq('organization_id', ORG_ID).single();
+        if (existing) {
+          parentId = existing.id;
+        } else {
+          // Create parent account via edge function
+          const { data: { session } } = await supabase.auth.getSession();
+          const res = await fetch('https://bxhzckjmyhachqotgulg.supabase.co/functions/v1/create-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+            body: JSON.stringify({
+              email: parentEmail, full_name: row.parent_name || parentEmail,
+              role: 'parent', organization_id: ORG_ID,
+              phone: row.parent_phone || null,
+              school_name: SCHOOL_NAME, school_code: SCHOOL_CODE
+            })
+          });
+          const result = await res.json();
+          if (result.success) parentId = result.user_id;
+        }
+      }
+
+      // Insert student
+      const qrCode = 'STU-' + Math.random().toString(36).substring(2, 12).toUpperCase();
+      const { error } = await supabase.from('students').insert([{
+        full_name:               name,
+        student_reg_id:          regId,
+        age:                     parseInt(row.age) || null,
+        gender:                  row.gender || 'male',
+        bus_id:                  busId || null,
+        parent_id:               parentId,
+        medical_info:            row.medical_info || null,
+        emergency_contact_name:  row.emergency_contact_name || null,
+        emergency_contact_email: row.emergency_contact_email || null,
+        emergency_contact_phone: row.emergency_contact_phone || null,
+        organization_id:         ORG_ID,
+        qr_code:                 qrCode
+      }]);
+
+      if (error) { failed++; } else { success++; }
+    }
+
+    document.getElementById('import-progress').style.display = 'none';
+    document.getElementById('import-preview').style.display  = 'none';
+    importRows = [];
+    closeModal('bulk-import-modal');
+    showToast(`Import complete: ${success} added${failed ? ', ' + failed + ' failed' : ''}.`, success > 0 ? 'success' : 'error');
+    loadStudents();
+  };
+
+  // Fixed `switchTab` implementation added back properly
+  window.switchTab = (tab) => {
+    document.getElementById('tab-create').classList.toggle('active', tab === 'create');
+    document.getElementById('tab-invite').classList.toggle('active', tab === 'invite');
+    document.getElementById('panel-create').style.display = tab === 'create' ? 'block' : 'none';
+    document.getElementById('panel-invite').style.display = tab === 'invite' ? 'block' : 'none';
+  };
+
+  window.openModal  = (id) => document.getElementById(id).classList.add('active');
+  window.closeModal = (id) => document.getElementById(id).classList.remove('active');
+
+  document.getElementById('search-bar').oninput   = () => renderTable(allUsers);
+  document.getElementById('role-filter').onchange = () => renderTable(allUsers);
 
   supabase.channel('users-manager')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles',

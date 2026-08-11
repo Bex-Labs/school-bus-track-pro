@@ -20,7 +20,7 @@
     .form-input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--r-md); margin-top: 4px; margin-bottom: 14px; outline: none; font-size: 13px; color: var(--navy); background: var(--bg); box-sizing: border-box; transition: border-color 0.2s; }
     .form-input:focus { border-color: var(--navy); }
 
-    /* Driver profile popup */
+    /* Driver/Attendant profile popup */
     .driver-profile-popup { display: none; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--r-lg); padding: 16px; margin-bottom: 14px; animation: fadeIn 0.2s ease; }
     .driver-profile-popup.show { display: flex; align-items: center; gap: 14px; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
@@ -38,12 +38,13 @@
     .bus-card-item:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--navy); }
     .bus-card-item.active-bus { border-left: 4px solid var(--green); }
     .bus-card-item.offline-bus { border-left: 4px solid #e2e8f0; }
+    .bus-card-item.understaffed { border-left: 4px solid #f59e0b !important; }
     .bus-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
     .bus-status-dot.online { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,0.6); }
     .bus-status-dot.offline { background: #cbd5e1; }
     .bus-id-badge { font-size: 22px; font-weight: 900; color: var(--navy); font-family: monospace; letter-spacing: 1px; }
     .bus-meta { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
-    .bus-driver-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-full); padding: 4px 10px; font-size: 11px; font-weight: 700; color: var(--navy); margin-top: 10px; cursor: pointer; transition: 0.2s; }
+    .bus-driver-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-full); padding: 4px 10px; font-size: 11px; font-weight: 700; color: var(--navy); cursor: pointer; transition: 0.2s; }
     .bus-driver-chip:hover { background: white; border-color: var(--navy); }
     .bus-actions { display: flex; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
     .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
@@ -73,7 +74,7 @@
       .bottom-nav.mobile-only a { flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0 !important; color: rgba(255,255,255,0.6) !important; }
       .bottom-nav.mobile-only a i { font-size: 22px !important; color: rgba(255,255,255,0.6) !important; }
       .bottom-nav.mobile-only a.active { color: var(--yellow) !important; }
-        .bottom-nav.mobile-only a.active i { color: var(--yellow) !important; }
+      .bottom-nav.mobile-only a.active i { color: var(--yellow) !important; }
     }
   </style>
 </head>
@@ -101,7 +102,7 @@
     <label class="form-label">Model / Description (Optional)</label>
     <input type="text" id="bus-model" class="form-input" placeholder="e.g. Toyota Coaster 2022">
 
-    <label class="form-label">Assign Driver (Optional)</label>
+    <label class="form-label">Assign Driver</label>
     <select id="bus-driver" class="form-input" style="height:40px;" onchange="onDriverSelect(this.value)">
       <option value="">No driver assigned</option>
     </select>
@@ -120,10 +121,14 @@
       </div>
     </div>
 
-    <label class="form-label" style="margin-top:8px;">Assign Bus Attendant (Optional)</label>
+    <label class="form-label" style="margin-top:8px;">Assign Bus Attendant</label>
     <select id="bus-attendant" class="form-input" style="height:40px;">
       <option value="">No attendant assigned</option>
     </select>
+
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:var(--r-md);padding:10px 14px;margin-bottom:14px;font-size:12px;color:#92400e;font-weight:600;">
+      <i class="bi bi-info-circle-fill"></i> For full operational status, both a driver and attendant should be assigned.
+    </div>
 
     <div style="display:flex;gap:12px;margin-top:8px;">
       <button class="btn btn-yellow btn-full" style="font-weight:800;" id="btn-save-bus" onclick="saveBus()">
@@ -147,7 +152,7 @@
   </div>
 </div>
 
-<!-- Driver Quick-View Modal (from bus card chip click) -->
+<!-- Driver/Attendant Quick-View Modal -->
 <div class="modal-overlay" id="driver-view-modal">
   <div class="driver-modal-card">
     <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
@@ -155,7 +160,7 @@
     </div>
     <div class="driver-modal-avatar" id="dvm-avatar">?</div>
     <h3 style="font-weight:900;font-size:18px;color:var(--navy);margin-bottom:4px;" id="dvm-name">---</h3>
-    <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px;margin-bottom:16px;">Driver</div>
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px;margin-bottom:16px;" id="dvm-role">Driver</div>
     <div style="text-align:left;display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
       <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-radius:var(--r-md);font-size:13px;">
         <i class="bi bi-envelope-fill" style="color:var(--navy);"></i>
@@ -210,7 +215,7 @@
     <header class="admin-topbar">
       <div>
         <h1 class="topbar-title">Bus Fleet</h1>
-        <p style="font-size:13px;color:var(--text-secondary);">Manage your school's buses and driver assignments.</p>
+        <p style="font-size:13px;color:var(--text-secondary);">Manage your school's buses, drivers and attendants.</p>
       </div>
       <button class="btn btn-yellow btn-sm" onclick="openAddBus()">
         <i class="bi bi-plus-circle-fill"></i> Add Bus
@@ -221,8 +226,8 @@
       <div class="kpi-grid">
         <div class="kpi-node"><div class="kpi-label">Total Buses</div><div class="kpi-value" id="kpi-total">0</div></div>
         <div class="kpi-node"><div class="kpi-label">Active</div><div class="kpi-value" style="color:var(--green);" id="kpi-active">0</div></div>
-        <div class="kpi-node"><div class="kpi-label">Offline</div><div class="kpi-value" style="color:var(--text-muted);" id="kpi-offline">0</div></div>
-        <div class="kpi-node"><div class="kpi-label">Unassigned</div><div class="kpi-value" style="color:#f59e0b;" id="kpi-unassigned">0</div></div>
+        <div class="kpi-node"><div class="kpi-label">Fully Staffed</div><div class="kpi-value" style="color:var(--navy);" id="kpi-staffed">0</div></div>
+        <div class="kpi-node"><div class="kpi-label">Understaffed</div><div class="kpi-value" style="color:#f59e0b;" id="kpi-understaffed">0</div></div>
       </div>
 
       <div class="filter-deck">
@@ -231,6 +236,11 @@
           <option value="ALL">All Statuses</option>
           <option value="active">Active</option>
           <option value="offline">Offline</option>
+        </select>
+        <select id="staff-filter" class="status-select">
+          <option value="ALL">All Staffing</option>
+          <option value="staffed">Fully Staffed</option>
+          <option value="understaffed">Understaffed</option>
         </select>
       </div>
 
@@ -274,26 +284,29 @@
   document.getElementById('sidebar-avatar').textContent = (profile.full_name || 'M').charAt(0).toUpperCase();
   document.getElementById('signout-btn').onclick = () => signOut();
 
-  let allBuses   = [];
-  let allDrivers = [];
+  let allBuses      = [];
+  let allDrivers    = [];
+  let allAttendants = [];
   let pendingDeleteId = null;
 
-  // ── Load drivers ────────────────────────────────────────────────────────
+  // ── Load drivers and attendants ──────────────────────────────────────
   async function loadDrivers() {
     const { data } = await supabase.from('profiles')
       .select('id, full_name, bus_id, email, phone, avatar_url, role')
       .eq('organization_id', ORG_ID)
       .in('role', ['driver', 'bus_attendant'])
       .order('full_name');
-    allDrivers = (data || []).filter(d => d.role === 'driver');
-    const attendants = (data || []).filter(d => d.role === 'bus_attendant');
+
+    allDrivers    = (data || []).filter(d => d.role === 'driver');
+    allAttendants = (data || []).filter(d => d.role === 'bus_attendant');
+
     refreshDriverDropdown();
 
-    // Populate attendant dropdown
     const attSel = document.getElementById('bus-attendant');
     if (attSel) {
+      const editId = document.getElementById('bus-edit-id').value;
       attSel.innerHTML = '<option value="">No attendant assigned</option>' +
-        attendants.map(a => `<option value="${a.id}">${a.full_name}</option>`).join('');
+        allAttendants.map(a => `<option value="${a.id}">${a.full_name}</option>`).join('');
     }
   }
 
@@ -301,47 +314,32 @@
     const sel = document.getElementById('bus-driver');
     sel.innerHTML = '<option value="">No driver assigned</option>' +
       allDrivers.map(d => {
-        const editId = document.getElementById('bus-edit-id').value || '__new__';
+        const editId   = document.getElementById('bus-edit-id').value || '__new__';
         const assigned = d.bus_id && d.bus_id !== editId ? ` (on: ${d.bus_id})` : '';
         return `<option value="${d.id}" ${d.id === selectedDriverId ? 'selected' : ''}>${d.full_name}${assigned}</option>`;
       }).join('');
-    // Trigger preview for pre-selected driver
     if (selectedDriverId) onDriverSelect(selectedDriverId);
     else hideDriverPreview();
   }
 
-  // ── Driver preview in modal ──────────────────────────────────────────────
+  // ── Driver preview ───────────────────────────────────────────────────
   window.onDriverSelect = (driverId) => {
     const preview = document.getElementById('driver-preview');
     if (!driverId) { hideDriverPreview(); return; }
-
     const d = allDrivers.find(x => x.id === driverId);
     if (!d) { hideDriverPreview(); return; }
-
-    // Avatar
     const av = document.getElementById('preview-avatar');
-    if (d.avatar_url) {
-      av.style.backgroundImage = `url(${d.avatar_url})`;
-      av.style.backgroundSize  = 'cover';
-      av.textContent = '';
-    } else {
-      av.style.backgroundImage = 'none';
-      av.textContent = d.full_name.charAt(0).toUpperCase();
-    }
-
+    if (d.avatar_url) { av.style.backgroundImage = `url(${d.avatar_url})`; av.style.backgroundSize = 'cover'; av.textContent = ''; }
+    else { av.style.backgroundImage = 'none'; av.textContent = d.full_name.charAt(0).toUpperCase(); }
     document.getElementById('preview-name').textContent  = d.full_name;
     document.getElementById('preview-email').textContent = d.email || 'No email';
     document.getElementById('preview-phone').textContent = d.phone || 'No phone';
-
-    const editId = document.getElementById('bus-edit-id').value;
-    const busWrap = document.getElementById('preview-bus-wrap');
+    const editId   = document.getElementById('bus-edit-id').value;
+    const busWrap  = document.getElementById('preview-bus-wrap');
     if (d.bus_id && d.bus_id !== editId) {
       document.getElementById('preview-current-bus').textContent = `Already on bus ${d.bus_id} — will be reassigned`;
       busWrap.style.display = 'flex';
-    } else {
-      busWrap.style.display = 'none';
-    }
-
+    } else { busWrap.style.display = 'none'; }
     preview.classList.add('show');
   };
 
@@ -349,29 +347,22 @@
     document.getElementById('driver-preview').classList.remove('show');
   }
 
-  // ── Driver quick-view from bus card ─────────────────────────────────────
-  window.viewDriverFromCard = (driverId) => {
-    const d = allDrivers.find(x => x.id === driverId);
+  // ── Driver/Attendant quick-view from bus card ────────────────────────
+  window.viewDriverFromCard = (personId) => {
+    const d = [...allDrivers, ...allAttendants].find(x => x.id === personId);
     if (!d) return;
-
     const av = document.getElementById('dvm-avatar');
-    if (d.avatar_url) {
-      av.style.backgroundImage = `url(${d.avatar_url})`;
-      av.style.backgroundSize  = 'cover';
-      av.textContent = '';
-    } else {
-      av.style.backgroundImage = 'none';
-      av.textContent = d.full_name.charAt(0).toUpperCase();
-    }
-
+    if (d.avatar_url) { av.style.backgroundImage = `url(${d.avatar_url})`; av.style.backgroundSize = 'cover'; av.textContent = ''; }
+    else { av.style.backgroundImage = 'none'; av.textContent = d.full_name.charAt(0).toUpperCase(); }
     document.getElementById('dvm-name').textContent  = d.full_name;
+    document.getElementById('dvm-role').textContent  = d.role === 'bus_attendant' ? 'Bus Attendant' : 'Driver';
     document.getElementById('dvm-email').textContent = d.email || 'No email on file';
     document.getElementById('dvm-phone').textContent = d.phone || 'No phone on file';
     document.getElementById('dvm-bus').textContent   = d.bus_id ? `Assigned to Bus ${d.bus_id}` : 'No bus assigned';
     openModal('driver-view-modal');
   };
 
-  // ── Load buses ──────────────────────────────────────────────────────────
+  // ── Load buses ───────────────────────────────────────────────────────
   async function loadBuses() {
     const { data, error } = await supabase.from('buses').select('*').eq('organization_id', ORG_ID).order('id');
     if (error) { showToast('Failed to load buses: ' + error.message, 'error'); return; }
@@ -381,21 +372,26 @@
   }
 
   function updateKPIs(buses) {
-    document.getElementById('kpi-total').textContent      = buses.length;
-    document.getElementById('kpi-active').textContent     = buses.filter(b => b.status === 'active').length;
-    document.getElementById('kpi-offline').textContent    = buses.filter(b => b.status !== 'active').length;
-    document.getElementById('kpi-unassigned').textContent = buses.filter(b => !b.driver_id).length;
+    const fullyStaffed   = buses.filter(b => b.driver_id && b.attendant_id).length;
+    const understaffed   = buses.filter(b => !b.driver_id || !b.attendant_id).length;
+    document.getElementById('kpi-total').textContent        = buses.length;
+    document.getElementById('kpi-active').textContent       = buses.filter(b => b.status === 'active').length;
+    document.getElementById('kpi-staffed').textContent      = fullyStaffed;
+    document.getElementById('kpi-understaffed').textContent = understaffed;
   }
 
   function renderGrid(buses) {
     const grid    = document.getElementById('buses-grid');
     const term    = document.getElementById('search-bar').value.toLowerCase();
     const statusF = document.getElementById('status-filter').value;
+    const staffF  = document.getElementById('staff-filter').value;
 
     const filtered = buses.filter(b => {
       const matchSearch = b.id?.toLowerCase().includes(term) || b.plate_number?.toLowerCase().includes(term);
       const matchStatus = statusF === 'ALL' || b.status === statusF || (statusF === 'offline' && b.status !== 'active');
-      return matchSearch && matchStatus;
+      const isFullyStaffed = b.driver_id && b.attendant_id;
+      const matchStaff  = staffF === 'ALL' || (staffF === 'staffed' && isFullyStaffed) || (staffF === 'understaffed' && !isFullyStaffed);
+      return matchSearch && matchStatus && matchStaff;
     });
 
     if (!filtered.length) {
@@ -409,18 +405,36 @@
     }
 
     grid.innerHTML = filtered.map(b => {
-      const isActive = b.status === 'active';
-      const driver   = allDrivers.find(d => d.id === b.driver_id);
+      const isActive     = b.status === 'active';
+      const driver       = allDrivers.find(d => d.id === b.driver_id);
+      const attendant    = allAttendants.find(a => a.id === b.attendant_id);
+      const fullyStaffed = !!driver && !!attendant;
+
+      const staffingBadge = fullyStaffed
+        ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:20px;padding:3px 8px;font-size:9px;font-weight:800;margin-top:6px;"><i class="bi bi-people-fill"></i> Fully Staffed</span>`
+        : !driver && !attendant
+          ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;border-radius:20px;padding:3px 8px;font-size:9px;font-weight:800;margin-top:6px;"><i class="bi bi-exclamation-triangle-fill"></i> No Staff Assigned</span>`
+          : `<span style="display:inline-flex;align-items:center;gap:4px;background:#fffbeb;color:#92400e;border:1px solid #fde68a;border-radius:20px;padding:3px 8px;font-size:9px;font-weight:800;margin-top:6px;"><i class="bi bi-exclamation-circle-fill"></i> ${!driver ? 'Missing Driver' : 'Missing Attendant'}</span>`;
+
       const driverChip = driver
         ? `<div class="bus-driver-chip" onclick="viewDriverFromCard('${driver.id}')" title="View driver profile">
-             <i class="bi bi-person-fill" style="color:var(--green);"></i>${driver.full_name}
+             <i class="bi bi-truck-front-fill" style="color:var(--green);"></i>${driver.full_name}
              <i class="bi bi-info-circle" style="font-size:10px;opacity:0.5;"></i>
            </div>`
         : `<div class="bus-driver-chip" style="color:var(--text-muted);border-style:dashed;cursor:default;">
-             <i class="bi bi-person-dash"></i> No driver assigned
+             <i class="bi bi-person-dash"></i> No driver
            </div>`;
 
-      return `<div class="bus-card-item ${isActive ? 'active-bus' : 'offline-bus'}">
+      const attendantChip = attendant
+        ? `<div class="bus-driver-chip" onclick="viewDriverFromCard('${attendant.id}')" title="View attendant profile" style="border-color:#ddd6fe;background:#f5f3ff;">
+             <i class="bi bi-person-badge-fill" style="color:#7c3aed;"></i>${attendant.full_name}
+             <i class="bi bi-info-circle" style="font-size:10px;opacity:0.5;"></i>
+           </div>`
+        : `<div class="bus-driver-chip" style="color:var(--text-muted);border-style:dashed;cursor:default;">
+             <i class="bi bi-person-dash"></i> No attendant
+           </div>`;
+
+      return `<div class="bus-card-item ${isActive ? 'active-bus' : 'offline-bus'}" style="${!fullyStaffed ? 'border-left-color:#f59e0b!important;' : ''}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
           <div>
             <div class="bus-id-badge">${b.id}</div>
@@ -429,12 +443,16 @@
               ${isActive ? 'Active' : 'Offline'}
               ${b.plate_number ? ` · ${b.plate_number}` : ''}
             </div>
+            ${staffingBadge}
           </div>
           <span class="badge ${isActive ? 'badge-green' : 'badge-red'}" style="font-size:10px;">${(b.status||'offline').toUpperCase()}</span>
         </div>
         ${b.model    ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;"><i class="bi bi-truck-front"></i> ${b.model}</div>` : ''}
         ${b.capacity ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;"><i class="bi bi-people-fill"></i> ${b.capacity} seats</div>` : ''}
-        <div style="margin-top:8px;">${driverChip}</div>
+        <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">
+          ${driverChip}
+          ${attendantChip}
+        </div>
         <div class="bus-actions">
           <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openEditBus('${b.id}')"><i class="bi bi-pencil"></i> Edit</button>
           <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openDeleteBus('${b.id}')"><i class="bi bi-trash text-red"></i> Delete</button>
@@ -444,14 +462,15 @@
   }
 
   window.openAddBus = () => {
-    document.getElementById('bus-modal-title').textContent  = 'Add Bus';
-    document.getElementById('bus-edit-id').value            = '';
-    document.getElementById('bus-id-input').value           = '';
-    document.getElementById('bus-id-input').readOnly        = false;
+    document.getElementById('bus-modal-title').textContent   = 'Add Bus';
+    document.getElementById('bus-edit-id').value             = '';
+    document.getElementById('bus-id-input').value            = '';
+    document.getElementById('bus-id-input').readOnly         = false;
     document.getElementById('bus-id-input').style.background = '';
-    document.getElementById('bus-plate').value              = '';
-    document.getElementById('bus-capacity').value           = '';
-    document.getElementById('bus-model').value              = '';
+    document.getElementById('bus-plate').value               = '';
+    document.getElementById('bus-capacity').value            = '';
+    document.getElementById('bus-model').value               = '';
+    document.getElementById('bus-attendant').value           = '';
     hideDriverPreview();
     refreshDriverDropdown();
     openModal('bus-modal');
@@ -459,14 +478,14 @@
 
   window.openEditBus = (id) => {
     const b = allBuses.find(x => x.id === id); if (!b) return;
-    document.getElementById('bus-modal-title').textContent  = 'Edit Bus';
-    document.getElementById('bus-edit-id').value            = b.id;
-    document.getElementById('bus-id-input').value           = b.id;
-    document.getElementById('bus-id-input').readOnly        = true;
+    document.getElementById('bus-modal-title').textContent   = 'Edit Bus';
+    document.getElementById('bus-edit-id').value             = b.id;
+    document.getElementById('bus-id-input').value            = b.id;
+    document.getElementById('bus-id-input').readOnly         = true;
     document.getElementById('bus-id-input').style.background = '#f8fafc';
-    document.getElementById('bus-plate').value              = b.plate_number || '';
-    document.getElementById('bus-capacity').value           = b.capacity || '';
-    document.getElementById('bus-model').value              = b.model || '';
+    document.getElementById('bus-plate').value               = b.plate_number || '';
+    document.getElementById('bus-capacity').value            = b.capacity || '';
+    document.getElementById('bus-model').value               = b.model || '';
     refreshDriverDropdown(b.driver_id || '');
     const attSel = document.getElementById('bus-attendant');
     if (attSel) attSel.value = b.attendant_id || '';
@@ -474,17 +493,17 @@
   };
 
   window.saveBus = async () => {
-    const btn      = document.getElementById('btn-save-bus');
-    const editId   = document.getElementById('bus-edit-id').value;
-    const busId    = document.getElementById('bus-id-input').value.trim().toUpperCase();
-    const plate    = document.getElementById('bus-plate').value.trim().toUpperCase();
-    const capacity = parseInt(document.getElementById('bus-capacity').value) || null;
-    const model    = document.getElementById('bus-model').value.trim() || null;
+    const btn         = document.getElementById('btn-save-bus');
+    const editId      = document.getElementById('bus-edit-id').value;
+    const busId       = document.getElementById('bus-id-input').value.trim().toUpperCase();
+    const plate       = document.getElementById('bus-plate').value.trim().toUpperCase();
+    const capacity    = parseInt(document.getElementById('bus-capacity').value) || null;
+    const model       = document.getElementById('bus-model').value.trim() || null;
     const driverId    = document.getElementById('bus-driver').value || null;
     const attendantId = document.getElementById('bus-attendant')?.value || null;
 
-    if (!busId) { showToast('Bus ID is required.', 'error'); return; }
-    if (!plate) { showToast('Plate number is required.', 'error'); return; }
+    if (!busId)  { showToast('Bus ID is required.', 'error'); return; }
+    if (!plate)  { showToast('Plate number is required.', 'error'); return; }
 
     btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Saving...';
 
@@ -505,28 +524,20 @@
 
     if (error) { showToast('Save failed: ' + error.message, 'error'); btn.disabled = false; btn.innerHTML = '<i class="bi bi-bus-front-fill"></i> Save Bus'; return; }
 
-    // ── Assign driver via edge function (bypasses RLS) ─────────────────
+    // Assign driver via edge function
     const { data: { session } } = await supabase.auth.getSession();
-    const oldBus = allBuses.find(b => b.id === (editId || busId));
+    const oldBus      = allBuses.find(b => b.id === (editId || busId));
     const oldDriverId = oldBus?.driver_id || null;
 
-    const assignRes = await fetch('https://bxhzckjmyhachqotgulg.supabase.co/functions/v1/assign-bus', {
+    await fetch('https://bxhzckjmyhachqotgulg.supabase.co/functions/v1/assign-bus', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
-      },
-      body: JSON.stringify({
-        bus_id:        editId || busId,
-        driver_id:     driverId,
-        org_id:        ORG_ID,
-        old_driver_id: oldDriverId !== driverId ? oldDriverId : null
-      })
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ bus_id: editId || busId, driver_id: driverId, org_id: ORG_ID, old_driver_id: oldDriverId !== driverId ? oldDriverId : null })
     });
 
-    const assignResult = await assignRes.json();
-    if (!assignResult.success) {
-      showToast('Bus saved but driver assignment failed: ' + assignResult.error, 'error');
+    // Update attendant profile bus_id
+    if (attendantId) {
+      await supabase.from('profiles').update({ bus_id: editId || busId }).eq('id', attendantId);
     }
 
     btn.disabled = false; btn.innerHTML = '<i class="bi bi-bus-front-fill"></i> Save Bus';
@@ -537,7 +548,7 @@
 
   window.openDeleteBus = (id) => {
     pendingDeleteId = id;
-    document.getElementById('delete-confirm-msg').textContent = `Delete bus "${id}"? This cannot be undone. The assigned driver will be unassigned.`;
+    document.getElementById('delete-confirm-msg').textContent = `Delete bus "${id}"? This cannot be undone.`;
     openModal('delete-modal');
   };
 
@@ -547,6 +558,7 @@
     btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
     const bus = allBuses.find(b => b.id === pendingDeleteId);
     if (bus?.driver_id) await supabase.from('profiles').update({ bus_id: null }).eq('id', bus.driver_id);
+    if (bus?.attendant_id) await supabase.from('profiles').update({ bus_id: null }).eq('id', bus.attendant_id);
     const { error } = await supabase.from('buses').delete().eq('id', pendingDeleteId).eq('organization_id', ORG_ID);
     btn.disabled = false; btn.innerHTML = 'Delete';
     if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
@@ -557,9 +569,11 @@
 
   document.getElementById('search-bar').oninput     = () => renderGrid(allBuses);
   document.getElementById('status-filter').onchange = () => renderGrid(allBuses);
+  document.getElementById('staff-filter').onchange  = () => renderGrid(allBuses);
 
   supabase.channel(`buses-${ORG_ID}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'buses', filter: `organization_id=eq.${ORG_ID}` }, async () => { await loadDrivers(); await loadBuses(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'buses', filter: `organization_id=eq.${ORG_ID}` },
+      async () => { await loadDrivers(); await loadBuses(); })
     .subscribe();
 
   window.openModal  = (id) => document.getElementById(id).classList.add('active');

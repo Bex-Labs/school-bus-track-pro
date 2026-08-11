@@ -181,7 +181,12 @@ serve(async (req) => {
 </body>
 </html>`
 
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    // Send welcome email with credentials via Brevo
+    console.log('Attempting to send email to:', email)
+    console.log('BREVO_API_KEY exists:', !!BREVO_API_KEY)
+    console.log('BREVO_API_KEY prefix:', BREVO_API_KEY?.substring(0, 10))
+
+    const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -192,9 +197,15 @@ serve(async (req) => {
       })
     })
 
-    if (!res.ok) {
-      const errText = await res.text()
-      console.warn('Brevo warning:', errText)
+    const brevoStatus = brevoRes.status
+    const brevoBody   = await brevoRes.text()
+    console.log('Brevo response status:', brevoStatus)
+    console.log('Brevo response body:', brevoBody)
+
+    if (!brevoRes.ok) {
+      console.warn('Brevo send failed:', brevoBody)
+    } else {
+      console.log('Brevo email sent successfully')
     }
 
     return new Response(
