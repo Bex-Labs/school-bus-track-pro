@@ -15,7 +15,6 @@
     .admin-main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
     .admin-content { flex: 1; overflow-y: auto; padding: 24px; scrollbar-width: thin; }
 
-    /* QR Scanner overlay */
     .scanner-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 5000; flex-direction: column; align-items: center; justify-content: center; }
     .scanner-overlay.active { display: flex; }
     .scanner-wrap { position: relative; width: 100%; max-width: 400px; }
@@ -27,7 +26,6 @@
     .scanner-hint { color: rgba(255,255,255,0.7); font-size: 14px; font-weight: 700; margin-top: 20px; text-align: center; }
     .scanner-close { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.15); border: none; color: white; width: 44px; height: 44px; border-radius: 50%; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-    /* Student confirmation popup */
     .scan-result-modal { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 6000; align-items: flex-end; justify-content: center; backdrop-filter: blur(4px); }
     .scan-result-modal.active { display: flex; }
     .scan-result-card { background: white; width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 28px; animation: slideUp 0.3s ease; }
@@ -35,7 +33,6 @@
     .scan-student-avatar { width: 72px; height: 72px; border-radius: 50%; background: var(--yellow); color: var(--navy); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; margin: 0 auto 16px; }
     .scan-action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
 
-    /* Student cards */
     .student-card { background: white; border: 1.5px solid var(--border); border-radius: var(--r-xl); padding: 16px 20px; display: flex; align-items: center; gap: 16px; transition: 0.2s; margin-bottom: 10px; }
     .student-card.boarded { border-color: var(--green); background: #f0fdf4; }
     .student-card.alighted { border-color: #e2e8f0; background: #f8fafc; opacity: 0.7; }
@@ -77,7 +74,7 @@
 
 <!-- QR Scanner Overlay -->
 <div class="scanner-overlay" id="scanner-overlay">
-  <button class="scanner-close" onclick="closeScanner()"><i class="bi bi-x-lg"></i></button>
+  <button class="scanner-close" onclick="window.closeScanner()"><i class="bi bi-x-lg"></i></button>
   <div class="scanner-wrap">
     <video id="scanner-video" autoplay playsinline muted></video>
     <div class="scanner-frame"><div class="scanner-line"></div></div>
@@ -97,28 +94,23 @@
       <h3 style="font-weight:900;font-size:20px;color:var(--navy);margin:0 0 4px;" id="scan-name">---</h3>
       <div style="font-size:13px;color:var(--text-secondary);font-weight:600;" id="scan-meta">---</div>
     </div>
-
-    <!-- Medical info warning -->
     <div id="scan-medical-wrap" style="display:none;background:#fef2f2;border:1px solid #fca5a5;border-radius:var(--r-lg);padding:12px 14px;margin-bottom:16px;">
       <div style="font-size:12px;font-weight:800;color:#991b1b;margin-bottom:2px;"><i class="bi bi-heart-pulse-fill"></i> Medical Info</div>
       <div style="font-size:13px;color:#991b1b;" id="scan-medical"></div>
     </div>
-
-    <!-- Current status -->
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
       <span style="font-size:13px;font-weight:700;color:var(--navy);">Current Status</span>
       <span id="scan-current-status" class="student-status pending">PENDING</span>
     </div>
-
     <div class="scan-action-row">
-      <button class="btn btn-yellow btn-full" style="font-weight:800;padding:14px;" id="btn-scan-board" onclick="confirmScanAction('boarding')">
+      <button class="btn btn-yellow btn-full" style="font-weight:800;padding:14px;" id="btn-scan-board" onclick="window.confirmScanAction('boarding')">
         <i class="bi bi-box-arrow-in-right"></i> Board
       </button>
-      <button class="btn btn-navy btn-full" style="font-weight:800;padding:14px;" id="btn-scan-alight" onclick="confirmScanAction('alighting')">
+      <button class="btn btn-navy btn-full" style="font-weight:800;padding:14px;" id="btn-scan-alight" onclick="window.confirmScanAction('alighting')">
         <i class="bi bi-box-arrow-right"></i> Alight
       </button>
     </div>
-    <button class="btn btn-ghost btn-full" style="margin-top:10px;" onclick="closeScanResult()">
+    <button class="btn btn-ghost btn-full" style="margin-top:10px;" onclick="window.closeScanResult()">
       Cancel — Scan Next
     </button>
   </div>
@@ -159,32 +151,21 @@
         <p style="font-size:13px;color:var(--text-secondary);" id="topbar-meta">Checking students in and out</p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-yellow btn-sm" onclick="openScanner()">
+        <button class="btn btn-yellow btn-sm" onclick="window.openScanner()">
           <i class="bi bi-qr-code-scan"></i> Scan QR
         </button>
-        <button class="btn btn-ghost btn-sm" onclick="markAllBoarded()">
+        <button class="btn btn-ghost btn-sm" onclick="window.markAllBoarded()">
           <i class="bi bi-check-all"></i> Mark All Boarded
         </button>
       </div>
     </header>
 
     <div class="admin-content">
-
       <div class="kpi-row">
-        <div class="kpi-mini">
-          <div class="kpi-mini-label">Expected</div>
-          <div class="kpi-mini-value" id="kpi-total">0</div>
-        </div>
-        <div class="kpi-mini">
-          <div class="kpi-mini-label" style="color:var(--green);">On Board</div>
-          <div class="kpi-mini-value" style="color:var(--green);" id="kpi-boarded">0</div>
-        </div>
-        <div class="kpi-mini">
-          <div class="kpi-mini-label" style="color:#f59e0b;">Pending</div>
-          <div class="kpi-mini-value" style="color:#f59e0b;" id="kpi-pending">0</div>
-        </div>
+        <div class="kpi-mini"><div class="kpi-mini-label">Expected</div><div class="kpi-mini-value" id="kpi-total">0</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-label" style="color:var(--green);">On Board</div><div class="kpi-mini-value" style="color:var(--green);" id="kpi-boarded">0</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-label" style="color:#f59e0b;">Pending</div><div class="kpi-mini-value" style="color:#f59e0b;" id="kpi-pending">0</div></div>
       </div>
-
       <div class="filter-row">
         <input type="text" id="search-bar" class="search-input" placeholder="Search student name or ID...">
         <select id="status-filter" class="status-select">
@@ -194,14 +175,12 @@
           <option value="alighted">Alighted</option>
         </select>
       </div>
-
       <div id="students-list">
         <div style="text-align:center;padding:60px;color:var(--text-muted);">
           <i class="bi bi-arrow-clockwise spin" style="font-size:28px;display:block;margin-bottom:12px;color:var(--yellow);"></i>
           Loading students...
         </div>
       </div>
-
     </div>
   </main>
 </div>
@@ -222,7 +201,9 @@
   await requireAuth();
   const profile = await getUserProfile();
   if (!profile || profile.role !== 'bus_attendant') {
-    await supabase.auth.signOut(); window.location.href = '../index.html'; throw new Error('Not authorized.');
+    await supabase.auth.signOut();
+    window.location.href = '../index.html';
+    throw new Error('Not authorized.');
   }
 
   const ORG_ID  = profile.organization_id;
@@ -238,256 +219,239 @@
   const { data: busData } = await supabase.from('buses').select('id, plate_number')
     .eq('attendant_id', USER_ID).eq('organization_id', ORG_ID).single();
 
+  const noBusHTML = `
+    <div style="text-align:center;padding:60px;background:white;border-radius:var(--r-xl);border:1px solid var(--border);">
+      <i class="bi bi-bus-front" style="font-size:40px;color:var(--border);display:block;margin-bottom:12px;"></i>
+      <div style="font-weight:800;color:var(--navy);">No Bus Assigned</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:6px;">Contact your manager to get a bus assigned.</div>
+    </div>`;
+
   if (!busData) {
     document.getElementById('topbar-meta').textContent = 'No bus assigned.';
     document.getElementById('sidebar-bus').textContent = 'No bus assigned';
-    document.getElementById('students-list').innerHTML = `
-      <div style="text-align:center;padding:60px;background:white;border-radius:var(--r-xl);border:1px solid var(--border);">
-        <i class="bi bi-bus-front" style="font-size:40px;color:var(--border);display:block;margin-bottom:12px;"></i>
-        <div style="font-weight:800;color:var(--navy);">No Bus Assigned</div>
-        <div style="font-size:13px;color:var(--text-muted);margin-top:6px;">Contact your manager to get a bus assigned.</div>
-      </div>`;
-    return;
-  }
+    document.getElementById('students-list').innerHTML = noBusHTML;
+  } else {
 
-  const busId = busData.id;
-  document.getElementById('sidebar-bus').textContent = `Bus ${busId}`;
-  document.getElementById('topbar-meta').textContent = `Bus ${busId} · ${busData.plate_number || ''}`;
+    const busId = busData.id;
+    document.getElementById('sidebar-bus').textContent = `Bus ${busId}`;
+    document.getElementById('topbar-meta').textContent = `Bus ${busId} · ${busData.plate_number || ''}`;
 
-  let allStudents      = [];
-  let boardedStudents  = new Set();
-  let alightedStudents = new Set();
-  let scannedStudentId = null;
+    let allStudents      = [];
+    let boardedStudents  = new Set();
+    let alightedStudents = new Set();
+    let scannedStudentId = null;
 
-  // ── Load attendance ───────────────────────────────────────────────────
-  async function loadTodayLogs() {
-    const today = new Date().toISOString().split('T')[0];
-    const { data: logs } = await supabase.from('attendance_logs')
-      .select('student_id, direction')
-      .eq('bus_id', busId).eq('organization_id', ORG_ID)
-      .gte('scanned_at', today + 'T00:00:00Z');
-    boardedStudents  = new Set();
-    alightedStudents = new Set();
-    if (logs) {
-      logs.forEach(l => {
-        if (l.direction === 'boarding')  boardedStudents.add(l.student_id);
-        if (l.direction === 'alighting') alightedStudents.add(l.student_id);
-      });
-    }
-  }
-
-  async function loadStudents() {
-    const { data, error } = await supabase.from('students')
-      .select('id, full_name, age, gender, student_reg_id, medical_info, qr_code')
-      .eq('bus_id', busId).eq('organization_id', ORG_ID).order('full_name');
-    if (error) { showToast('Failed to load students: ' + error.message, 'error'); return; }
-    allStudents = data || [];
-    await loadTodayLogs();
-    renderStudents();
-  }
-
-  function getStudentStatus(id) {
-    if (alightedStudents.has(id)) return 'alighted';
-    if (boardedStudents.has(id))  return 'boarded';
-    return 'pending';
-  }
-
-  function renderStudents() {
-    const list   = document.getElementById('students-list');
-    const term   = document.getElementById('search-bar').value.toLowerCase();
-    const filter = document.getElementById('status-filter').value;
-
-    const boarded = allStudents.filter(s => getStudentStatus(s.id) === 'boarded').length;
-    const pending = allStudents.filter(s => getStudentStatus(s.id) === 'pending').length;
-    document.getElementById('kpi-total').textContent   = allStudents.length;
-    document.getElementById('kpi-boarded').textContent = boarded;
-    document.getElementById('kpi-pending').textContent = pending;
-
-    const filtered = allStudents.filter(s => {
-      const matchSearch = s.full_name?.toLowerCase().includes(term) || s.student_reg_id?.toLowerCase().includes(term);
-      const status      = getStudentStatus(s.id);
-      return matchSearch && (filter === 'ALL' || status === filter);
-    });
-
-    if (!filtered.length) {
-      list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px;">No students found.</div>';
-      return;
-    }
-
-    list.innerHTML = filtered.map(s => {
-      const status     = getStudentStatus(s.id);
-      const isBoarded  = status === 'boarded';
-      const isAlighted = status === 'alighted';
-      return `<div class="student-card ${status}" id="scard-${s.id}">
-        <div class="student-av ${isBoarded ? 'boarded' : ''}">
-          ${isBoarded ? '<i class="bi bi-check-lg"></i>' : s.full_name.charAt(0).toUpperCase()}
-        </div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-weight:800;font-size:14px;color:var(--navy);">${s.full_name}</div>
-          <div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:2px;">
-            ID: ${s.student_reg_id || '---'} · Age: ${s.age || '--'}
-            ${s.medical_info ? `<span style="color:#dc2626;margin-left:6px;"><i class="bi bi-heart-pulse-fill"></i> ${s.medical_info}</span>` : ''}
-          </div>
-          ${s.qr_code ? `<div style="font-size:10px;color:var(--text-muted);font-family:monospace;margin-top:2px;">${s.qr_code}</div>` : ''}
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
-          <span class="student-status ${status}">${status === 'boarded' ? '✅ ON BOARD' : status === 'alighted' ? '🚪 ALIGHTED' : '⏳ PENDING'}</span>
-          <div style="display:flex;gap:6px;">
-            ${!isBoarded && !isAlighted ? `<button class="btn btn-yellow btn-sm" onclick="markBoarded('${s.id}','${s.full_name.replace(/'/g,"\\'")}')"><i class="bi bi-box-arrow-in-right"></i></button>` : ''}
-            ${isBoarded ? `<button class="btn btn-ghost btn-sm text-red" onclick="markAlighted('${s.id}','${s.full_name.replace(/'/g,"\\'")}')"><i class="bi bi-box-arrow-right"></i></button>` : ''}
-            ${isAlighted ? `<button class="btn btn-ghost btn-sm" onclick="markBoarded('${s.id}','${s.full_name.replace(/'/g,"\\'")}')"><i class="bi bi-arrow-counterclockwise"></i></button>` : ''}
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  // ── Attendance actions ────────────────────────────────────────────────
-  window.markBoarded = async (studentId, name) => {
-    const { error } = await supabase.from('attendance_logs').insert([{
-      student_id: studentId, bus_id: busId, organization_id: ORG_ID,
-      direction: 'boarding', scanned_by: USER_ID
-    }]);
-    if (error) { showToast('Failed: ' + error.message, 'error'); return; }
-    boardedStudents.add(studentId); alightedStudents.delete(studentId);
-    showToast(`${name} boarded. ✅`, 'success'); renderStudents();
-  };
-
-  window.markAlighted = async (studentId, name) => {
-    const { error } = await supabase.from('attendance_logs').insert([{
-      student_id: studentId, bus_id: busId, organization_id: ORG_ID,
-      direction: 'alighting', scanned_by: USER_ID
-    }]);
-    if (error) { showToast('Failed: ' + error.message, 'error'); return; }
-    alightedStudents.add(studentId);
-    showToast(`${name} alighted. 🚪`, 'success'); renderStudents();
-  };
-
-  window.markAllBoarded = async () => {
-    const pending = allStudents.filter(s => getStudentStatus(s.id) === 'pending');
-    if (!pending.length) { showToast('All students already boarded.', 'success'); return; }
-    if (!confirm(`Mark all ${pending.length} pending students as boarded?`)) return;
-    for (const s of pending) await window.markBoarded(s.id, s.full_name);
-  };
-
-  // ── QR Scanner ────────────────────────────────────────────────────────
-  let videoStream  = null;
-  let scanInterval = null;
-
-  window.openScanner = async () => {
-    const overlay = document.getElementById('scanner-overlay');
-    overlay.classList.add('active');
-    try {
-      videoStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-      });
-      const video = document.getElementById('scanner-video');
-      video.srcObject = videoStream;
-      await video.play();
-      startScanLoop();
-    } catch (err) {
-      showToast('Camera access denied. Please allow camera permission.', 'error');
-      overlay.classList.remove('active');
-    }
-  };
-
-  function startScanLoop() {
-    const video  = document.getElementById('scanner-video');
-    const canvas = document.getElementById('scanner-canvas');
-    const ctx    = canvas.getContext('2d');
-
-    scanInterval = setInterval(() => {
-      if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
-      canvas.width  = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
-      if (code && code.data) {
-        clearInterval(scanInterval);
-        handleQRCode(code.data);
+    // ── Load attendance logs ────────────────────────────────────────────
+    async function loadTodayLogs() {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: logs } = await supabase.from('attendance_logs')
+        .select('student_id, direction')
+        .eq('bus_id', busId).eq('organization_id', ORG_ID)
+        .gte('scanned_at', today + 'T00:00:00Z');
+      boardedStudents  = new Set();
+      alightedStudents = new Set();
+      if (logs) {
+        logs.forEach(l => {
+          if (l.direction === 'boarding')  boardedStudents.add(l.student_id);
+          if (l.direction === 'alighting') alightedStudents.add(l.student_id);
+        });
       }
-    }, 300);
-  }
-
-  async function handleQRCode(qrData) {
-    // Close scanner
-    closeScanner();
-
-    // Find student by QR code
-    const student = allStudents.find(s => s.qr_code === qrData);
-    if (!student) {
-      showToast(`QR code not found: ${qrData}`, 'error');
-      return;
     }
 
-    scannedStudentId = student.id;
-    const status     = getStudentStatus(student.id);
-
-    // Populate scan result modal
-    document.getElementById('scan-avatar').textContent  = student.full_name.charAt(0).toUpperCase();
-    document.getElementById('scan-name').textContent    = student.full_name;
-    document.getElementById('scan-meta').textContent    = `ID: ${student.student_reg_id || '---'} · Age: ${student.age || '--'} · ${student.gender || ''}`;
-
-    // Medical info
-    const medWrap = document.getElementById('scan-medical-wrap');
-    if (student.medical_info) {
-      document.getElementById('scan-medical').textContent = student.medical_info;
-      medWrap.style.display = 'block';
-    } else {
-      medWrap.style.display = 'none';
+    async function loadStudents() {
+      const { data, error } = await supabase.from('students')
+        .select('id, full_name, age, gender, student_reg_id, medical_info, qr_code')
+        .eq('bus_id', busId).eq('organization_id', ORG_ID).order('full_name');
+      if (error) { showToast('Failed to load students: ' + error.message, 'error'); return; }
+      allStudents = data || [];
+      await loadTodayLogs();
+      renderStudents();
     }
 
-    // Current status
-    const statusEl = document.getElementById('scan-current-status');
-    statusEl.textContent  = status === 'boarded' ? '✅ ON BOARD' : status === 'alighted' ? '🚪 ALIGHTED' : '⏳ PENDING';
-    statusEl.className    = `student-status ${status}`;
-
-    // Button states
-    const btnBoard  = document.getElementById('btn-scan-board');
-    const btnAlight = document.getElementById('btn-scan-alight');
-    btnBoard.disabled  = status === 'boarded';
-    btnAlight.disabled = status !== 'boarded';
-
-    document.getElementById('scan-result-modal').classList.add('active');
-  }
-
-  window.confirmScanAction = async (direction) => {
-    if (!scannedStudentId) return;
-    const student = allStudents.find(s => s.id === scannedStudentId);
-    if (!student) return;
-
-    document.getElementById('scan-result-modal').classList.remove('active');
-
-    if (direction === 'boarding') {
-      await window.markBoarded(scannedStudentId, student.full_name);
-    } else {
-      await window.markAlighted(scannedStudentId, student.full_name);
+    function getStudentStatus(id) {
+      if (alightedStudents.has(id)) return 'alighted';
+      if (boardedStudents.has(id))  return 'boarded';
+      return 'pending';
     }
-    scannedStudentId = null;
-  };
 
-  window.closeScanResult = () => {
-    document.getElementById('scan-result-modal').classList.remove('active');
-    scannedStudentId = null;
-  };
+    function renderStudents() {
+      const list   = document.getElementById('students-list');
+      const term   = document.getElementById('search-bar').value.toLowerCase();
+      const filter = document.getElementById('status-filter').value;
 
-  window.closeScanner = () => {
-    clearInterval(scanInterval);
-    if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
-    document.getElementById('scanner-overlay').classList.remove('active');
-  };
+      const boarded = allStudents.filter(s => getStudentStatus(s.id) === 'boarded').length;
+      const pending = allStudents.filter(s => getStudentStatus(s.id) === 'pending').length;
+      document.getElementById('kpi-total').textContent   = allStudents.length;
+      document.getElementById('kpi-boarded').textContent = boarded;
+      document.getElementById('kpi-pending').textContent = pending;
 
-  document.getElementById('search-bar').oninput     = () => renderStudents();
-  document.getElementById('status-filter').onchange = () => renderStudents();
+      const filtered = allStudents.filter(s => {
+        const matchSearch = s.full_name?.toLowerCase().includes(term) || s.student_reg_id?.toLowerCase().includes(term);
+        const status      = getStudentStatus(s.id);
+        return matchSearch && (filter === 'ALL' || status === filter);
+      });
+
+      if (!filtered.length) {
+        list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px;">No students found.</div>';
+        return;
+      }
+
+      list.innerHTML = filtered.map(s => {
+        const status     = getStudentStatus(s.id);
+        const isBoarded  = status === 'boarded';
+        const isAlighted = status === 'alighted';
+        return `<div class="student-card ${status}" id="scard-${s.id}">
+          <div class="student-av ${isBoarded ? 'boarded' : ''}">
+            ${isBoarded ? '<i class="bi bi-check-lg"></i>' : s.full_name.charAt(0).toUpperCase()}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:800;font-size:14px;color:var(--navy);">${s.full_name}</div>
+            <div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:2px;">
+              ID: ${s.student_reg_id || '---'} · Age: ${s.age || '--'}
+              ${s.medical_info ? `<span style="color:#dc2626;margin-left:6px;"><i class="bi bi-heart-pulse-fill"></i> ${s.medical_info}</span>` : ''}
+            </div>
+            ${s.qr_code ? `<div style="font-size:10px;color:var(--text-muted);font-family:monospace;margin-top:2px;">${s.qr_code}</div>` : ''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+            <span class="student-status ${status}">${status === 'boarded' ? '✅ ON BOARD' : status === 'alighted' ? '🚪 ALIGHTED' : '⏳ PENDING'}</span>
+            <div style="display:flex;gap:6px;">
+              ${!isBoarded && !isAlighted ? `<button class="btn btn-yellow btn-sm" onclick="window.markBoarded('${s.id}','${s.full_name.replace(/'/g,"\\'")}')"><i class="bi bi-box-arrow-in-right"></i></button>` : ''}
+              ${isBoarded ? `<button class="btn btn-ghost btn-sm text-red" onclick="window.markAlighted('${s.id}','${s.full_name.replace(/'/g,"\\'")}')"><i class="bi bi-box-arrow-right"></i></button>` : ''}
+              ${isAlighted ? `<button class="btn btn-ghost btn-sm" onclick="window.markBoarded('${s.id}','${s.full_name.replace(/'/g,"\\'")}')"><i class="bi bi-arrow-counterclockwise"></i></button>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // ── Attendance actions ──────────────────────────────────────────────
+    window.markBoarded = async (studentId, name) => {
+      const { error } = await supabase.from('attendance_logs').insert([{
+        student_id: studentId, bus_id: busId, organization_id: ORG_ID,
+        direction: 'boarding', scanned_by: USER_ID
+      }]);
+      if (error) { showToast('Failed: ' + error.message, 'error'); return; }
+      boardedStudents.add(studentId); alightedStudents.delete(studentId);
+      showToast(`${name} boarded. ✅`, 'success'); renderStudents();
+    };
+
+    window.markAlighted = async (studentId, name) => {
+      const { error } = await supabase.from('attendance_logs').insert([{
+        student_id: studentId, bus_id: busId, organization_id: ORG_ID,
+        direction: 'alighting', scanned_by: USER_ID
+      }]);
+      if (error) { showToast('Failed: ' + error.message, 'error'); return; }
+      alightedStudents.add(studentId);
+      showToast(`${name} alighted. 🚪`, 'success'); renderStudents();
+    };
+
+    window.markAllBoarded = async () => {
+      const pending = allStudents.filter(s => getStudentStatus(s.id) === 'pending');
+      if (!pending.length) { showToast('All students already boarded.', 'success'); return; }
+      if (!confirm(`Mark all ${pending.length} pending students as boarded?`)) return;
+      for (const s of pending) await window.markBoarded(s.id, s.full_name);
+    };
+
+    // ── QR Scanner ──────────────────────────────────────────────────────
+    let videoStream  = null;
+    let scanInterval = null;
+
+    window.openScanner = async () => {
+      const overlay = document.getElementById('scanner-overlay');
+      overlay.classList.add('active');
+      try {
+        videoStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        const video = document.getElementById('scanner-video');
+        video.srcObject = videoStream;
+        await video.play();
+        startScanLoop();
+      } catch (err) {
+        showToast('Camera access denied. Please allow camera permission.', 'error');
+        overlay.classList.remove('active');
+      }
+    };
+
+    function startScanLoop() {
+      const video  = document.getElementById('scanner-video');
+      const canvas = document.getElementById('scanner-canvas');
+      const ctx    = canvas.getContext('2d');
+      scanInterval = setInterval(() => {
+        if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+        canvas.width  = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+        if (code && code.data) {
+          clearInterval(scanInterval);
+          handleQRCode(code.data);
+        }
+      }, 300);
+    }
+
+    async function handleQRCode(qrData) {
+      window.closeScanner();
+      const student = allStudents.find(s => s.qr_code === qrData);
+      if (!student) { showToast(`QR code not recognised: ${qrData}`, 'error'); return; }
+
+      scannedStudentId = student.id;
+      const status     = getStudentStatus(student.id);
+
+      document.getElementById('scan-avatar').textContent = student.full_name.charAt(0).toUpperCase();
+      document.getElementById('scan-name').textContent   = student.full_name;
+      document.getElementById('scan-meta').textContent   = `ID: ${student.student_reg_id || '---'} · Age: ${student.age || '--'} · ${student.gender || ''}`;
+
+      const medWrap = document.getElementById('scan-medical-wrap');
+      if (student.medical_info) {
+        document.getElementById('scan-medical').textContent = student.medical_info;
+        medWrap.style.display = 'block';
+      } else { medWrap.style.display = 'none'; }
+
+      const statusEl = document.getElementById('scan-current-status');
+      statusEl.textContent = status === 'boarded' ? '✅ ON BOARD' : status === 'alighted' ? '🚪 ALIGHTED' : '⏳ PENDING';
+      statusEl.className   = `student-status ${status}`;
+
+      document.getElementById('btn-scan-board').disabled  = status === 'boarded';
+      document.getElementById('btn-scan-alight').disabled = status !== 'boarded';
+
+      document.getElementById('scan-result-modal').classList.add('active');
+    }
+
+    window.confirmScanAction = async (direction) => {
+      if (!scannedStudentId) return;
+      const student = allStudents.find(s => s.id === scannedStudentId);
+      if (!student) return;
+      document.getElementById('scan-result-modal').classList.remove('active');
+      if (direction === 'boarding') await window.markBoarded(scannedStudentId, student.full_name);
+      else await window.markAlighted(scannedStudentId, student.full_name);
+      scannedStudentId = null;
+    };
+
+    window.closeScanResult = () => {
+      document.getElementById('scan-result-modal').classList.remove('active');
+      scannedStudentId = null;
+    };
+
+    window.closeScanner = () => {
+      clearInterval(scanInterval);
+      if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
+      document.getElementById('scanner-overlay').classList.remove('active');
+    };
+
+    document.getElementById('search-bar').oninput     = () => renderStudents();
+    document.getElementById('status-filter').onchange = () => renderStudents();
+
+    loadStudents();
+
+  } // end else (busData exists)
 
   function showToast(m, t='info') {
     const c = document.getElementById('toast-container');
     const d = document.createElement('div'); d.className = `toast ${t} active`; d.textContent = m; c.appendChild(d);
     setTimeout(() => d.remove(), 4000);
   }
-
-  loadStudents();
 </script>
 </body>
 </html>
