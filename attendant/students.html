@@ -246,7 +246,8 @@
     const video = document.getElementById('scanner-video');
     const canvas = document.getElementById('scanner-canvas');
     if (!canvas || !video) return;
-    const ctx = canvas.getContext('2d');
+    // Optimized with willReadFrequently to address canvas performance warnings
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     scanInterval = setInterval(() => {
       if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
       canvas.width = video.videoWidth;
@@ -408,8 +409,10 @@
   document.getElementById('sidebar-avatar').textContent = (profile.full_name || 'A').charAt(0).toUpperCase();
   document.getElementById('signout-btn').onclick = () => signOut();
 
-  const { data: busData } = await supabase.from('buses').select('id, plate_number')
-    .eq('attendant_id', USER_ID).eq('organization_id', ORG_ID).single();
+  // FIX for 406 Error: use limit(1) instead of single() to handle multi-assignment safely
+  const { data: busDataList } = await supabase.from('buses').select('id, plate_number')
+    .eq('attendant_id', USER_ID).eq('organization_id', ORG_ID).limit(1);
+  const busData = busDataList && busDataList.length > 0 ? busDataList[0] : null;
 
   const noBusHTML = `
     <div style="text-align:center;padding:60px;background:white;border-radius:var(--r-xl);border:1px solid var(--border);">
