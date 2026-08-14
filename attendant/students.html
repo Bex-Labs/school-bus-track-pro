@@ -3,70 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Student Register | School Bus Track Pro</title>
+  <title>Student Attendance | School Bus Track Pro</title>
   <link rel="icon" type="image/png" href="../assets/images/logo.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="../assets/css/main.css">
   <link rel="stylesheet" href="../assets/css/admin.css">
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <style>
-    html, body { height: 100%; margin: 0; }
-    .admin-layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
-    .admin-main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-    .admin-content { flex: 1; overflow-y: auto; padding: 24px; scrollbar-width: thin; }
-
-    .scanner-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 5000; flex-direction: column; align-items: center; justify-content: center; }
-    .scanner-overlay.active { display: flex; }
-    .scanner-wrap { position: relative; width: 100%; max-width: 400px; }
-    #scanner-video { width: 100%; border-radius: 12px; display: block; object-fit: cover; }
-    .scanner-frame { position: absolute; inset: 0; border-radius: 12px; pointer-events: none; }
-    .scanner-frame::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 200px; height: 200px; border: 3px solid var(--yellow); border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); }
-    .scanner-line { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) translateY(-100px); width: 200px; height: 3px; background: var(--yellow); animation: scan 2s linear infinite; box-shadow: 0 0 8px var(--yellow); }
-    @keyframes scan { 0% { transform: translate(-50%,-50%) translateY(-97px); } 100% { transform: translate(-50%,-50%) translateY(97px); } }
-    .scanner-hint { color: rgba(255,255,255,0.7); font-size: 14px; font-weight: 700; margin-top: 20px; text-align: center; }
-    .scanner-close { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.15); border: none; color: white; width: 44px; height: 44px; border-radius: 50%; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5010; }
-
-    .scan-result-modal { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 6000; align-items: flex-end; justify-content: center; backdrop-filter: blur(4px); }
-    .scan-result-modal.active { display: flex; }
-    .scan-result-card { background: white; width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 28px; animation: slideUp 0.3s ease; }
-    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    .scan-student-avatar { width: 72px; height: 72px; border-radius: 50%; background: var(--yellow); color: var(--navy); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; margin: 0 auto 16px; }
-    .scan-action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
-
-    .student-card { background: white; border: 1.5px solid var(--border); border-radius: var(--r-xl); padding: 16px 20px; display: flex; align-items: center; gap: 16px; transition: 0.2s; margin-bottom: 10px; }
-    .student-card.boarded { border-color: var(--green); background: #f0fdf4; }
-    .student-card.alighted { border-color: #e2e8f0; background: #f8fafc; opacity: 0.7; }
-    .student-av { width: 46px; height: 46px; border-radius: 50%; background: var(--yellow); color: var(--navy); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; flex-shrink: 0; }
-    .student-av.boarded { background: var(--green); color: white; }
-    .student-status { font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px; }
-    .student-status.pending  { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
-    .student-status.boarded  { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
-    .student-status.alighted { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
-
-    .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
-    .kpi-mini { background: white; border: 1px solid var(--border); border-radius: var(--r-lg); padding: 14px; text-align: center; }
-    .kpi-mini-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
-    .kpi-mini-value { font-size: 26px; font-weight: 900; color: var(--navy); }
-
-    .filter-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
-    .search-input { flex: 1; min-width: 180px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; }
-    .status-select { padding: 0 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: white; outline: none; font-size: 13px; color: var(--navy); height: 40px; }
-
-    .spin { animation: spin 1s linear infinite; }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-    @media (max-width: 768px) {
-      html, body { overflow: auto !important; height: auto !important; }
-      .admin-layout { height: auto !important; overflow: visible !important; }
-      .admin-main { height: auto !important; overflow: visible !important; }
-      .admin-content { overflow: visible !important; padding: 16px 16px 100px !important; }
-      .admin-sidebar { display: none !important; }
-      .admin-topbar { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; height: auto !important; padding: 16px !important; }
-      .kpi-row { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
-      .bottom-nav.mobile-only { height: 64px !important; padding: 0 !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center !important; background: var(--navy) !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 999 !important; }
-      .bottom-nav.mobile-only a { flex: 1 !important; height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; font-size: 0 !important; color: rgba(255,255,255,0.6) !important; text-decoration: none !important; }
-      .bottom-nav.mobile-only a i { font-size: 22px !important; color: rgba(255,255,255,0.6) !important; }
-      .bottom-nav.mobile-only a.active i { color: var(--yellow) !important; }
+    html,body{height:100%;margin:0;}
+    .admin-layout{display:flex;height:100vh;width:100vw;overflow:hidden;}
+    .admin-main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+    .admin-content{flex:1;overflow-y:auto;padding:24px;scrollbar-width:thin;}
+    .mode-tabs{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:4px;gap:4px;margin-bottom:20px;}
+    .mode-tab{flex:1;padding:10px;border:none;border-radius:var(--r-md);font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:var(--text-secondary);transition:0.2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+    .mode-tab.active{background:var(--navy);color:white;}
+    .mode-tab.qr.active{background:var(--yellow);color:var(--navy);}
+    .scanner-overlay{display:none;position:fixed;inset:0;background:#000;z-index:5000;flex-direction:column;align-items:center;justify-content:center;}
+    .scanner-overlay.active{display:flex;}
+    .scanner-wrap{position:relative;width:100%;max-width:400px;}
+    #scanner-video{width:100%;border-radius:12px;display:block;}
+    .scanner-frame{position:absolute;inset:0;border-radius:12px;}
+    .scanner-frame::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:200px;height:200px;border:3px solid var(--yellow);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.5);}
+    .scanner-line{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) translateY(-97px);width:200px;height:3px;background:var(--yellow);animation:scan 2s linear infinite;box-shadow:0 0 8px var(--yellow);}
+    @keyframes scan{0%{transform:translate(-50%,-50%) translateY(-97px);}100%{transform:translate(-50%,-50%) translateY(97px);}}
+    .scanner-hint{color:rgba(255,255,255,0.7);font-size:14px;font-weight:700;margin-top:20px;text-align:center;}
+    .scanner-close{position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.15);border:none;color:white;width:44px;height:44px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+    .scan-result-modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:6000;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);}
+    .scan-result-modal.active{display:flex;}
+    .scan-result-card{background:white;width:100%;max-width:480px;border-radius:24px 24px 0 0;padding:28px;animation:slideUp 0.3s ease;}
+    @keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+    .scan-avatar{width:72px;height:72px;border-radius:50%;background:var(--yellow);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;margin:0 auto 16px;}
+    .checklist-item{background:white;border:1.5px solid var(--border);border-radius:var(--r-xl);padding:14px 18px;display:flex;align-items:center;gap:14px;margin-bottom:10px;transition:0.2s;}
+    .checklist-item.boarded{border-color:var(--green);background:#f0fdf4;}
+    .checklist-item.absent{border-color:#fca5a5;background:#fef2f2;}
+    .check-circle{width:44px;height:44px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:var(--navy);flex-shrink:0;background:var(--bg);transition:0.2s;}
+    .checklist-item.boarded .check-circle{background:var(--green);border-color:var(--green);color:white;}
+    .checklist-item.absent .check-circle{background:#fef2f2;border-color:#fca5a5;color:#dc2626;}
+    .kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+    .kpi-mini{background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;text-align:center;}
+    .kpi-mini-label{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
+    .kpi-mini-value{font-size:26px;font-weight:900;color:var(--navy);}
+    .spin{animation:spin 1s linear infinite;}
+    @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+    @media(max-width:768px){
+      html,body{overflow:auto!important;height:auto!important;}
+      .admin-layout{height:auto!important;overflow:visible!important;}
+      .admin-main{height:auto!important;overflow:visible!important;}
+      .admin-content{overflow:visible!important;padding:16px 16px 100px!important;}
+      .admin-sidebar{display:none!important;}
+      .admin-topbar{flex-direction:column!important;align-items:stretch!important;gap:10px!important;height:auto!important;padding:16px!important;}
+      .bottom-nav.mobile-only{height:64px!important;display:flex!important;flex-direction:row!important;justify-content:space-around!important;align-items:center!important;background:var(--navy)!important;position:fixed!important;bottom:0!important;left:0!important;right:0!important;z-index:999!important;}
+      .bottom-nav.mobile-only a{flex:1!important;height:100%!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;font-size:0!important;color:rgba(255,255,255,0.6)!important;text-decoration:none!important;}
+      .bottom-nav.mobile-only a i{font-size:22px!important;color:rgba(255,255,255,0.6)!important;}
+      .bottom-nav.mobile-only a.active i{color:var(--yellow)!important;}
     }
   </style>
 </head>
@@ -90,7 +79,7 @@
 <div class="scan-result-modal" id="scan-result-modal">
   <div class="scan-result-card">
     <div style="text-align:center;margin-bottom:16px;">
-      <div class="scan-student-avatar" id="scan-avatar">?</div>
+      <div class="scan-avatar" id="scan-avatar">?</div>
       <h3 style="font-weight:900;font-size:20px;color:var(--navy);margin:0 0 4px;" id="scan-name">---</h3>
       <div style="font-size:13px;color:var(--text-secondary);font-weight:600;" id="scan-meta">---</div>
     </div>
@@ -100,9 +89,9 @@
     </div>
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
       <span style="font-size:13px;font-weight:700;color:var(--navy);">Current Status</span>
-      <span id="scan-current-status" class="student-status pending">PENDING</span>
+      <span id="scan-status" style="font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;background:#fffbeb;color:#92400e;border:1px solid #fde68a;">PENDING</span>
     </div>
-    <div class="scan-action-row">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
       <button class="btn btn-yellow btn-full" style="font-weight:800;padding:14px;" id="btn-scan-board" onclick="window.confirmScanAction('boarding')">
         <i class="bi bi-box-arrow-in-right"></i> Board
       </button>
@@ -110,9 +99,7 @@
         <i class="bi bi-box-arrow-right"></i> Alight
       </button>
     </div>
-    <button class="btn btn-ghost btn-full" style="margin-top:10px;" onclick="window.closeScanResult()">
-      Cancel — Scan Next
-    </button>
+    <button class="btn btn-ghost btn-full" onclick="window.closeScanResult()">Cancel</button>
   </div>
 </div>
 
@@ -125,7 +112,7 @@
     <nav class="sidebar-nav" style="flex:1;overflow-y:auto;">
       <div class="nav-group-label">Operations</div>
       <a href="dashboard.html" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
-      <a href="students.html" class="nav-link active"><i class="bi bi-people-fill"></i><span>Student Register</span></a>
+      <a href="students.html" class="nav-link active"><i class="bi bi-people-fill"></i><span>Attendance</span></a>
       <a href="schedule.html" class="nav-link"><i class="bi bi-calendar-check-fill"></i><span>Route Manifest</span></a>
       <div class="nav-group-label">Account</div>
       <a href="profile.html" class="nav-link"><i class="bi bi-person-gear"></i><span>My Profile</span></a>
@@ -147,38 +134,63 @@
   <main class="admin-main">
     <header class="admin-topbar">
       <div>
-        <h1 class="topbar-title">Student Register</h1>
-        <p style="font-size:13px;color:var(--text-secondary);" id="topbar-meta">Checking students in and out</p>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-yellow btn-sm" onclick="window.openScanner()">
-          <i class="bi bi-qr-code-scan"></i> Scan QR
-        </button>
-        <button class="btn btn-ghost btn-sm" onclick="window.markAllBoarded()">
-          <i class="bi bi-check-all"></i> Mark All Boarded
-        </button>
+        <h1 class="topbar-title">Student Attendance</h1>
+        <p style="font-size:13px;color:var(--text-secondary);" id="topbar-meta">Loading...</p>
       </div>
     </header>
-
     <div class="admin-content">
       <div class="kpi-row">
         <div class="kpi-mini"><div class="kpi-mini-label">Expected</div><div class="kpi-mini-value" id="kpi-total">0</div></div>
-        <div class="kpi-mini"><div class="kpi-mini-label" style="color:var(--green);">On Board</div><div class="kpi-mini-value" style="color:var(--green);" id="kpi-boarded">0</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-label" style="color:var(--green);">Boarded</div><div class="kpi-mini-value" style="color:var(--green);" id="kpi-boarded">0</div></div>
         <div class="kpi-mini"><div class="kpi-mini-label" style="color:#f59e0b;">Pending</div><div class="kpi-mini-value" style="color:#f59e0b;" id="kpi-pending">0</div></div>
       </div>
-      <div class="filter-row">
-        <input type="text" id="search-bar" class="search-input" placeholder="Search student name or ID...">
-        <select id="status-filter" class="status-select">
-          <option value="ALL">All Students</option>
-          <option value="pending">Pending</option>
-          <option value="boarded">On Board</option>
-          <option value="alighted">Alighted</option>
-        </select>
+
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="tab-manual" onclick="window.switchMode('manual')">
+          <i class="bi bi-list-check"></i> Manual Checklist
+        </button>
+        <button class="mode-tab qr" id="tab-qr" onclick="window.switchMode('qr')">
+          <i class="bi bi-qr-code-scan"></i> QR Scanner
+        </button>
       </div>
-      <div id="students-list">
-        <div style="text-align:center;padding:60px;color:var(--text-muted);">
-          <i class="bi bi-arrow-clockwise spin" style="font-size:28px;display:block;margin-bottom:12px;color:var(--yellow);"></i>
-          Loading students...
+
+      <!-- Manual Checklist -->
+      <div id="manual-section">
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+          <input type="text" id="search-bar" placeholder="Search student..." style="flex:1;min-width:140px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--r-md);background:white;outline:none;font-size:13px;">
+          <select id="status-filter" style="padding:0 14px;border:1px solid var(--border);border-radius:var(--r-md);background:white;outline:none;font-size:13px;color:var(--navy);height:40px;">
+            <option value="ALL">All</option>
+            <option value="pending">Pending</option>
+            <option value="boarded">Boarded</option>
+            <option value="alighted">Alighted</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="window.markAllBoarded()">
+            <i class="bi bi-check-all"></i> All Boarded
+          </button>
+        </div>
+        <div id="checklist-list">
+          <div style="text-align:center;padding:60px;color:var(--text-muted);">
+            <i class="bi bi-arrow-clockwise spin" style="font-size:28px;display:block;margin-bottom:12px;color:var(--yellow);"></i>
+            Loading students...
+          </div>
+        </div>
+      </div>
+
+      <!-- QR Mode -->
+      <div id="qr-section" style="display:none;">
+        <div style="background:var(--navy);border-radius:var(--r-xl);padding:32px;text-align:center;color:white;">
+          <i class="bi bi-qr-code-scan" style="font-size:56px;display:block;margin-bottom:16px;color:var(--yellow);"></i>
+          <h3 style="font-weight:900;font-size:20px;margin:0 0 8px;">QR Code Scanner</h3>
+          <p style="opacity:0.7;font-size:14px;margin:0 0 24px;">Scan a student's QR code to mark them as boarded or alighted instantly.</p>
+          <button class="btn btn-yellow btn-full" style="font-weight:800;font-size:15px;padding:16px;" onclick="window.openScanner()">
+            <i class="bi bi-camera-fill"></i> Open Camera &amp; Scan
+          </button>
+        </div>
+        <div style="margin-top:20px;">
+          <div style="font-size:12px;font-weight:800;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px;margin-bottom:10px;">Recent Scans Today</div>
+          <div id="recent-scans">
+            <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">No scans yet today.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -198,200 +210,6 @@
   import { supabase, getUserProfile } from '../js/config.js';
   import { requireAuth, signOut } from '../js/auth.js';
 
-  // Global scanner controls declared outside so buttons can hook to them safely
-  let videoStream = null;
-  let scanInterval = null;
-  let scannedStudentId = null;
-  let allStudents = [];
-  let busId = null;
-  let ORG_ID = null;
-  let USER_ID = null;
-  let boardedStudents = new Set();
-  let alightedStudents = new Set();
-
-  window.closeScanner = () => {
-    clearInterval(scanInterval);
-    if (videoStream) {
-      videoStream.getTracks().forEach(t => t.stop());
-      videoStream = null;
-    }
-    const overlay = document.getElementById('scanner-overlay');
-    if (overlay) overlay.classList.remove('active');
-  };
-
-  window.closeScanResult = () => {
-    const modal = document.getElementById('scan-result-modal');
-    if (modal) modal.classList.remove('active');
-    scannedStudentId = null;
-  };
-
-  window.openScanner = async () => {
-    const overlay = document.getElementById('scanner-overlay');
-    if (overlay) overlay.classList.add('active');
-    try {
-      videoStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-      });
-      const video = document.getElementById('scanner-video');
-      video.srcObject = videoStream;
-      await video.play();
-      startScanLoop();
-    } catch (err) {
-      showToast('Camera access denied or unavailable.', 'error');
-      window.closeScanner();
-    }
-  };
-
-  function startScanLoop() {
-    const video = document.getElementById('scanner-video');
-    const canvas = document.getElementById('scanner-canvas');
-    if (!canvas || !video) return;
-    // Optimized with willReadFrequently to address canvas performance warnings
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    scanInterval = setInterval(() => {
-      if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
-      if (code && code.data) {
-        clearInterval(scanInterval);
-        handleQRCode(code.data);
-      }
-    }, 300);
-  }
-
-  async function handleQRCode(qrData) {
-    window.closeScanner();
-    const student = allStudents.find(s => s.qr_code === qrData);
-    if (!student) {
-      showToast(`QR code not recognised: ${qrData}`, 'error');
-      return;
-    }
-
-    scannedStudentId = student.id;
-    const status = getStudentStatus(student.id);
-
-    document.getElementById('scan-avatar').textContent = student.full_name.charAt(0).toUpperCase();
-    document.getElementById('scan-name').textContent = student.full_name;
-    document.getElementById('scan-meta').textContent = `ID: ${student.student_reg_id || '---'} · Age: ${student.age || '--'} · ${student.gender || ''}`;
-
-    const medWrap = document.getElementById('scan-medical-wrap');
-    if (student.medical_info) {
-      document.getElementById('scan-medical').textContent = student.medical_info;
-      medWrap.style.display = 'block';
-    } else {
-      medWrap.style.display = 'none';
-    }
-
-    const statusEl = document.getElementById('scan-current-status');
-    statusEl.textContent = status === 'boarded' ? '✅ ON BOARD' : status === 'alighted' ? '🚪 ALIGHTED' : '⏳ PENDING';
-    statusEl.className = `student-status ${status}`;
-
-    document.getElementById('btn-scan-board').disabled = status === 'boarded';
-    document.getElementById('btn-scan-alight').disabled = status !== 'boarded';
-
-    document.getElementById('scan-result-modal').classList.add('active');
-  }
-
-  window.confirmScanAction = async (direction) => {
-    if (!scannedStudentId) return;
-    const student = allStudents.find(s => s.id === scannedStudentId);
-    if (!student) return;
-    window.closeScanResult();
-    if (direction === 'boarding') await window.markBoarded(scannedStudentId, student.full_name);
-    else await window.markAlighted(scannedStudentId, student.full_name);
-    scannedStudentId = null;
-  };
-
-  function getStudentStatus(id) {
-    if (alightedStudents.has(id)) return 'alighted';
-    if (boardedStudents.has(id)) return 'boarded';
-    return 'pending';
-  }
-
-  window.markBoarded = async (studentId, name) => {
-    const { error } = await supabase.from('attendance_logs').insert([{
-      student_id: studentId, bus_id: busId, organization_id: ORG_ID,
-      direction: 'boarding', scanned_by: USER_ID
-    }]);
-    if (error) { showToast('Failed: ' + error.message, 'error'); return; }
-    boardedStudents.add(studentId);
-    alightedStudents.delete(studentId);
-    showToast(`${name} boarded. ✅`, 'success');
-    renderStudents();
-  };
-
-  window.markAlighted = async (studentId, name) => {
-    const { error } = await supabase.from('attendance_logs').insert([{
-      student_id: studentId, bus_id: busId, organization_id: ORG_ID,
-      direction: 'alighting', scanned_by: USER_ID
-    }]);
-    if (error) { showToast('Failed: ' + error.message, 'error'); return; }
-    alightedStudents.add(studentId);
-    showToast(`${name} alighted. 🚪`, 'success');
-    renderStudents();
-  };
-
-  window.markAllBoarded = async () => {
-    const pending = allStudents.filter(s => getStudentStatus(s.id) === 'pending');
-    if (!pending.length) { showToast('All students already boarded.', 'success'); return; }
-    if (!confirm(`Mark all ${pending.length} pending students as boarded?`)) return;
-    for (const s of pending) await window.markBoarded(s.id, s.full_name);
-  };
-
-  function renderStudents() {
-    const list = document.getElementById('students-list');
-    const term = document.getElementById('search-bar').value.toLowerCase();
-    const filter = document.getElementById('status-filter').value;
-
-    const boarded = allStudents.filter(s => getStudentStatus(s.id) === 'boarded').length;
-    const pending = allStudents.filter(s => getStudentStatus(s.id) === 'pending').length;
-    document.getElementById('kpi-total').textContent = allStudents.length;
-    document.getElementById('kpi-boarded').textContent = boarded;
-    document.getElementById('kpi-pending').textContent = pending;
-
-    const filtered = allStudents.filter(s => {
-      const matchSearch = s.full_name?.toLowerCase().includes(term) || s.student_reg_id?.toLowerCase().includes(term);
-      const status = getStudentStatus(s.id);
-      return matchSearch && (filter === 'ALL' || status === filter);
-    });
-
-    if (!filtered.length) {
-      list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px;">No students found.</div>';
-      return;
-    }
-
-    list.innerHTML = filtered.map(s => {
-      const status = getStudentStatus(s.id);
-      const isBoarded = status === 'boarded';
-      const isAlighted = status === 'alighted';
-      return `<div class="student-card ${status}" id="scard-${s.id}">
-        <div class="student-av ${isBoarded ? 'boarded' : ''}">
-          ${isBoarded ? '<i class="bi bi-check-lg"></i>' : s.full_name.charAt(0).toUpperCase()}
-        </div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-weight:800;font-size:14px;color:var(--navy);">${s.full_name}</div>
-          <div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:2px;">
-            ID: ${s.student_reg_id || '---'} · Age: ${s.age || '--'}
-            ${s.medical_info ? `<span style="color:#dc2626;margin-left:6px;"><i class="bi bi-heart-pulse-fill"></i> ${s.medical_info}</span>` : ''}
-          </div>
-          ${s.qr_code ? `<div style="font-size:10px;color:var(--text-muted);font-family:monospace;margin-top:2px;">${s.qr_code}</div>` : ''}
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
-          <span class="student-status ${status}">${status === 'boarded' ? '✅ ON BOARD' : status === 'alighted' ? '🚪 ALIGHTED' : '⏳ PENDING'}</span>
-          <div style="display:flex;gap:6px;">
-            ${!isBoarded && !isAlighted ? `<button class="btn btn-yellow btn-sm" onclick="window.markBoarded('${s.id}','${s.full_name.replace(/'/g,"\\'")}')"><i class="bi bi-box-arrow-in-right"></i></button>` : ''}
-            ${isBoarded ? `<button class="btn btn-ghost btn-sm text-red" onclick="window.markAlighted('${s.id}','${s.full_name.replace(/'/g,"\\'")}')"><i class="bi bi-box-arrow-right"></i></button>` : ''}
-            ${isAlighted ? `<button class="btn btn-ghost btn-sm" onclick="window.markBoarded('${s.id}','${s.full_name.replace(/'/g,"\\'")}')"><i class="bi bi-arrow-counterclockwise"></i></button>` : ''}
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  // ── Initialization Sequence ──────────────────────────────────────────
   await requireAuth();
   const profile = await getUserProfile();
   if (!profile || profile.role !== 'bus_attendant') {
@@ -400,72 +218,249 @@
     throw new Error('Not authorized.');
   }
 
-  ORG_ID  = profile.organization_id;
-  USER_ID = profile.id;
+  const ORG_ID  = profile.organization_id;
+  const USER_ID = profile.id;
 
-  const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
-  if (org) document.getElementById('sidebar-school-name').innerHTML = `${org.name} <small>Attendant Hub</small>`;
-  document.getElementById('sidebar-name').textContent   = profile.full_name || 'Attendant';
-  document.getElementById('sidebar-avatar').textContent = (profile.full_name || 'A').charAt(0).toUpperCase();
-  document.getElementById('signout-btn').onclick = () => signOut();
-
-  // FIX for 406 Error: use limit(1) instead of single() to handle multi-assignment safely
-  const { data: busDataList } = await supabase.from('buses').select('id, plate_number')
-    .eq('attendant_id', USER_ID).eq('organization_id', ORG_ID).limit(1);
-  const busData = busDataList && busDataList.length > 0 ? busDataList[0] : null;
-
-  const noBusHTML = `
-    <div style="text-align:center;padding:60px;background:white;border-radius:var(--r-xl);border:1px solid var(--border);">
-      <i class="bi bi-bus-front" style="font-size:40px;color:var(--border);display:block;margin-bottom:12px;"></i>
-      <div style="font-weight:800;color:var(--navy);">No Bus Assigned</div>
-      <div style="font-size:13px;color:var(--text-muted);margin-top:6px;">Contact your manager to get a bus assigned.</div>
-    </div>`;
-
-  if (!busData) {
-    document.getElementById('topbar-meta').textContent = 'No bus assigned.';
-    document.getElementById('sidebar-bus').textContent = 'No bus assigned';
-    document.getElementById('students-list').innerHTML = noBusHTML;
-  } else {
-    busId = busData.id;
-    document.getElementById('sidebar-bus').textContent = `Bus ${busId}`;
-    document.getElementById('topbar-meta').textContent = `Bus ${busId} · ${busData.plate_number || ''}`;
-
-    async function loadTodayLogs() {
-      const today = new Date().toISOString().split('T')[0];
-      const { data: logs } = await supabase.from('attendance_logs')
-        .select('student_id, direction')
-        .eq('bus_id', busId).eq('organization_id', ORG_ID)
-        .gte('scanned_at', today + 'T00:00:00Z');
-      boardedStudents  = new Set();
-      alightedStudents = new Set();
-      if (logs) {
-        logs.forEach(l => {
-          if (l.direction === 'boarding')  boardedStudents.add(l.student_id);
-          if (l.direction === 'alighting') alightedStudents.add(l.student_id);
-        });
-      }
-    }
-
-    async function loadStudents() {
-      const { data, error } = await supabase.from('students')
-        .select('id, full_name, age, gender, student_reg_id, medical_info, qr_code')
-        .eq('bus_id', busId).eq('organization_id', ORG_ID).order('full_name');
-      if (error) { showToast('Failed to load students: ' + error.message, 'error'); return; }
-      allStudents = data || [];
-      await loadTodayLogs();
-      renderStudents();
-    }
-
-    document.getElementById('search-bar').oninput      = () => renderStudents();
-    document.getElementById('status-filter').onchange = () => renderStudents();
-
-    loadStudents();
-  }
+  // ── Always-available globals ────────────────────────────────────────
+  let allStudents      = [];
+  let boardedStudents  = new Set();
+  let alightedStudents = new Set();
+  let recentScans      = [];
+  let scannedStudentId = null;
+  let videoStream      = null;
+  let scanInterval     = null;
+  let BUS_ID           = null;
 
   function showToast(m, t='info') {
     const c = document.getElementById('toast-container');
     const d = document.createElement('div'); d.className = `toast ${t} active`; d.textContent = m; c.appendChild(d);
     setTimeout(() => d.remove(), 4000);
+  }
+
+  function getStatus(id) {
+    if (alightedStudents.has(id)) return 'alighted';
+    if (boardedStudents.has(id))  return 'boarded';
+    return 'pending';
+  }
+
+  function updateKPIs() {
+    const boarded = allStudents.filter(s => getStatus(s.id) === 'boarded').length;
+    const pending  = allStudents.filter(s => getStatus(s.id) === 'pending').length;
+    document.getElementById('kpi-total').textContent   = allStudents.length;
+    document.getElementById('kpi-boarded').textContent = boarded;
+    document.getElementById('kpi-pending').textContent = pending;
+  }
+
+  function renderChecklist() {
+    const list   = document.getElementById('checklist-list');
+    const term   = (document.getElementById('search-bar')?.value || '').toLowerCase();
+    const filter = document.getElementById('status-filter')?.value || 'ALL';
+    const filtered = allStudents.filter(s => {
+      const matchSearch = s.full_name?.toLowerCase().includes(term) || s.student_reg_id?.toLowerCase().includes(term);
+      return matchSearch && (filter === 'ALL' || getStatus(s.id) === filter);
+    });
+    if (!filtered.length) { list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px;">No students found.</div>'; return; }
+    list.innerHTML = filtered.map(s => {
+      const status    = getStatus(s.id);
+      const isBoarded = status === 'boarded';
+      const isAlighted = status === 'alighted';
+      const initial   = s.full_name.charAt(0).toUpperCase();
+      const checkIcon = isBoarded ? '<i class="bi bi-check-lg"></i>' : isAlighted ? '<i class="bi bi-door-open"></i>' : initial;
+      return `<div class="checklist-item ${status}">
+        <div class="check-circle">${checkIcon}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:800;font-size:14px;color:var(--navy);">${s.full_name}</div>
+          <div style="font-size:11px;color:var(--text-secondary);font-weight:600;margin-top:2px;">
+            ID: ${s.student_reg_id || '---'}${s.age ? ' · Age ' + s.age : ''}
+            ${s.medical_info ? `<span style="color:#dc2626;margin-left:4px;"><i class="bi bi-heart-pulse-fill"></i> ${s.medical_info}</span>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">
+          ${!isBoarded && !isAlighted ? `
+            <button class="btn btn-yellow btn-sm" onclick="window.markBoarded('${s.id}','${s.full_name.replace(/'/g,"\\'")}')"><i class="bi bi-box-arrow-in-right"></i> Board</button>` : ''}
+          ${isBoarded ? `
+            <span style="font-size:11px;font-weight:800;color:var(--green);display:flex;align-items:center;gap:4px;"><i class="bi bi-check-circle-fill"></i> On Board</span>
+            <button class="btn btn-ghost btn-sm" onclick="window.markAlighted('${s.id}','${s.full_name.replace(/'/g,"\\'")}')"><i class="bi bi-box-arrow-right"></i> Alight</button>` : ''}
+          ${isAlighted ? `<span style="font-size:11px;font-weight:800;color:var(--text-muted);display:flex;align-items:center;gap:4px;"><i class="bi bi-door-open"></i> Alighted</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderRecentScans() {
+    const el = document.getElementById('recent-scans');
+    if (!recentScans.length) { el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">No scans yet today.</div>'; return; }
+    el.innerHTML = recentScans.slice(0, 8).map(log => {
+      const student = allStudents.find(s => s.id === log.student_id);
+      const name    = student?.full_name || 'Unknown';
+      const time    = new Date(log.scanned_at).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
+      const isBoard = log.direction === 'boarding';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="width:32px;height:32px;border-radius:50%;background:${isBoard ? 'var(--green)' : '#f1f5f9'};color:${isBoard ? 'white' : 'var(--navy)'};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;">${name.charAt(0)}</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--navy);">${name}</div><div style="font-size:11px;color:var(--text-muted);">${isBoard ? '✅ Boarded' : '🚪 Alighted'} · ${time}</div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Attendance actions ────────────────────────────────────────────────
+  window.markBoarded = async (studentId, name) => {
+    if (!BUS_ID) { showToast('No bus assigned.', 'error'); return; }
+    const { error } = await supabase.from('attendance_logs').insert([{ student_id: studentId, bus_id: BUS_ID, organization_id: ORG_ID, direction: 'boarding', scanned_by: USER_ID }]);
+    if (error) { showToast('Failed: ' + error.message, 'error'); return; }
+    boardedStudents.add(studentId); alightedStudents.delete(studentId);
+    recentScans.unshift({ student_id: studentId, direction: 'boarding', scanned_at: new Date().toISOString() });
+    showToast(`${name} — Boarded ✅`, 'success');
+    updateKPIs(); renderChecklist(); renderRecentScans();
+  };
+
+  window.markAlighted = async (studentId, name) => {
+    if (!BUS_ID) { showToast('No bus assigned.', 'error'); return; }
+    const { error } = await supabase.from('attendance_logs').insert([{ student_id: studentId, bus_id: BUS_ID, organization_id: ORG_ID, direction: 'alighting', scanned_by: USER_ID }]);
+    if (error) { showToast('Failed: ' + error.message, 'error'); return; }
+    alightedStudents.add(studentId);
+    recentScans.unshift({ student_id: studentId, direction: 'alighting', scanned_at: new Date().toISOString() });
+    showToast(`${name} — Alighted 🚪`, 'success');
+    updateKPIs(); renderChecklist(); renderRecentScans();
+  };
+
+  window.markAllBoarded = async () => {
+    const pending = allStudents.filter(s => getStatus(s.id) === 'pending');
+    if (!pending.length) { showToast('All students already boarded.', 'success'); return; }
+    if (!confirm(`Mark all ${pending.length} pending students as boarded?`)) return;
+    for (const s of pending) await window.markBoarded(s.id, s.full_name);
+  };
+
+  // ── Mode switcher ─────────────────────────────────────────────────────
+  window.switchMode = (mode) => {
+    const isManual = mode === 'manual';
+    document.getElementById('manual-section').style.display = isManual ? 'block' : 'none';
+    document.getElementById('qr-section').style.display     = isManual ? 'none'  : 'block';
+    document.getElementById('tab-manual').classList.toggle('active', isManual);
+    document.getElementById('tab-qr').classList.toggle('active', !isManual);
+  };
+
+  // ── QR Scanner ────────────────────────────────────────────────────────
+  window.openScanner = async () => {
+    document.getElementById('scanner-overlay').classList.add('active');
+    try {
+      videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } });
+      const video = document.getElementById('scanner-video');
+      video.srcObject = videoStream;
+      await video.play();
+      startScanLoop();
+    } catch (err) {
+      showToast('Camera access denied. Please allow camera permission.', 'error');
+      document.getElementById('scanner-overlay').classList.remove('active');
+    }
+  };
+
+  function startScanLoop() {
+    const video  = document.getElementById('scanner-video');
+    const canvas = document.getElementById('scanner-canvas');
+    const ctx    = canvas.getContext('2d');
+    scanInterval = setInterval(() => {
+      if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code    = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+      if (code?.data) { clearInterval(scanInterval); handleQRCode(code.data); }
+    }, 300);
+  }
+
+  function handleQRCode(qrData) {
+    window.closeScanner();
+    const student = allStudents.find(s => s.qr_code === qrData);
+    if (!student) { showToast(`QR not recognised: ${qrData}`, 'error'); return; }
+    scannedStudentId = student.id;
+    const status = getStatus(student.id);
+    document.getElementById('scan-avatar').textContent = student.full_name.charAt(0).toUpperCase();
+    document.getElementById('scan-name').textContent   = student.full_name;
+    document.getElementById('scan-meta').textContent   = `ID: ${student.student_reg_id || '---'} · Age: ${student.age || '--'}`;
+    const medWrap = document.getElementById('scan-medical-wrap');
+    if (student.medical_info) { document.getElementById('scan-medical').textContent = student.medical_info; medWrap.style.display = 'block'; }
+    else { medWrap.style.display = 'none'; }
+    const statusEl = document.getElementById('scan-status');
+    if (status === 'boarded')       { statusEl.textContent = '✅ ON BOARD';  statusEl.style.cssText = 'font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;'; }
+    else if (status === 'alighted') { statusEl.textContent = '🚪 ALIGHTED';  statusEl.style.cssText = 'font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;'; }
+    else                            { statusEl.textContent = '⏳ PENDING';   statusEl.style.cssText = 'font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;background:#fffbeb;color:#92400e;border:1px solid #fde68a;'; }
+    document.getElementById('btn-scan-board').disabled  = status === 'boarded';
+    document.getElementById('btn-scan-alight').disabled = status !== 'boarded';
+    document.getElementById('scan-result-modal').classList.add('active');
+  }
+
+  window.confirmScanAction = async (direction) => {
+    if (!scannedStudentId) return;
+    const student = allStudents.find(s => s.id === scannedStudentId);
+    if (!student) return;
+    document.getElementById('scan-result-modal').classList.remove('active');
+    if (direction === 'boarding') await window.markBoarded(scannedStudentId, student.full_name);
+    else await window.markAlighted(scannedStudentId, student.full_name);
+    scannedStudentId = null;
+  };
+
+  window.closeScanResult = () => { document.getElementById('scan-result-modal').classList.remove('active'); scannedStudentId = null; };
+
+  window.closeScanner = () => {
+    clearInterval(scanInterval);
+    if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
+    document.getElementById('scanner-overlay').classList.remove('active');
+  };
+
+  // ── Init ──────────────────────────────────────────────────────────────
+  document.getElementById('sidebar-name').textContent   = profile.full_name || 'Attendant';
+  document.getElementById('sidebar-avatar').textContent = (profile.full_name || 'A').charAt(0).toUpperCase();
+  document.getElementById('signout-btn').onclick = () => signOut();
+
+  const { data: org } = await supabase.from('organizations').select('name').eq('id', ORG_ID).single();
+  if (org) document.getElementById('sidebar-school-name').innerHTML = `${org.name} <small>Attendant Hub</small>`;
+
+  // Get bus
+  const { data: busData } = await supabase.from('buses').select('id, plate_number')
+    .eq('attendant_id', USER_ID).eq('organization_id', ORG_ID).maybeSingle();
+
+  if (!busData) {
+    document.getElementById('topbar-meta').textContent = 'No bus assigned — contact your manager.';
+    document.getElementById('sidebar-bus').textContent = 'No bus assigned';
+    document.getElementById('checklist-list').innerHTML = `
+      <div style="text-align:center;padding:60px;background:white;border-radius:var(--r-xl);border:1px solid var(--border);">
+        <i class="bi bi-bus-front" style="font-size:40px;color:var(--border);display:block;margin-bottom:12px;"></i>
+        <div style="font-weight:800;color:var(--navy);">No Bus Assigned</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:6px;">Contact your manager to get a bus assigned.</div>
+      </div>`;
+  } else {
+    BUS_ID = busData.id;
+    document.getElementById('sidebar-bus').textContent = `Bus ${BUS_ID}`;
+    document.getElementById('topbar-meta').textContent = `Bus ${BUS_ID} · ${busData.plate_number || ''} · ${new Date().toLocaleDateString('en-NG', { weekday:'short', day:'numeric', month:'short' })}`;
+
+    // Load students
+    const { data: students } = await supabase.from('students')
+      .select('id, full_name, age, gender, student_reg_id, medical_info, qr_code')
+      .eq('bus_id', BUS_ID).eq('organization_id', ORG_ID).order('full_name');
+    allStudents = students || [];
+
+    // Load today's logs
+    const today = new Date().toISOString().split('T')[0];
+    const { data: logs } = await supabase.from('attendance_logs')
+      .select('student_id, direction, scanned_at')
+      .eq('bus_id', BUS_ID).eq('organization_id', ORG_ID)
+      .gte('scanned_at', today + 'T00:00:00Z')
+      .order('scanned_at', { ascending: false });
+
+    if (logs) {
+      recentScans = logs;
+      logs.forEach(l => {
+        if (l.direction === 'boarding')  boardedStudents.add(l.student_id);
+        if (l.direction === 'alighting') alightedStudents.add(l.student_id);
+      });
+    }
+
+    updateKPIs();
+    renderChecklist();
+    renderRecentScans();
+
+    document.getElementById('search-bar').oninput     = () => renderChecklist();
+    document.getElementById('status-filter').onchange = () => renderChecklist();
   }
 </script>
 </body>
