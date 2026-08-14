@@ -68,7 +68,7 @@
     <nav class="sidebar-nav" style="flex:1;overflow-y:auto;">
       <div class="nav-group-label">Operations</div>
       <a href="dashboard.html" class="nav-link active"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
-      <a href="students.html" class="nav-link"><i class="bi bi-people-fill"></i><span>Students Attendance</span></a>
+      <a href="students.html" class="nav-link"><i class="bi bi-people-fill"></i><span>Student Register</span></a>
       <a href="schedule.html" class="nav-link"><i class="bi bi-calendar-check-fill"></i><span>Route Manifest</span></a>
       <div class="nav-group-label">Account</div>
       <a href="profile.html" class="nav-link"><i class="bi bi-person-gear"></i><span>My Profile</span></a>
@@ -216,10 +216,21 @@
   document.getElementById('sidebar-avatar').textContent = (profile.full_name || 'A').charAt(0).toUpperCase();
   document.getElementById('signout-btn').onclick = () => signOut();
 
+  // ── Map — always initialize ──────────────────────────────────────────
+  const mapEl = document.getElementById('bus-map');
+  mapEl.style.height = '320px';
+  mapEl.style.width  = '100%';
+  const map = L.map('bus-map', { zoomControl: true, attributionControl: false });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  let busMarker = null;
+  const defaultCoords = [6.5244, 3.3792];
+  map.setView(defaultCoords, 13);
+  setTimeout(() => { map.invalidateSize(); map.setView(defaultCoords, 13); }, 500);
+
   // Find bus assigned to this attendant
   const { data: busData } = await supabase.from('buses')
     .select('*, profiles!buses_driver_id_fkey(full_name, email, phone, avatar_url)')
-    .eq('attendant_id', USER_ID).eq('organization_id', ORG_ID).single();
+    .eq('attendant_id', USER_ID).eq('organization_id', ORG_ID).maybeSingle();
 
   if (!busData) {
     document.getElementById('topbar-meta').textContent = 'No bus assigned — contact your manager.';
@@ -285,14 +296,6 @@
           </div>`).join('')}
         ${stops && stops.length > 0 ? '' : '<div style="font-size:13px;color:var(--text-muted);">No stops configured yet.</div>'}`;
     }
-
-    // Map
-    const map = L.map('bus-map', { zoomControl: true, attributionControl: false });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
-
-    let busMarker = null;
-    const defaultCoords = [6.5244, 3.3792];
-    map.setView(defaultCoords, 13);
 
     function updateMap(bus) {
       if (!bus.current_lat || !bus.current_lng) return;
